@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { axiosClient } from '../api/axiosClient';
-import { invoke } from '@tauri-apps/api/core';
+import { axiosClient, invoke } from '../api/axiosClient';
+import { apiClient } from '../config/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { 
   Loader2, 
@@ -88,10 +88,16 @@ export default function Login() {
       const { accessToken, token: rawToken, refreshToken, username: user, role, permissions } = response.data;
       const token = accessToken || rawToken;
 
-      // Securely vault JWT in Windows DPAPI via Tauri command (bypassing localStorage)
+      // Securely vault Access Token & Refresh Token in Windows DPAPI (P2.1 / P3.2)
       try {
         if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-          await invoke('store_secure_token', { token });
+          await invoke('store_account_tokens', {
+            account: user || 'default_user',
+            tokens: {
+              access_token: token,
+              refresh_token: refreshToken || null,
+            },
+          });
         }
       } catch (vaultErr) {
         console.error('[Login] Failed to store secure token in native vault:', vaultErr);
@@ -126,10 +132,16 @@ export default function Login() {
       const { accessToken, token: rawToken, refreshToken, username: user, role, permissions } = response.data;
       const token = accessToken || rawToken;
 
-      // Securely vault JWT in Windows DPAPI via Tauri command (bypassing localStorage)
+      // Securely vault Access Token & Refresh Token in Windows DPAPI (P2.1 / P3.2)
       try {
         if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-          await invoke('store_secure_token', { token });
+          await invoke('store_account_tokens', {
+            account: user || 'default_user',
+            tokens: {
+              access_token: token,
+              refresh_token: refreshToken || null,
+            },
+          });
         }
       } catch (vaultErr) {
         console.error('[Login] Failed to store secure token in native vault:', vaultErr);
