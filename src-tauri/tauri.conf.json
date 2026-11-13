@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/tauri-apps/tauri/dev/crates/tauri-cli/schema.json",
+  "productName": "EduPulse ERP",
+  "version": "1.0.0",
+  "identifier": "com.edupulse.erp",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "EduPulse ERP Windows Desktop Edition",
+        "width": 1280,
+        "height": 800,
+        "resizable": true,
+        "fullscreen": false,
+        "useHttpsScheme": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' https: tauri:; script-src 'self'; style-src 'self' 'unsafe-inline'"
+    }
+  }
+}
