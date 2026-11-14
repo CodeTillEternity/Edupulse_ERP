@@ -10,16 +10,19 @@
     "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
         "title": "EduPulse ERP Windows Desktop Edition",
         "width": 1280,
         "height": 800,
+        "minWidth": 1024,
+        "minHeight": 640,
         "resizable": true,
         "fullscreen": false,
         "useHttpsScheme": true
       }
     ],
     "security": {
-      "csp": "default-src 'self' https: tauri:; script-src 'self'; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; connect-src 'self' https: https://tauri.localhost http://localhost:8081; img-src 'self' data: https: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
     }
   }
 }
