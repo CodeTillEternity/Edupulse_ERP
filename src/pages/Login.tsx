@@ -4,6 +4,12 @@ import { axiosClient, invoke, isTauriDesktop } from '../api/axiosClient';
 import { useAuthStore } from '../store/useAuthStore';
 import { useInstitutionStore } from '../store/useInstitutionStore';
 import { 
+  extractDominantColors, 
+  deriveThemeFromColor, 
+  DEFAULT_THEME, 
+  type ExtractedColors 
+} from '../lib/colorExtractor';
+import { 
   Loader2, 
   Eye, 
   EyeOff, 
@@ -33,7 +39,57 @@ export default function Login() {
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-  const { institution } = useInstitutionStore();
+  const { institution, updateInstitution } = useInstitutionStore();
+
+  // Personalized Adaptive Brand Theme State
+  const [theme, setTheme] = useState<ExtractedColors>(() => {
+    // If institution name or branding indicates Arya College, initialize immediately with royal maroon & gold
+    if (institution.name?.toLowerCase().includes('arya')) {
+      return deriveThemeFromColor('#991b1b', '#f59e0b');
+    }
+    if (institution.brandPrimary && institution.brandPrimary !== '#2563eb') {
+      return deriveThemeFromColor(institution.brandPrimary, institution.brandSecondary);
+    }
+    return DEFAULT_THEME;
+  });
+
+  // Extract from logo automatically on mount or when logoUrl changes
+  useEffect(() => {
+    let active = true;
+
+    if (institution.logoUrl) {
+      extractDominantColors(institution.logoUrl)
+        .then((extracted) => {
+          if (!active) return;
+          setTheme(extracted);
+
+          // Update store if store was never personalized or still default
+          if (!institution.brandPrimary || institution.brandPrimary === '#2563eb' || !institution.bgDark) {
+            updateInstitution({
+              brandPrimary: extracted.primary,
+              brandSecondary: extracted.secondary,
+              brandPrimaryRgb: extracted.primaryRgb,
+              brandSecondaryRgb: extracted.secondaryRgb,
+              bgDark: extracted.bgDark,
+              bgDarkest: extracted.bgDarkest,
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn('[Login] Theme extraction failed:', err);
+        });
+    } else if (institution.brandPrimary && institution.brandPrimary !== '#2563eb') {
+      setTheme(deriveThemeFromColor(institution.brandPrimary, institution.brandSecondary));
+    } else if (institution.name?.toLowerCase().includes('arya')) {
+      setTheme(deriveThemeFromColor('#991b1b', '#f59e0b'));
+    } else {
+      setTheme(DEFAULT_THEME);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [institution.logoUrl, institution.brandPrimary, institution.brandSecondary, institution.name]);
 
   useEffect(() => {
     const role = searchParams.get('role');
@@ -116,54 +172,56 @@ export default function Login() {
   };
 
   return (
-    <div className="h-full w-full overflow-hidden flex flex-col lg:flex-row font-sans select-none bg-slate-900">
+    <div className="h-full w-full overflow-hidden flex flex-col lg:flex-row font-sans select-none bg-slate-950">
       
       {/* ========================================================================= */}
-      {/* LEFT PANEL: Enterprise Branding & Institution Showcase                     */}
+      {/* LEFT PANEL: Enterprise Branding & Dynamic Institutional Atmosphere         */}
       {/* ========================================================================= */}
       <div 
-        className="hidden lg:flex lg:w-1/2 xl:w-7/12 text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden border-r border-slate-800 transition-all duration-700"
+        className="hidden lg:flex lg:w-1/2 xl:w-7/12 text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden transition-all duration-700"
         style={{
-          background: institution.brandPrimary 
-            ? `radial-gradient(circle at 50% 45%, rgba(${institution.brandPrimaryRgb || '37, 99, 235'}, 0.28) 0%, rgba(15, 23, 42, 0.94) 60%, #020617 100%)`
-            : 'linear-gradient(to bottom right, #020617, #0f172a, #1e1b4b)'
+          background: theme.gradientStyle,
+          borderRight: `1px solid rgba(${theme.primaryRgb}, 0.25)`
         }}
       >
         
-        {/* Dynamic ambient backlight matching the logo's dominant palette */}
+        {/* Dynamic primary ambient backlight halo matching the logo's dominant palette */}
         <div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[540px] h-[540px] rounded-full blur-[110px] pointer-events-none transition-all duration-700"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[580px] h-[580px] rounded-full blur-[100px] pointer-events-none transition-all duration-700"
           style={{
-            backgroundColor: institution.brandPrimary 
-              ? `rgba(${institution.brandPrimaryRgb || '37, 99, 235'}, 0.35)` 
-              : 'rgba(59, 130, 246, 0.15)'
+            background: theme.haloGlowStyle,
           }}
         />
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-black/40 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Dynamic secondary luminous aura for depth */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full blur-[65px] pointer-events-none transition-all duration-700"
+          style={{
+            backgroundColor: `rgba(${theme.secondaryRgb}, 0.30)`,
+          }}
+        />
 
         {/* Top Header: EduPulse Logo & Title */}
         <div className="relative z-10 flex items-center space-x-4">
           <img 
             src="/logo.jpg" 
             alt="EduPulse Logo" 
-            className="w-12 h-12 rounded-xl object-cover shadow-lg border border-slate-700/80" 
+            className="w-12 h-12 rounded-xl object-cover shadow-lg border border-white/20" 
           />
           <div>
-            <h1 className="text-2xl font-black tracking-tight text-white">EduPulse ERP</h1>
-            <p className="text-xs text-slate-400 font-medium">Unified Institutional Management Platform</p>
+            <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">EduPulse ERP</h1>
+            <p className="text-xs text-white/70 font-medium">Unified Institutional Management Platform</p>
           </div>
         </div>
 
         {/* Center: Dedicated Institutional Showcase (Logo and Name of the Institution) */}
         <div className="relative z-10 flex flex-col items-center justify-center my-auto py-12 text-center">
-          {/* Institution Crest / Logo Container */}
+          {/* Institution Crest / Logo Container with brand-matching glow and border */}
           <div 
-            className="w-32 h-32 rounded-3xl bg-white shadow-2xl flex items-center justify-center mb-6 ring-8 ring-white/10 overflow-hidden p-3 transition-transform duration-300 hover:scale-105"
+            className="w-32 h-32 rounded-3xl bg-white flex items-center justify-center mb-6 overflow-hidden p-3 transition-transform duration-300 hover:scale-105 relative z-10"
             style={{
-              boxShadow: institution.brandPrimary 
-                ? `0 20px 50px -10px rgba(${institution.brandPrimaryRgb || '37, 99, 235'}, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.25)` 
-                : '0 20px 50px -10px rgba(0, 0, 0, 0.5)'
+              boxShadow: theme.boxShadowStyle,
+              border: `2px solid rgba(${theme.secondaryRgb}, 0.5)`
             }}
           >
             {institution.logoUrl ? (
@@ -178,16 +236,21 @@ export default function Login() {
           </div>
 
           {/* Institution Name & Details */}
-          <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white mb-2 max-w-md drop-shadow-sm">
+          <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white mb-2 max-w-md drop-shadow-md">
             {institution.name || 'Central University System'}
           </h2>
-          <p className="text-sm font-semibold text-slate-300 max-w-sm drop-shadow-sm">
+          <p className="text-sm font-semibold text-white/80 max-w-sm drop-shadow-sm">
             {institution.campus || 'Main Campus • Institutional Node 01'}
           </p>
         </div>
 
         {/* Bottom Footer */}
-        <div className="relative z-10 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+        <div 
+          className="relative z-10 pt-4 flex items-center justify-between text-xs text-white/50"
+          style={{
+            borderTop: `1px solid rgba(${theme.primaryRgb}, 0.25)`
+          }}
+        >
           <span>&copy; {new Date().getFullYear()} EduPulse ERP Technologies.</span>
           <span>Build 1.0.0 • Windows 10/11 x64</span>
         </div>
@@ -208,88 +271,84 @@ export default function Login() {
         </div>
 
         {/* Center Container */}
-        <div className="w-full max-w-sm mx-auto my-auto space-y-6">
-          <div className="space-y-1.5 text-left">
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">
-              Sign In to Your Workspace
-            </h2>
-            <p className="text-xs text-slate-500 font-medium">
-              Select your institutional portal role and enter your verified credentials.
+        <div className="max-w-md w-full mx-auto my-auto py-4">
+          
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Sign in to your account</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              Select your institutional portal role and enter your authorized credentials.
             </p>
           </div>
 
-          {/* Tactile Elevated Role Selector Tabs */}
-          <div className="grid grid-cols-5 p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] gap-1">
-            {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((r) => {
-              const isActive = activeTab === r;
+          {/* Tab Selector (Elevated Split-Screen Tabs) */}
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-6 shadow-inner border border-slate-200/80">
+            {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((tab) => {
+              const isSelected = activeTab === tab;
               return (
                 <button
-                  key={r}
+                  key={tab}
                   type="button"
                   onClick={() => {
-                    setActiveTab(r);
+                    setActiveTab(tab);
                     setUsername('');
                     setPassword('');
                   }}
-                  className={`relative py-2 text-[11px] font-bold rounded-xl transition-all duration-200 ease-out cursor-pointer flex flex-col items-center justify-center ${
-                    isActive
-                      ? 'bg-white text-slate-950 font-extrabold shadow-[0_6px_16px_rgba(0,0,0,0.14),0_2px_4px_rgba(0,0,0,0.06)] -translate-y-0.5 border border-slate-200/90 ring-1 ring-black/[0.04] z-10 scale-[1.02]'
-                      : 'text-slate-500 hover:text-slate-800 font-semibold shadow-none translate-y-0 opacity-75 hover:opacity-100 hover:bg-slate-300/30'
+                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${
+                    isSelected
+                      ? 'bg-white text-slate-950 shadow-md ring-1 ring-black/5 -translate-y-0.5 scale-[1.02] z-10'
+                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
                   }`}
                 >
-                  {isActive && (
-                    <span className="absolute -top-1 w-5 h-1 bg-blue-600 rounded-full" />
-                  )}
-                  <span>{r.charAt(0) + r.slice(1).toLowerCase()}</span>
+                  {tab === 'ADMIN' ? 'Admin' : tab === 'FACULTY' ? 'Faculty' : tab === 'STUDENT' ? 'Student' : tab === 'PARENT' ? 'Parent' : 'Finance'}
                 </button>
               );
             })}
           </div>
 
-          {/* Form */}
           <form onSubmit={handleErpSubmit} className="space-y-4">
-            <div className="space-y-1 text-left">
+            
+            <div className="space-y-1.5">
               <div className="flex justify-between items-center">
-                <Label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                  Username or Email
+                <Label htmlFor="erp-username" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Username or Institutional Email
                 </Label>
                 <button
                   type="button"
                   onClick={handleDemoFill}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                  className="text-xs font-bold text-amber-600 hover:text-amber-700 cursor-pointer"
                 >
                   Use Demo Login
                 </button>
               </div>
               <Input
-                id="username"
+                id="erp-username"
                 type="text"
+                placeholder={activeTab === 'ADMIN' ? 'admin or superadmin' : `${activeTab.toLowerCase()}`}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={`Enter ${activeTab.toLowerCase()} username`}
-                className="h-11 text-sm bg-slate-50/60 border-slate-200 rounded-lg focus:bg-white"
                 required
+                className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white text-sm"
               />
             </div>
 
-            <div className="space-y-1 text-left">
-              <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-slate-600">
+            <div className="space-y-1.5">
+              <Label htmlFor="erp-password" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                 Password
               </Label>
               <div className="relative">
                 <Input
-                  id="password"
+                  id="erp-password"
                   type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="h-11 text-sm bg-slate-50/60 border-slate-200 rounded-lg pr-10 focus:bg-white"
                   required
+                  className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white pr-10 text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -299,30 +358,33 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg shadow-md mt-2 cursor-pointer transition-colors"
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-md cursor-pointer mt-2"
             >
               {loading ? (
-                <div className="flex items-center space-x-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Signing in...</span>
-                </div>
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Authenticating...
+                </>
               ) : (
-                `Sign In as ${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`
+                `Sign In as ${activeTab === 'ADMIN' ? 'Admin' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`
               )}
             </Button>
+
           </form>
 
-          {/* Security Subtext */}
-          <div className="flex items-center justify-center space-x-1.5 text-[11px] text-slate-400 pt-2">
-            <Lock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Protected by Windows DPAPI Vault & Hardware Isolation</span>
+          {/* Windows DPAPI Security Notice */}
+          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center space-x-2 text-xs text-slate-400">
+            <Lock className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Protected by Windows Hardware Security Vault (DPAPI)</span>
           </div>
+
         </div>
 
-        {/* Right Footer */}
-        <div className="text-center text-[11px] text-slate-400 pt-6">
-          EduPulse ERP Windows Client • Connected to Institution Cloud
+        {/* Footer */}
+        <div className="text-center text-xs text-slate-400 pt-4">
+          &copy; {new Date().getFullYear()} EduPulse ERP Technologies. All rights reserved.
         </div>
+
       </div>
 
     </div>

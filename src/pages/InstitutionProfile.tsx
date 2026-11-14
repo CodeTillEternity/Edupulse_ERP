@@ -1,7 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { PageFrame } from '../components/ui/PageFrame';
 import { useInstitutionStore, DEFAULT_INSTITUTION_PROFILE } from '../store/useInstitutionStore';
-import { extractDominantColors, hexToRgb } from '../lib/colorExtractor';
+import { 
+  extractDominantColors, 
+  deriveThemeFromColor 
+} from '../lib/colorExtractor';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -16,21 +19,20 @@ import {
   MapPin, 
   Eye, 
   Sparkles,
-  Palette,
-  Check
+  Palette
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../config/api';
 
-const PRESET_COLORS = [
-  { label: 'Arya Maroon', hex: '#991b1b', rgb: '153, 27, 27' },
-  { label: 'Crimson Wine', hex: '#881337', rgb: '136, 19, 55' },
-  { label: 'Royal Blue', hex: '#2563eb', rgb: '37, 99, 235' },
-  { label: 'Deep Indigo', hex: '#4338ca', rgb: '67, 56, 202' },
-  { label: 'Emerald Green', hex: '#059669', rgb: '5, 150, 105' },
-  { label: 'Amber Gold', hex: '#d97706', rgb: '217, 119, 6' },
-  { label: 'Slate Navy', hex: '#334155', rgb: '51, 65, 85' },
-  { label: 'Royal Purple', hex: '#7c3aed', rgb: '124, 58, 237' },
+const PRESET_PALETTES = [
+  { label: 'Arya Maroon & Gold', primary: '#991b1b', secondary: '#f59e0b' },
+  { label: 'Crimson & Amber', primary: '#881337', secondary: '#fbbf24' },
+  { label: 'Royal Blue & Cyan', primary: '#2563eb', secondary: '#38bdf8' },
+  { label: 'Deep Indigo & Violet', primary: '#4338ca', secondary: '#a855f7' },
+  { label: 'Emerald & Mint', primary: '#059669', secondary: '#34d399' },
+  { label: 'Amber Gold & Bronze', primary: '#d97706', secondary: '#fde047' },
+  { label: 'Slate Navy & Steel', primary: '#334155', secondary: '#94a3b8' },
+  { label: 'Royal Purple & Fuchsia', primary: '#7c3aed', secondary: '#f43f5e' },
 ];
 
 export default function InstitutionProfile() {
@@ -42,9 +44,12 @@ export default function InstitutionProfile() {
     campus: institution.campus,
     tagline: institution.tagline,
     logoUrl: institution.logoUrl,
-    brandPrimary: institution.brandPrimary || '#2563eb',
-    brandSecondary: institution.brandSecondary || '#1e1b4b',
-    brandPrimaryRgb: institution.brandPrimaryRgb || '37, 99, 235',
+    brandPrimary: institution.brandPrimary || '#991b1b',
+    brandSecondary: institution.brandSecondary || '#f59e0b',
+    brandPrimaryRgb: institution.brandPrimaryRgb || '153, 27, 27',
+    brandSecondaryRgb: institution.brandSecondaryRgb || '245, 158, 11',
+    bgDark: institution.bgDark || '#0f0608',
+    bgDarkest: institution.bgDarkest || '#060304',
     website: institution.website,
     email: institution.email,
     phone: institution.phone,
@@ -55,18 +60,23 @@ export default function InstitutionProfile() {
   const [extracting, setExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Auto-extract color on initial mount if logo exists but primary is still default
+  // Compute live preview theme reacting instantly to any color or preset choice
+  const previewTheme = useMemo(() => {
+    return deriveThemeFromColor(formData.brandPrimary, formData.brandSecondary);
+  }, [formData.brandPrimary, formData.brandSecondary]);
+
+  // Auto-extract color on initial mount if logo exists but primary is still default or un-extracted
   useEffect(() => {
-    if (
-      formData.logoUrl && 
-      (!formData.brandPrimary || formData.brandPrimary === DEFAULT_INSTITUTION_PROFILE.brandPrimary)
-    ) {
-      extractDominantColors(formData.logoUrl).then((colors) => {
+    if (formData.logoUrl && (!formData.brandPrimary || formData.brandPrimary === DEFAULT_INSTITUTION_PROFILE.brandPrimary)) {
+      extractDominantColors(formData.logoUrl).then((theme) => {
         setFormData((prev) => ({
           ...prev,
-          brandPrimary: colors.primary,
-          brandSecondary: colors.secondary,
-          brandPrimaryRgb: colors.rgb,
+          brandPrimary: theme.primary,
+          brandSecondary: theme.secondary,
+          brandPrimaryRgb: theme.primaryRgb,
+          brandSecondaryRgb: theme.secondaryRgb,
+          bgDark: theme.bgDark,
+          bgDarkest: theme.bgDarkest,
         }));
       }).catch(() => {});
     }
@@ -95,15 +105,18 @@ export default function InstitutionProfile() {
     reader.onload = async () => {
       const result = reader.result as string;
       try {
-        const extracted = await extractDominantColors(result);
+        const theme = await extractDominantColors(result);
         setFormData((prev) => ({
           ...prev,
           logoUrl: result,
-          brandPrimary: extracted.primary,
-          brandSecondary: extracted.secondary,
-          brandPrimaryRgb: extracted.rgb,
+          brandPrimary: theme.primary,
+          brandSecondary: theme.secondary,
+          brandPrimaryRgb: theme.primaryRgb,
+          brandSecondaryRgb: theme.secondaryRgb,
+          bgDark: theme.bgDark,
+          bgDarkest: theme.bgDarkest,
         }));
-        toast.success(`Logo loaded! Personalized palette detected (${extracted.primary}). Click Save to apply.`);
+        toast.success(`Logo loaded! Detected authentic palette (${theme.primary} & ${theme.secondary}). Click Save to apply.`);
       } catch (err) {
         setFormData((prev) => ({ ...prev, logoUrl: result }));
         toast.success('Custom logo loaded! Click Save to apply.');
@@ -121,14 +134,17 @@ export default function InstitutionProfile() {
     }
     setExtracting(true);
     try {
-      const extracted = await extractDominantColors(formData.logoUrl);
+      const theme = await extractDominantColors(formData.logoUrl);
       setFormData((prev) => ({
         ...prev,
-        brandPrimary: extracted.primary,
-        brandSecondary: extracted.secondary,
-        brandPrimaryRgb: extracted.rgb,
+        brandPrimary: theme.primary,
+        brandSecondary: theme.secondary,
+        brandPrimaryRgb: theme.primaryRgb,
+        brandSecondaryRgb: theme.secondaryRgb,
+        bgDark: theme.bgDark,
+        bgDarkest: theme.bgDarkest,
       }));
-      toast.success(`Extracted brand color: ${extracted.primary}. Click Save to apply.`);
+      toast.success(`Extracted palette: ${theme.primary} & ${theme.secondary}. Click Save to apply.`);
     } catch {
       toast.error('Failed to extract colors from image.');
     } finally {
@@ -136,21 +152,37 @@ export default function InstitutionProfile() {
     }
   };
 
-  const handleSelectPresetColor = (preset: { hex: string; rgb: string }) => {
+  const handleSelectPreset = (preset: typeof PRESET_PALETTES[0]) => {
+    const theme = deriveThemeFromColor(preset.primary, preset.secondary);
     setFormData((prev) => ({
       ...prev,
-      brandPrimary: preset.hex,
-      brandPrimaryRgb: preset.rgb,
+      brandPrimary: theme.primary,
+      brandSecondary: theme.secondary,
+      brandPrimaryRgb: theme.primaryRgb,
+      brandSecondaryRgb: theme.secondaryRgb,
+      bgDark: theme.bgDark,
+      bgDarkest: theme.bgDarkest,
     }));
-    toast.info(`Selected theme color: ${preset.hex}`);
+    toast.info(`Selected theme palette: ${preset.label}`);
   };
 
-  const handleCustomColorChange = (hex: string) => {
-    const rgb = hexToRgb(hex);
+  const handleCustomPrimaryChange = (hex: string) => {
+    const theme = deriveThemeFromColor(hex, formData.brandSecondary);
     setFormData((prev) => ({
       ...prev,
       brandPrimary: hex,
-      brandPrimaryRgb: rgb,
+      brandPrimaryRgb: theme.primaryRgb,
+      bgDark: theme.bgDark,
+      bgDarkest: theme.bgDarkest,
+    }));
+  };
+
+  const handleCustomSecondaryChange = (hex: string) => {
+    const theme = deriveThemeFromColor(formData.brandPrimary, hex);
+    setFormData((prev) => ({
+      ...prev,
+      brandSecondary: hex,
+      brandSecondaryRgb: theme.secondaryRgb,
     }));
   };
 
@@ -161,6 +193,9 @@ export default function InstitutionProfile() {
       brandPrimary: DEFAULT_INSTITUTION_PROFILE.brandPrimary,
       brandSecondary: DEFAULT_INSTITUTION_PROFILE.brandSecondary,
       brandPrimaryRgb: DEFAULT_INSTITUTION_PROFILE.brandPrimaryRgb,
+      brandSecondaryRgb: DEFAULT_INSTITUTION_PROFILE.brandSecondaryRgb,
+      bgDark: DEFAULT_INSTITUTION_PROFILE.bgDark,
+      bgDarkest: DEFAULT_INSTITUTION_PROFILE.bgDarkest,
     }));
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -182,7 +217,6 @@ export default function InstitutionProfile() {
           name: formData.name,
           code: formData.code,
         }).catch(async () => {
-          // If ID 1 does not exist yet, try creating it
           await apiClient.post('/api/v1/institutions', {
             name: formData.name,
             code: formData.code,
@@ -211,6 +245,9 @@ export default function InstitutionProfile() {
       brandPrimary: DEFAULT_INSTITUTION_PROFILE.brandPrimary,
       brandSecondary: DEFAULT_INSTITUTION_PROFILE.brandSecondary,
       brandPrimaryRgb: DEFAULT_INSTITUTION_PROFILE.brandPrimaryRgb,
+      brandSecondaryRgb: DEFAULT_INSTITUTION_PROFILE.brandSecondaryRgb,
+      bgDark: DEFAULT_INSTITUTION_PROFILE.bgDark,
+      bgDarkest: DEFAULT_INSTITUTION_PROFILE.bgDarkest,
       website: 'https://university.edu',
       email: 'admin@centraluniversity.edu',
       phone: '+1 (555) 234-5678',
@@ -316,9 +353,10 @@ export default function InstitutionProfile() {
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 {/* Logo Display Box */}
                 <div 
-                  className="w-28 h-28 rounded-2xl border-2 border-slate-200 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-md p-2 transition-all"
+                  className="w-28 h-28 rounded-2xl bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-md p-2 transition-all"
                   style={{
-                    boxShadow: `0 10px 25px -5px rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.35)`
+                    boxShadow: previewTheme.boxShadowStyle,
+                    border: `2px solid rgba(${previewTheme.secondaryRgb}, 0.5)`
                   }}
                 >
                   {formData.logoUrl ? (
@@ -406,25 +444,29 @@ export default function InstitutionProfile() {
                     Preset Institutional Palettes
                   </Label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {PRESET_COLORS.map((preset) => {
-                      const isSelected = formData.brandPrimary.toLowerCase() === preset.hex.toLowerCase();
+                    {PRESET_PALETTES.map((preset) => {
+                      const isSelected = formData.brandPrimary.toLowerCase() === preset.primary.toLowerCase();
                       return (
                         <button
-                          key={preset.hex}
+                          key={preset.label}
                           type="button"
-                          onClick={() => handleSelectPresetColor(preset)}
+                          onClick={() => handleSelectPreset(preset)}
                           className={`flex items-center space-x-2.5 p-2 rounded-lg border text-left transition-all cursor-pointer ${
                             isSelected 
                               ? 'border-slate-900 bg-slate-50 ring-2 ring-slate-900/10 font-bold' 
                               : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
                           }`}
                         >
-                          <span 
-                            className="w-5 h-5 rounded-full shrink-0 shadow-sm border border-black/10 flex items-center justify-center text-white"
-                            style={{ backgroundColor: preset.hex }}
-                          >
-                            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                          </span>
+                          <div className="flex -space-x-1 shrink-0">
+                            <span 
+                              className="w-4 h-4 rounded-full shadow-sm border border-black/10 flex items-center justify-center text-white z-10"
+                              style={{ backgroundColor: preset.primary }}
+                            />
+                            <span 
+                              className="w-4 h-4 rounded-full shadow-sm border border-black/10"
+                              style={{ backgroundColor: preset.secondary }}
+                            />
+                          </div>
                           <span className="text-xs text-slate-700 truncate">{preset.label}</span>
                         </button>
                       );
@@ -433,33 +475,47 @@ export default function InstitutionProfile() {
                 </div>
 
                 {/* Custom Color Input */}
-                <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <input
-                        type="color"
-                        id="custom-color-picker"
-                        value={formData.brandPrimary}
-                        onChange={(e) => handleCustomColorChange(e.target.value)}
-                        className="w-10 h-10 rounded-lg border border-slate-300 p-0.5 cursor-pointer"
-                      />
-                    </div>
+                    <input
+                      type="color"
+                      id="custom-primary-picker"
+                      value={formData.brandPrimary}
+                      onChange={(e) => handleCustomPrimaryChange(e.target.value)}
+                      className="w-10 h-10 rounded-lg border border-slate-300 p-0.5 cursor-pointer"
+                    />
                     <div>
-                      <Label htmlFor="custom-color-picker" className="text-xs font-bold text-slate-800 cursor-pointer">
-                        Custom Hex Brand Color
+                      <Label htmlFor="custom-primary-picker" className="text-xs font-bold text-slate-800 cursor-pointer block">
+                        Primary Brand Color
                       </Label>
-                      <p className="text-[11px] text-slate-400">Click swatch or type hex</p>
+                      <Input
+                        value={formData.brandPrimary}
+                        onChange={(e) => handleCustomPrimaryChange(e.target.value)}
+                        placeholder="#991b1b"
+                        className="w-24 font-mono text-xs uppercase h-7 mt-1"
+                      />
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-mono font-bold text-slate-500">HEX:</span>
-                    <Input
-                      value={formData.brandPrimary}
-                      onChange={(e) => handleCustomColorChange(e.target.value)}
-                      placeholder="#991b1b"
-                      className="w-28 font-mono text-xs uppercase h-9"
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="color"
+                      id="custom-secondary-picker"
+                      value={formData.brandSecondary}
+                      onChange={(e) => handleCustomSecondaryChange(e.target.value)}
+                      className="w-10 h-10 rounded-lg border border-slate-300 p-0.5 cursor-pointer"
                     />
+                    <div>
+                      <Label htmlFor="custom-secondary-picker" className="text-xs font-bold text-slate-800 cursor-pointer block">
+                        Secondary Accent Color
+                      </Label>
+                      <Input
+                        value={formData.brandSecondary}
+                        onChange={(e) => handleCustomSecondaryChange(e.target.value)}
+                        placeholder="#f59e0b"
+                        className="w-24 font-mono text-xs uppercase h-7 mt-1"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -568,44 +624,47 @@ export default function InstitutionProfile() {
           <div className="bg-slate-950 text-white border border-slate-800 shadow-xl rounded-2xl p-6 relative overflow-hidden">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
               <div className="flex items-center space-x-2">
-                <Eye className="w-4 h-4 text-blue-400" />
+                <Eye className="w-4 h-4 text-amber-400" />
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
                   Live Login Atmosphere Preview
                 </span>
               </div>
-              <span 
-                className="text-[10px] px-2.5 py-0.5 rounded-full font-semibold border flex items-center space-x-1"
-                style={{
-                  backgroundColor: `rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.25)`,
-                  borderColor: `rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.5)`,
-                  color: '#fff'
-                }}
-              >
-                <span>Active Theme:</span>
-                <span className="font-mono">{formData.brandPrimary}</span>
-              </span>
+              <div className="flex items-center space-x-1.5">
+                <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: previewTheme.primary }} />
+                <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: previewTheme.secondary }} />
+              </div>
             </div>
 
             {/* Preview Canvas with Dynamic Radial Gradient matching Login Screen */}
             <div 
-              className="rounded-xl p-8 border border-slate-800/80 flex flex-col items-center text-center my-2 relative overflow-hidden transition-all duration-700"
+              className="rounded-xl p-8 border flex flex-col items-center text-center my-2 relative overflow-hidden transition-all duration-700"
               style={{
-                background: `radial-gradient(circle at 50% 45%, rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.35) 0%, rgba(15, 23, 42, 0.95) 60%, #020617 100%)`
+                background: previewTheme.gradientStyle,
+                borderColor: `rgba(${previewTheme.primaryRgb}, 0.25)`
               }}
             >
-              {/* Dynamic ambient backlight blur glow */}
+              {/* Dynamic primary ambient backlight blur glow */}
               <div 
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl pointer-events-none transition-all duration-700"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-56 rounded-full blur-3xl pointer-events-none transition-all duration-700"
                 style={{
-                  backgroundColor: `rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.4)`
+                  background: previewTheme.haloGlowStyle
+                }}
+              />
+
+              {/* Dynamic secondary luminous aura */}
+              <div 
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-2xl pointer-events-none transition-all duration-700"
+                style={{
+                  backgroundColor: `rgba(${previewTheme.secondaryRgb}, 0.35)`
                 }}
               />
 
               {/* Crest Preview - Clean White Card Container matching Login Screen */}
               <div 
-                className="w-24 h-24 rounded-2xl bg-white shadow-2xl flex items-center justify-center mb-5 ring-4 ring-white/10 overflow-hidden p-2 relative z-10 transition-transform duration-300 hover:scale-105"
+                className="w-24 h-24 rounded-2xl bg-white flex items-center justify-center mb-5 overflow-hidden p-2 relative z-10 transition-transform duration-300 hover:scale-105"
                 style={{
-                  boxShadow: `0 15px 35px -5px rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.25)`
+                  boxShadow: previewTheme.boxShadowStyle,
+                  border: `2px solid rgba(${previewTheme.secondaryRgb}, 0.5)`
                 }}
               >
                 {formData.logoUrl ? (
@@ -616,12 +675,12 @@ export default function InstitutionProfile() {
               </div>
 
               {/* Institution Name */}
-              <h4 className="text-2xl font-black tracking-tight text-white mb-1.5 max-w-xs leading-snug relative z-10 drop-shadow-sm">
+              <h4 className="text-2xl font-black tracking-tight text-white mb-1.5 max-w-xs leading-snug relative z-10 drop-shadow-md">
                 {formData.name || 'Central University System'}
               </h4>
 
               {/* Campus Node */}
-              <p className="text-xs font-semibold text-slate-300 max-w-xs relative z-10 drop-shadow-sm">
+              <p className="text-xs font-semibold text-white/80 max-w-xs relative z-10 drop-shadow-sm">
                 {formData.campus || 'Main Campus • Institutional Node 01'}
               </p>
 
@@ -629,8 +688,8 @@ export default function InstitutionProfile() {
               <div 
                 className="mt-4 px-3 py-1 rounded-full border text-[11px] font-bold text-white relative z-10"
                 style={{
-                  backgroundColor: `rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.25)`,
-                  borderColor: `rgba(${formData.brandPrimaryRgb || '37, 99, 235'}, 0.5)`
+                  backgroundColor: `rgba(${previewTheme.primaryRgb}, 0.25)`,
+                  borderColor: `rgba(${previewTheme.secondaryRgb}, 0.5)`
                 }}
               >
                 Node Code: {formData.code || 'CUS-01'}
@@ -662,10 +721,17 @@ export default function InstitutionProfile() {
                 <span className="font-mono font-semibold text-slate-800">{formData.code}</span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-50">
-                <span className="text-slate-500">Brand Color:</span>
-                <span className="flex items-center space-x-1.5 font-mono font-bold text-slate-800">
-                  <span className="w-3.5 h-3.5 rounded-full inline-block border border-black/10" style={{ backgroundColor: formData.brandPrimary }} />
-                  <span>{formData.brandPrimary}</span>
+                <span className="text-slate-500">Brand Palette:</span>
+                <span className="flex items-center space-x-2 font-mono font-bold text-slate-800">
+                  <span className="flex items-center space-x-1">
+                    <span className="w-3 h-3 rounded-full border border-black/10 inline-block" style={{ backgroundColor: previewTheme.primary }} />
+                    <span>{previewTheme.primary}</span>
+                  </span>
+                  <span className="text-slate-300">/</span>
+                  <span className="flex items-center space-x-1">
+                    <span className="w-3 h-3 rounded-full border border-black/10 inline-block" style={{ backgroundColor: previewTheme.secondary }} />
+                    <span>{previewTheme.secondary}</span>
+                  </span>
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 border-b border-slate-50">
