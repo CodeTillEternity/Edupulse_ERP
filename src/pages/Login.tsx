@@ -141,22 +141,17 @@ export default function Login() {
         {/* Center: Dedicated Institutional Showcase (Logo and Name of the Institution) */}
         <div className="relative z-10 flex flex-col items-center justify-center my-auto py-12 text-center">
           {/* Institution Crest / Logo Container */}
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600/20 to-indigo-600/30 border border-slate-700/80 shadow-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
-            <Building2 className="w-12 h-12 text-blue-400 stroke-[1.5]" />
+          <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-blue-600/20 via-indigo-600/30 to-purple-600/20 border border-slate-700/80 shadow-2xl flex items-center justify-center mb-6 backdrop-blur-md ring-1 ring-white/10">
+            <Building2 className="w-14 h-14 text-blue-400 stroke-[1.5]" />
           </div>
 
           {/* Institution Name & Details */}
-          <h2 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-white mb-2 max-w-md">
+          <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white mb-2 max-w-md">
             Central University System
           </h2>
-          <p className="text-sm font-medium text-slate-400 max-w-sm mb-4">
+          <p className="text-sm font-medium text-slate-400 max-w-sm">
             Main Campus • Institutional Node 01
           </p>
-
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-800/60 border border-slate-700/60 text-slate-300">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>Connected Institution Workspace</span>
-          </div>
         </div>
 
         {/* Bottom Footer */}
@@ -191,26 +186,32 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Role selector tabs */}
-          <div className="grid grid-cols-5 p-1 bg-slate-100 rounded-xl border border-slate-200">
-            {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => {
-                  setActiveTab(r);
-                  setUsername('');
-                  setPassword('');
-                }}
-                className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                  activeTab === r 
-                    ? 'bg-white text-slate-900 shadow-sm' 
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {r.charAt(0) + r.slice(1).toLowerCase()}
-              </button>
-            ))}
+          {/* Tactile Elevated Role Selector Tabs */}
+          <div className="grid grid-cols-5 p-1.5 bg-slate-200/80 rounded-2xl border border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] gap-1">
+            {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((r) => {
+              const isActive = activeTab === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(r);
+                    setUsername('');
+                    setPassword('');
+                  }}
+                  className={`relative py-2 text-[11px] font-bold rounded-xl transition-all duration-200 ease-out cursor-pointer flex flex-col items-center justify-center ${
+                    isActive
+                      ? 'bg-white text-slate-950 font-extrabold shadow-[0_6px_16px_rgba(0,0,0,0.14),0_2px_4px_rgba(0,0,0,0.06)] -translate-y-0.5 border border-slate-200/90 ring-1 ring-black/[0.04] z-10 scale-[1.02]'
+                      : 'text-slate-500 hover:text-slate-800 font-semibold shadow-none translate-y-0 opacity-75 hover:opacity-100 hover:bg-slate-300/30'
+                  }`}
+                >
+                  {isActive && (
+                    <span className="absolute -top-1 w-5 h-1 bg-blue-600 rounded-full" />
+                  )}
+                  <span>{r.charAt(0) + r.slice(1).toLowerCase()}</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Form */}
