@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "identifier": "com.edupulse.erp",
   "build": {
-    "frontendDist": "../dist"
+    "beforeDevCommand": "npm --prefix Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/frontend-v2 run dev",
+    "beforeBuildCommand": "npm --prefix Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/frontend-v2 run build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/frontend-v2/dist"
   },
   "app": {
     "withGlobalTauri": true,
@@ -18,11 +21,34 @@
         "minHeight": 640,
         "resizable": true,
         "fullscreen": false,
+        "center": true,
         "useHttpsScheme": true
       }
     ],
     "security": {
       "csp": "default-src 'self'; connect-src 'self' https: https://tauri.localhost http://localhost:8081; img-src 'self' data: https: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none';"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis",
+      "msi"
+    ],
+    "publisher": "EduPulse ERP Technologies",
+    "copyright": "Copyright © 2026 EduPulse ERP. All rights reserved.",
+    "shortDescription": "EduPulse Enterprise Resource Planning Desktop Edition",
+    "longDescription": "EduPulse ERP Windows Desktop Edition for Higher Education Institutions.",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "",
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "displayLanguageSelector": false
+      }
     }
   }
 }

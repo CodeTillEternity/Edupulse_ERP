@@ -1,0 +1,19 @@
+{
+  "name": "edupulse-erp-desktop",
+  "version": "1.0.0",
+  "description": "EduPulse ERP Windows Desktop Edition",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/frontend-v2 run dev",
+    "build": "npm --prefix Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/frontend-v2 run build"
+  },
+  "keywords": [
+    "edupulse",
+    "erp",
+    "tauri",
+    "desktop",
+    "windows"
+  ],
+  "author": "EduPulse ERP Technologies",
+  "license": "UNLICENSED"
+}
