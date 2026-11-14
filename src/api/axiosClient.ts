@@ -31,11 +31,36 @@ export const invoke = async <T = unknown>(cmd: string, args?: Record<string, unk
 };
 
 /**
+ * Resolves and strictly validates the API Base URL based on environment.
+ * Complies with P4.1: Production desktop builds reject insecure HTTP or localhost fallbacks.
+ */
+export const resolveBaseUrl = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) {
+    const cleanUrl = envUrl.replace(/\/$/, '');
+    if (import.meta.env.PROD && isTauriDesktop()) {
+      if (!cleanUrl.startsWith('https://')) {
+        console.error('[axiosClient] Insecure HTTP base URL rejected in production desktop:', cleanUrl);
+        throw new Error('Insecure HTTP base URL rejected in production desktop edition');
+      }
+    }
+    return cleanUrl;
+  }
+
+  if (import.meta.env.DEV) {
+    return 'http://localhost:8081';
+  }
+
+  // Web production default (served behind reverse proxy)
+  return '';
+};
+
+/**
  * Axios instance for EduPulse ERP Desktop.
  * Base URL is strictly driven by Vite environment variable VITE_API_BASE_URL.
  */
 export const axiosClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:8081/api' : '/api'),
+  baseURL: resolveBaseUrl(),
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -46,6 +71,7 @@ export const axiosClient: AxiosInstance = axios.create({
  * Request Interceptor:
  * Asynchronously retrieves the JWT from the native Rust DPAPI vault via Tauri IPC (get_secure_token)
  * instead of reading from insecure browser localStorage.
+ * Injects request correlation ID (X-Correlation-Id) for distributed traceability (P4.2).
  */
 axiosClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
@@ -60,8 +86,17 @@ axiosClient.interceptors.request.use(
         token = localStorage.getItem('auth_token');
       }
 
-      if (token && config.headers) {
-        config.headers.Authorization = `Bearer ${token}`;
+      if (config.headers) {
+        if (!config.headers['X-Correlation-Id']) {
+          const correlationId = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+          config.headers['X-Correlation-Id'] = correlationId;
+        }
+
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
     } catch (error) {
       console.error('[axiosClient] Failed to retrieve secure token from native vault:', error);
