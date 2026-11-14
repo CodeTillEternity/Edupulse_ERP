@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { axiosClient, invoke, isTauriDesktop } from '../api/axiosClient';
 import { useAuthStore } from '../store/useAuthStore';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { 
+  Loader2, 
+  Eye, 
+  EyeOff, 
+  ShieldCheck, 
+  Building2, 
+  CheckCircle2, 
+  Lock 
+} from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { toast } from 'sonner';
 
 export default function Login() {
@@ -109,27 +116,123 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen w-screen bg-slate-900 flex flex-col justify-center items-center p-4 font-sans relative overflow-hidden select-none">
+    <div className="h-screen w-screen overflow-hidden flex flex-col lg:flex-row font-sans select-none bg-slate-900">
       
-      {/* Subtle Desktop Background Glow */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 z-0"></div>
+      {/* ========================================================================= */}
+      {/* LEFT PANEL: Enterprise Branding & Institution Showcase                     */}
+      {/* ========================================================================= */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden border-r border-slate-800">
+        
+        {/* Subtle decorative glow */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <Card className="w-full max-w-md shadow-2xl border border-slate-700/50 rounded-2xl p-2 sm:p-4 z-10 bg-white">
-        <CardHeader className="flex flex-col items-center mb-0 pb-3 text-center">
-          <div className="flex flex-col items-center">
-            <img 
-              src="/logo.jpg" 
-              alt="EduPulse Logo" 
-              className="w-14 h-14 rounded-xl object-cover mb-2 shadow-md border border-slate-100" 
-            />
-            <CardTitle className="text-xl font-black text-slate-900 tracking-tight">EduPulse ERP</CardTitle>
+        {/* Top Header: EduPulse Logo & Title */}
+        <div className="relative z-10 flex items-center space-x-4">
+          <img 
+            src="/logo.jpg" 
+            alt="EduPulse Logo" 
+            className="w-12 h-12 rounded-xl object-cover shadow-lg border border-slate-700/80" 
+          />
+          <div>
+            <div className="flex items-center space-x-2">
+              <h1 className="text-2xl font-black tracking-tight text-white">EduPulse ERP</h1>
+              <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-md">
+                Desktop Edition
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-medium">Unified Institutional Management Platform</p>
           </div>
-          <CardDescription className="text-xs text-slate-500 font-medium mt-0.5">
-            Unified Institutional Management Platform
-          </CardDescription>
+        </div>
+
+        {/* Center: Branding Copy & Co-Branding Showcase */}
+        <div className="relative z-10 space-y-6 my-auto py-6">
+          <div className="space-y-3">
+            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Windows DPAPI Credential Vault Active</span>
+            </div>
+            <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white leading-tight">
+              Enterprise Campus Intelligence & Governance
+            </h2>
+            <p className="text-sm text-slate-400 max-w-xl leading-relaxed">
+              Designed for modern higher education institutions. Orchestrate academic programs, 
+              student lifecycles, examination schedules, financial audits, and multi-campus sync 
+              with hardware-backed Windows security.
+            </p>
+          </div>
+
+          {/* Co-Branded Institutional Workspace Card */}
+          <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 backdrop-blur-sm max-w-xl">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
+              Authorized Institutional Node
+            </p>
+            <div className="flex items-center space-x-3.5">
+              <div className="w-11 h-11 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white truncate">Central University System</p>
+                <p className="text-xs text-slate-400 truncate">Main Campus • Multi-Tenant Production Cluster</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature Pillars */}
+          <div className="grid grid-cols-2 gap-3 max-w-xl pt-2">
+            <div className="flex items-center space-x-2 text-xs text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Zero LocalStorage Token Exposure</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Strict Role-Based Access Control</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Real-Time Academics & Timetables</span>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-slate-300">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>End-to-End Financial Ledgers</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Footer */}
+        <div className="relative z-10 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+          <span>&copy; {new Date().getFullYear()} EduPulse ERP Technologies.</span>
+          <span>Build 1.0.0 • Windows 10/11 x64</span>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* RIGHT PANEL: Integrated Login Facility                                    */}
+      {/* ========================================================================= */}
+      <div className="w-full lg:w-1/2 xl:w-5/12 bg-white flex flex-col justify-between p-8 sm:p-12 xl:p-16 h-full overflow-y-auto">
+        
+        {/* Mobile Header (visible only on small viewports) */}
+        <div className="lg:hidden flex items-center space-x-3 mb-6">
+          <img src="/logo.jpg" alt="EduPulse Logo" className="w-10 h-10 rounded-lg shadow-sm" />
+          <div>
+            <h1 className="text-lg font-bold text-slate-900">EduPulse ERP</h1>
+            <p className="text-xs text-slate-500">Windows Desktop Edition</p>
+          </div>
+        </div>
+
+        {/* Center Container */}
+        <div className="w-full max-w-sm mx-auto my-auto space-y-6">
+          <div className="space-y-1.5 text-left">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">
+              Sign In to Your Workspace
+            </h2>
+            <p className="text-xs text-slate-500 font-medium">
+              Select your institutional portal role and enter your verified credentials.
+            </p>
+          </div>
 
           {/* Role selector tabs */}
-          <div className="w-full grid grid-cols-5 p-1 bg-slate-100 rounded-xl mt-3 border border-slate-200">
+          <div className="grid grid-cols-5 p-1 bg-slate-100 rounded-xl border border-slate-200">
             {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((r) => (
               <button
                 key={r}
@@ -139,7 +242,7 @@ export default function Login() {
                   setUsername('');
                   setPassword('');
                 }}
-                className={`py-1 text-[11px] font-bold rounded-lg transition-all ${
+                className={`py-1.5 text-[11px] font-bold rounded-lg transition-all ${
                   activeTab === r 
                     ? 'bg-white text-slate-900 shadow-sm' 
                     : 'text-slate-500 hover:text-slate-800'
@@ -149,11 +252,10 @@ export default function Login() {
               </button>
             ))}
           </div>
-        </CardHeader>
 
-        <CardContent className="pt-2">
+          {/* Form */}
           <form onSubmit={handleErpSubmit} className="space-y-4">
-            <div className="space-y-1">
+            <div className="space-y-1 text-left">
               <div className="flex justify-between items-center">
                 <Label htmlFor="username" className="text-xs font-bold uppercase tracking-wider text-slate-600">
                   Username or Email
@@ -161,7 +263,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={handleDemoFill}
-                  className="text-xs text-amber-600 hover:text-amber-800 font-semibold cursor-pointer"
+                  className="text-xs text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
                 >
                   Use Demo Login
                 </button>
@@ -171,13 +273,13 @@ export default function Login() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
-                className="h-10 text-sm bg-slate-50/50"
+                placeholder={`Enter ${activeTab.toLowerCase()} username`}
+                className="h-11 text-sm bg-slate-50/60 border-slate-200 rounded-lg focus:bg-white"
                 required
               />
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 text-left">
               <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-slate-600">
                 Password
               </Label>
@@ -187,14 +289,14 @@ export default function Login() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter password"
-                  className="h-10 text-sm bg-slate-50/50 pr-10"
+                  placeholder="Enter your password"
+                  className="h-11 text-sm bg-slate-50/60 border-slate-200 rounded-lg pr-10 focus:bg-white"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -204,7 +306,7 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-lg mt-2 cursor-pointer"
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg shadow-md mt-2 cursor-pointer transition-colors"
             >
               {loading ? (
                 <div className="flex items-center space-x-2">
@@ -216,14 +318,20 @@ export default function Login() {
               )}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-      
-      <div className="mt-4 text-xs text-slate-400 z-10 flex items-center gap-2">
-        <span>&copy; {new Date().getFullYear()} EduPulse ERP Technologies.</span>
-        <span>•</span>
-        <span>Windows Desktop Edition v1.0</span>
+
+          {/* Security Subtext */}
+          <div className="flex items-center justify-center space-x-1.5 text-[11px] text-slate-400 pt-2">
+            <Lock className="w-3.5 h-3.5 text-slate-400" />
+            <span>Protected by Windows DPAPI Vault & Hardware Isolation</span>
+          </div>
+        </div>
+
+        {/* Right Footer */}
+        <div className="text-center text-[11px] text-slate-400 pt-6">
+          EduPulse ERP Windows Client • Connected to Institution Cloud
+        </div>
       </div>
+
     </div>
   );
 }
