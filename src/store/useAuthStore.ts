@@ -83,14 +83,44 @@ export const useAuthStore = create<AuthState>()(
 
             // Attempt to validate session against backend
             try {
-              const res = await axiosClient.get('/auth/me', {
-                headers: { Authorization: `Bearer ${accessToken}` },
-              });
+              let res: any;
+              try {
+                // Primary: /auth/session endpoint returns SessionResponse { username, role, permissions, active }
+                res = await axiosClient.get('/auth/session', {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                });
+              } catch {
+                // Secondary fallback: /auth/me returns { username, authorities: ["ROLE_..."] }
+                res = await axiosClient.get('/auth/me', {
+                  headers: { Authorization: `Bearer ${accessToken}` },
+                });
+              }
+
+              const existingUser = get().user;
+              let extractedRole = res.data.role;
+
+              if (!extractedRole && Array.isArray(res.data.authorities)) {
+                const roleAuth = res.data.authorities.find((a: string) => a.startsWith('ROLE_'));
+                if (roleAuth) {
+                  extractedRole = roleAuth.replace('ROLE_', '');
+                }
+              }
+
+              if (!extractedRole) {
+                extractedRole = existingUser?.role || 'ADMIN';
+              }
+
+              const extractedPermissions = res.data.permissions 
+                || (Array.isArray(res.data.authorities) ? res.data.authorities.filter((a: string) => !a.startsWith('ROLE_')) : null)
+                || existingUser?.permissions 
+                || [];
+
               const userData: User = {
-                username: res.data.username,
-                role: res.data.role,
-                permissions: res.data.permissions || [],
+                username: res.data.username || existingUser?.username || 'User',
+                role: extractedRole,
+                permissions: extractedPermissions,
               };
+
               set({
                 token: accessToken,
                 refreshToken: refreshToken,
@@ -118,13 +148,21 @@ export const useAuthStore = create<AuthState>()(
                     },
                   });
 
+                  const existingUser = get().user;
+                  let refRole = refreshRes.data.role;
+                  if (!refRole && Array.isArray(refreshRes.data.authorities)) {
+                    const roleAuth = refreshRes.data.authorities.find((a: string) => a.startsWith('ROLE_'));
+                    if (roleAuth) refRole = roleAuth.replace('ROLE_', '');
+                  }
+                  if (!refRole) refRole = existingUser?.role || 'ADMIN';
+
                   set({
                     token: newAccess,
                     refreshToken: newRefresh,
                     user: {
-                      username: refreshRes.data.username,
-                      role: refreshRes.data.role,
-                      permissions: refreshRes.data.permissions || [],
+                      username: refreshRes.data.username || existingUser?.username || 'User',
+                      role: refRole,
+                      permissions: refreshRes.data.permissions || existingUser?.permissions || [],
                     },
                     isAuthenticated: true,
                     isInitializing: false,
