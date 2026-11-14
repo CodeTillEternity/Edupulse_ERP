@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { axiosClient, invoke, isTauriDesktop } from '../api/axiosClient';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { 
   Loader2, 
   Eye, 
@@ -32,6 +33,7 @@ export default function Login() {
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const { institution } = useInstitutionStore();
 
   useEffect(() => {
     const role = searchParams.get('role');
@@ -141,16 +143,20 @@ export default function Login() {
         {/* Center: Dedicated Institutional Showcase (Logo and Name of the Institution) */}
         <div className="relative z-10 flex flex-col items-center justify-center my-auto py-12 text-center">
           {/* Institution Crest / Logo Container */}
-          <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-blue-600/20 via-indigo-600/30 to-purple-600/20 border border-slate-700/80 shadow-2xl flex items-center justify-center mb-6 backdrop-blur-md ring-1 ring-white/10">
-            <Building2 className="w-14 h-14 text-blue-400 stroke-[1.5]" />
+          <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-blue-600/20 via-indigo-600/30 to-purple-600/20 border border-slate-700/80 shadow-2xl flex items-center justify-center mb-6 backdrop-blur-md ring-1 ring-white/10 overflow-hidden p-2">
+            {institution.logoUrl ? (
+              <img src={institution.logoUrl} alt={institution.name} className="w-full h-full object-contain rounded-2xl" />
+            ) : (
+              <Building2 className="w-14 h-14 text-blue-400 stroke-[1.5]" />
+            )}
           </div>
 
           {/* Institution Name & Details */}
           <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white mb-2 max-w-md">
-            Central University System
+            {institution.name || 'Central University System'}
           </h2>
           <p className="text-sm font-medium text-slate-400 max-w-sm">
-            Main Campus • Institutional Node 01
+            {institution.campus || 'Main Campus • Institutional Node 01'}
           </p>
         </div>
 
