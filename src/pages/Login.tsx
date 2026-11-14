@@ -121,13 +121,28 @@ export default function Login() {
       {/* ========================================================================= */}
       {/* LEFT PANEL: Enterprise Branding & Institution Showcase                     */}
       {/* ========================================================================= */}
-      <div className="hidden lg:flex lg:w-1/2 xl:w-7/12 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden border-r border-slate-800">
+      <div 
+        className="hidden lg:flex lg:w-1/2 xl:w-7/12 text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden border-r border-slate-800 transition-all duration-700"
+        style={{
+          background: institution.brandPrimary 
+            ? `radial-gradient(circle at 50% 45%, rgba(${institution.brandPrimaryRgb || '37, 99, 235'}, 0.28) 0%, rgba(15, 23, 42, 0.94) 60%, #020617 100%)`
+            : 'linear-gradient(to bottom right, #020617, #0f172a, #1e1b4b)'
+        }}
+      >
         
-        {/* Subtle decorative glow */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        {/* Dynamic ambient backlight matching the logo's dominant palette */}
+        <div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[540px] h-[540px] rounded-full blur-[110px] pointer-events-none transition-all duration-700"
+          style={{
+            backgroundColor: institution.brandPrimary 
+              ? `rgba(${institution.brandPrimaryRgb || '37, 99, 235'}, 0.35)` 
+              : 'rgba(59, 130, 246, 0.15)'
+          }}
+        />
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-black/40 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Header: EduPulse Logo & Title (Desktop Edition tag removed) */}
+        {/* Top Header: EduPulse Logo & Title */}
         <div className="relative z-10 flex items-center space-x-4">
           <img 
             src="/logo.jpg" 
@@ -143,19 +158,30 @@ export default function Login() {
         {/* Center: Dedicated Institutional Showcase (Logo and Name of the Institution) */}
         <div className="relative z-10 flex flex-col items-center justify-center my-auto py-12 text-center">
           {/* Institution Crest / Logo Container */}
-          <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-blue-600/20 via-indigo-600/30 to-purple-600/20 border border-slate-700/80 shadow-2xl flex items-center justify-center mb-6 backdrop-blur-md ring-1 ring-white/10 overflow-hidden p-2">
+          <div 
+            className="w-32 h-32 rounded-3xl bg-white shadow-2xl flex items-center justify-center mb-6 ring-8 ring-white/10 overflow-hidden p-3 transition-transform duration-300 hover:scale-105"
+            style={{
+              boxShadow: institution.brandPrimary 
+                ? `0 20px 50px -10px rgba(${institution.brandPrimaryRgb || '37, 99, 235'}, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.25)` 
+                : '0 20px 50px -10px rgba(0, 0, 0, 0.5)'
+            }}
+          >
             {institution.logoUrl ? (
-              <img src={institution.logoUrl} alt={institution.name} className="w-full h-full object-contain rounded-2xl" />
+              <img 
+                src={institution.logoUrl} 
+                alt={institution.name} 
+                className="w-full h-full object-contain" 
+              />
             ) : (
-              <Building2 className="w-14 h-14 text-blue-400 stroke-[1.5]" />
+              <Building2 className="w-16 h-16 text-blue-600 stroke-[1.5]" />
             )}
           </div>
 
           {/* Institution Name & Details */}
-          <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white mb-2 max-w-md">
+          <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white mb-2 max-w-md drop-shadow-sm">
             {institution.name || 'Central University System'}
           </h2>
-          <p className="text-sm font-medium text-slate-400 max-w-sm">
+          <p className="text-sm font-semibold text-slate-300 max-w-sm drop-shadow-sm">
             {institution.campus || 'Main Campus • Institutional Node 01'}
           </p>
         </div>

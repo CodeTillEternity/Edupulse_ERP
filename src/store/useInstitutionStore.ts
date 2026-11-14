@@ -7,6 +7,9 @@ export interface InstitutionProfileData {
   campus: string;
   tagline: string;
   logoUrl: string | null;
+  brandPrimary: string;
+  brandSecondary: string;
+  brandPrimaryRgb: string;
   website: string;
   email: string;
   phone: string;
@@ -19,6 +22,9 @@ export const DEFAULT_INSTITUTION_PROFILE: InstitutionProfileData = {
   campus: 'Main Campus • Institutional Node 01',
   tagline: 'Unified Institutional Management Platform',
   logoUrl: null,
+  brandPrimary: '#2563eb',
+  brandSecondary: '#1e1b4b',
+  brandPrimaryRgb: '37, 99, 235',
   website: 'https://university.edu',
   email: 'admin@centraluniversity.edu',
   phone: '+1 (555) 234-5678',
