@@ -6,9 +6,7 @@ import {
   Loader2, 
   Eye, 
   EyeOff, 
-  ShieldCheck, 
   Building2, 
-  CheckCircle2, 
   Lock 
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -127,7 +125,7 @@ export default function Login() {
         <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Top Header: EduPulse Logo & Title */}
+        {/* Top Header: EduPulse Logo & Title (Desktop Edition tag removed) */}
         <div className="relative z-10 flex items-center space-x-4">
           <img 
             src="/logo.jpg" 
@@ -135,67 +133,29 @@ export default function Login() {
             className="w-12 h-12 rounded-xl object-cover shadow-lg border border-slate-700/80" 
           />
           <div>
-            <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-black tracking-tight text-white">EduPulse ERP</h1>
-              <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-md">
-                Desktop Edition
-              </span>
-            </div>
+            <h1 className="text-2xl font-black tracking-tight text-white">EduPulse ERP</h1>
             <p className="text-xs text-slate-400 font-medium">Unified Institutional Management Platform</p>
           </div>
         </div>
 
-        {/* Center: Branding Copy & Co-Branding Showcase */}
-        <div className="relative z-10 space-y-6 my-auto py-6">
-          <div className="space-y-3">
-            <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Windows DPAPI Credential Vault Active</span>
-            </div>
-            <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white leading-tight">
-              Enterprise Campus Intelligence & Governance
-            </h2>
-            <p className="text-sm text-slate-400 max-w-xl leading-relaxed">
-              Designed for modern higher education institutions. Orchestrate academic programs, 
-              student lifecycles, examination schedules, financial audits, and multi-campus sync 
-              with hardware-backed Windows security.
-            </p>
+        {/* Center: Dedicated Institutional Showcase (Logo and Name of the Institution) */}
+        <div className="relative z-10 flex flex-col items-center justify-center my-auto py-12 text-center">
+          {/* Institution Crest / Logo Container */}
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600/20 to-indigo-600/30 border border-slate-700/80 shadow-2xl flex items-center justify-center mb-6 backdrop-blur-sm">
+            <Building2 className="w-12 h-12 text-blue-400 stroke-[1.5]" />
           </div>
 
-          {/* Co-Branded Institutional Workspace Card */}
-          <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/60 backdrop-blur-sm max-w-xl">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
-              Authorized Institutional Node
-            </p>
-            <div className="flex items-center space-x-3.5">
-              <div className="w-11 h-11 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
-                <Building2 className="w-6 h-6" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate">Central University System</p>
-                <p className="text-xs text-slate-400 truncate">Main Campus • Multi-Tenant Production Cluster</p>
-              </div>
-            </div>
-          </div>
+          {/* Institution Name & Details */}
+          <h2 className="text-2xl xl:text-3xl font-extrabold tracking-tight text-white mb-2 max-w-md">
+            Central University System
+          </h2>
+          <p className="text-sm font-medium text-slate-400 max-w-sm mb-4">
+            Main Campus • Institutional Node 01
+          </p>
 
-          {/* Feature Pillars */}
-          <div className="grid grid-cols-2 gap-3 max-w-xl pt-2">
-            <div className="flex items-center space-x-2 text-xs text-slate-300">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Zero LocalStorage Token Exposure</span>
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-slate-300">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Strict Role-Based Access Control</span>
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-slate-300">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Real-Time Academics & Timetables</span>
-            </div>
-            <div className="flex items-center space-x-2 text-xs text-slate-300">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>End-to-End Financial Ledgers</span>
-            </div>
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-800/60 border border-slate-700/60 text-slate-300">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Connected Institution Workspace</span>
           </div>
         </div>
 
@@ -216,7 +176,7 @@ export default function Login() {
           <img src="/logo.jpg" alt="EduPulse Logo" className="w-10 h-10 rounded-lg shadow-sm" />
           <div>
             <h1 className="text-lg font-bold text-slate-900">EduPulse ERP</h1>
-            <p className="text-xs text-slate-500">Windows Desktop Edition</p>
+            <p className="text-xs text-slate-500">Institutional Workspace</p>
           </div>
         </div>
 
