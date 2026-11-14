@@ -18,15 +18,6 @@ export const invoke = async <T = unknown>(cmd: string, args?: Record<string, unk
   if (win?.__TAURI__?.core?.invoke) {
     return win.__TAURI__.core.invoke(cmd, args);
   }
-  if (isTauriDesktop()) {
-    try {
-      // @ts-ignore
-      const tauri = await import(/* @vite-ignore */ '@tauri-apps/api/core');
-      return tauri.invoke(cmd, args);
-    } catch {
-      // desktop fallback
-    }
-  }
   return null;
 };
 
