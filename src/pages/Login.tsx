@@ -13,8 +13,7 @@ import {
   Loader2, 
   Eye, 
   EyeOff, 
-  Building2, 
-  Lock 
+  Building2 
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -270,12 +269,12 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Center Container */}
-        <div className="max-w-md w-full mx-auto my-auto py-4">
+        {/* Center Container - Sleek & Compact Form Width */}
+        <div className="max-w-sm w-full mx-auto my-auto py-4">
           
-          <div className="mb-8">
+          <div className="mb-7">
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">Sign in to your account</h2>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Select your institutional portal role and enter your authorized credentials.
             </p>
           </div>
@@ -327,7 +326,7 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="h-10 bg-slate-50/50 border-slate-200 focus:bg-white text-sm rounded-lg"
+                className="h-9 bg-slate-50/50 border-slate-200 focus:bg-white text-xs sm:text-sm rounded-lg"
               />
             </div>
 
@@ -343,14 +342,14 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-10 bg-slate-50/50 border-slate-200 focus:bg-white pr-10 text-sm rounded-lg"
+                  className="h-9 bg-slate-50/50 border-slate-200 focus:bg-white pr-9 text-xs sm:text-sm rounded-lg"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
@@ -374,12 +373,6 @@ export default function Login() {
             </div>
 
           </form>
-
-          {/* Windows DPAPI Security Notice */}
-          <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center space-x-2 text-xs text-slate-400">
-            <Lock className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Protected by Windows Hardware Security Vault (DPAPI)</span>
-          </div>
 
         </div>
 
