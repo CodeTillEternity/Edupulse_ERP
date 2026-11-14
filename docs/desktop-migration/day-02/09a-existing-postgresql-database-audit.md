@@ -195,3 +195,4 @@ Production connection pooling is configured in `backend/src/main/resources/appli
 | **DB-DEBT-02** | Synchronization | Absence of soft-deletion (`deleted_at` / tombstones) prevents delta sync from detecting deleted records. | **High** (Requires hash reconciliation for offline cache) |
 | **DB-DEBT-03** | Denormalization | `students.department` and `students.program` are stored as plain VARCHAR strings rather than foreign key references to `department.id` and `program.id`. | **Medium** (Risk of string mismatch during department renaming) |
 | **DB-DEBT-04** | Audit Actors | Lack of `created_by` / `last_modified_by` prevents row-level attribution of unauthorized modifications. | **Medium** (Compliance & non-repudiation gap) |
+

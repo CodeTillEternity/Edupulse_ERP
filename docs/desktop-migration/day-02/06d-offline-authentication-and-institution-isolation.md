@@ -171,3 +171,4 @@ The cache purge sequence guarantees:
 2. **Zero Residual State:** `cache.db` and all associated WAL journals are unlinked from the filesystem.
 3. **Credential Annihilation:** All DPAPI blobs containing previous refresh tokens, session snapshots, and user IDs are unlinked.
 4. **Mandatory Initial Sync:** The application launches in a clean, pristine state against the new institution endpoint, requiring fresh online authentication.
+

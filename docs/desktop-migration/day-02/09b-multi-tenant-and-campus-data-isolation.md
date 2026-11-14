@@ -180,3 +180,4 @@ For faculty members who teach across multiple campuses within the *same* institu
   ```
 - The React frontend provides an active campus switcher in the title bar.
 - Switching active campuses changes the context header (`X-Campus-Id: 2`) on outbound API calls and filters the local view, without requiring database wiping because both campuses share the same authoritative institutional boundary.
+

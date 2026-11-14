@@ -42,12 +42,11 @@ export default function Login() {
 
   // Personalized Adaptive Brand Theme State
   const [theme, setTheme] = useState<ExtractedColors>(() => {
-    // If institution name or branding indicates Arya College, initialize immediately with royal maroon & gold
-    if (institution.name?.toLowerCase().includes('arya')) {
-      return deriveThemeFromColor('#991b1b', '#f59e0b');
-    }
     if (institution.brandPrimary && institution.brandPrimary !== '#2563eb') {
       return deriveThemeFromColor(institution.brandPrimary, institution.brandSecondary);
+    }
+    if (institution.name?.toLowerCase().includes('arya')) {
+      return deriveThemeFromColor('#991b1b', '#f59e0b');
     }
     return DEFAULT_THEME;
   });

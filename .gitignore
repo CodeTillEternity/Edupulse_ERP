@@ -77,3 +77,9 @@ $RECYCLE.BIN/
 .parcel-cache
 .eslintcache
 .stylelintcache
+
+# Built Desktop Executable
+EduPulse-ERP-Desktop.exe
+*.exe
+
+start-desktop.bat

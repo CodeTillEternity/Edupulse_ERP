@@ -117,38 +117,15 @@ function RoleProtectedRoute({ children, allowedRoles }: { children: ReactNode; a
 
 function PublicOnlyRoute({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isInitializing = useAuthStore((state) => state.isInitializing);
-
-  if (isInitializing) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          <p className="text-sm text-slate-500 font-medium">Verifying session...</p>
-        </div>
-      </div>
-    );
-  }
 
   return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 }
 
 function RootRoute() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const isInitializing = useAuthStore((state) => state.isInitializing);
 
   if (isTauriDesktop()) {
-    if (isInitializing) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-900">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-white border-t-transparent" />
-            <p className="text-sm text-slate-300 font-medium">Launching EduPulse Desktop...</p>
-          </div>
-        </div>
-      );
-    }
-    return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
+    return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login />;
   }
 
   return <LandingPage />;

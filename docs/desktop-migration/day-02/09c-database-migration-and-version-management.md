@@ -161,3 +161,4 @@ Before any Flyway migration executes in production:
 Before publishing a new desktop installer (`.msi` or `.exe`):
 1. The desktop build is verified against the lowest supported production backend version.
 2. The desktop application verifies minimum backend API compatibility during startup health checks against `/api/v1/health` and displays an informative upgrade notification if the campus server is incompatible.
+

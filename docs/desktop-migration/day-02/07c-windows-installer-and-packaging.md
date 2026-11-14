@@ -218,6 +218,27 @@ sequenceDiagram
     App->>App: Apply server URL & lock configuration in UI ("Managed by Administrator")
 ```
 
+### 7.2 Persistence and Consumption Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant IT as IT Admin / SCCM
+    participant MSI as Windows Installer Engine (msiexec)
+    participant Reg as Windows Registry (HKLM\SOFTWARE\Policies\EduPulse)
+    participant App as EduPulse Desktop Shell (registry_policy.rs)
+
+    IT->>MSI: msiexec /i EduPulseERP.msi BACKEND_URL="https://campus.institution.edu" /qn
+    MSI->>MSI: Evaluate Property [BACKEND_URL]
+    MSI->>Reg: Write String "BackendUrl" = "https://campus.institution.edu"
+    Note over MSI,Reg: Key protected: Standard users cannot write to HKLM Policies
+    
+    IT->>App: User Launches Desktop Application
+    App->>Reg: Query HKLM\SOFTWARE\Policies\EduPulse\BackendUrl
+    Reg-->>App: "https://campus.institution.edu"
+    App->>App: Apply server URL & lock configuration in UI ("Managed by Administrator")
+```
+
 ### Supported MSI Public Properties:
 - `ALLUSERS=1`: Enforces system-wide installation to `%ProgramFiles%`.
 - `BACKEND_URL="https://..."`: Written to `HKLM\SOFTWARE\Policies\EduPulse\BackendUrl` via the WiX `RegistryValue` component. If omitted, the registry value is not written, permitting local configuration via `%APPDATA%`.

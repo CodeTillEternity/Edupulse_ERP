@@ -229,3 +229,4 @@ The following engineering decisions require empirical validation or policy deter
 | **POC-03** | **SHA-256 Deletion Hash Performance** | Performance POC | Requires POC | Benchmark Spring Boot backend performance computing SHA-256 reconciliation hashes over 50,000+ student records. | Phase 5 |
 | **OPEN-01** | **WebView2 Distribution on Air-Gapped Networks** | Policy / Arch | Open | Decide whether to require Evergreen WebView2 download or provide an optional Fixed Version Runtime bundle (+150 MB) for air-gapped campuses. | Phase 6 |
 | **OPEN-02** | **Multi-User Shared Windows Account Isolation** | Security Policy | Open | Determine whether "Shared PC Mode" (purge cache on logout) should be forced by default across all institutional installations. | Phase 3 |
+
