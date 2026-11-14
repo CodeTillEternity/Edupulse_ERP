@@ -327,7 +327,7 @@ export default function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white text-sm"
+                className="h-10 bg-slate-50/50 border-slate-200 focus:bg-white text-sm rounded-lg"
               />
             </div>
 
@@ -343,7 +343,7 @@ export default function Login() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-11 bg-slate-50/50 border-slate-200 focus:bg-white pr-10 text-sm"
+                  className="h-10 bg-slate-50/50 border-slate-200 focus:bg-white pr-10 text-sm rounded-lg"
                 />
                 <button
                   type="button"
