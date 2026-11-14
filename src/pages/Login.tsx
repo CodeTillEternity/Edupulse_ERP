@@ -114,7 +114,7 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col lg:flex-row font-sans select-none bg-slate-900">
+    <div className="h-full w-full overflow-hidden flex flex-col lg:flex-row font-sans select-none bg-slate-900">
       
       {/* ========================================================================= */}
       {/* LEFT PANEL: Enterprise Branding & Institution Showcase                     */}

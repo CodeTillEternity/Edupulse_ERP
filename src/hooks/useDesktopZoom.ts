@@ -3,8 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 const ZOOM_KEY = 'edupulse_desktop_zoom_level';
 const DEFAULT_ZOOM = 1.0;
 const MIN_ZOOM = 0.75;
-const MAX_ZOOM = 1.6;
-const STEP = 0.05;
+const MAX_ZOOM = 2.0;
+const STEP = 0.1;
 
 export function useDesktopZoom() {
   const [zoom, setZoomState] = useState<number>(() => {
@@ -13,11 +13,11 @@ export function useDesktopZoom() {
       if (saved) {
         const num = parseFloat(saved);
         if (!isNaN(num) && num >= MIN_ZOOM && num <= MAX_ZOOM) {
-          return num;
+          return Math.round(num * 100) / 100;
         }
       }
     } catch {
-      // In case localStorage is blocked
+      // ignore
     }
     return DEFAULT_ZOOM;
   });
@@ -30,15 +30,22 @@ export function useDesktopZoom() {
     } catch {
       // ignore
     }
-    document.documentElement.style.setProperty('--desktop-zoom', clamped.toString());
+    
+    // Apply Chromium / Edge WebView2 native zoom directly to document.body
+    if (typeof document !== 'undefined' && document.body) {
+      (document.body.style as any).zoom = clamped.toString();
+    }
   }, []);
 
   const zoomIn = useCallback(() => applyZoom(zoom + STEP), [zoom, applyZoom]);
   const zoomOut = useCallback(() => applyZoom(zoom - STEP), [zoom, applyZoom]);
   const resetZoom = useCallback(() => applyZoom(DEFAULT_ZOOM), [applyZoom]);
 
+  // Apply on initial mount and whenever zoom changes
   useEffect(() => {
-    document.documentElement.style.setProperty('--desktop-zoom', zoom.toString());
+    if (typeof document !== 'undefined' && document.body) {
+      (document.body.style as any).zoom = zoom.toString();
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Check for Ctrl + + / Ctrl + = (zoom in)
