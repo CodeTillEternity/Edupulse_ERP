@@ -70,7 +70,7 @@ $RECYCLE.BIN/
 .DS_Store
 .AppleDouble
 .LSOverride
-Icon?
+!src-tauri/icons/
 
 # Local Native Tools & Caches
 .turbo
