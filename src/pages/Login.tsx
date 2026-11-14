@@ -280,8 +280,8 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Role Tab Selector (Harmonious Rounded Pill Navigation) */}
-          <div className="flex bg-slate-100/90 p-1.5 rounded-full mb-6 border border-slate-200/80 shadow-inner">
+          {/* Role Tab Selector (Split-Screen Depth & Sunken Under Effect) */}
+          <div className="flex bg-slate-200/75 p-1.5 rounded-full mb-6 border border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]">
             {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((tab) => {
               const isSelected = activeTab === tab;
               return (
@@ -293,10 +293,10 @@ export default function Login() {
                     setUsername('');
                     setPassword('');
                   }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer ${
+                  className={`flex-1 py-1.5 text-xs rounded-full transition-all duration-200 cursor-pointer ${
                     isSelected
-                      ? 'bg-white text-slate-950 shadow-sm ring-1 ring-black/5'
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
+                      ? 'bg-white text-slate-950 font-black shadow-[0_6px_16px_-2px_rgba(0,0,0,0.14),0_2px_4px_-1px_rgba(0,0,0,0.08)] ring-1 ring-black/5 -translate-y-0.5 z-10'
+                      : 'text-slate-500 font-semibold hover:text-slate-800 hover:bg-white/40'
                   }`}
                 >
                   {tab === 'ADMIN' ? 'Admin' : tab === 'FACULTY' ? 'Faculty' : tab === 'STUDENT' ? 'Student' : tab === 'PARENT' ? 'Parent' : 'Finance'}
@@ -355,20 +355,23 @@ export default function Login() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-md cursor-pointer mt-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Authenticating...
-                </>
-              ) : (
-                `Sign In as ${activeTab === 'ADMIN' ? 'Admin' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`
-              )}
-            </Button>
+            <div className="flex justify-center pt-2">
+              <Button
+                type="submit"
+                disabled={loading}
+                size="sm"
+                className="w-full sm:w-auto sm:min-w-[200px] h-9 px-8 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-all"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  `Sign In as ${activeTab === 'ADMIN' ? 'Admin' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`
+                )}
+              </Button>
+            </div>
 
           </form>
 
