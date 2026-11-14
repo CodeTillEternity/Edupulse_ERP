@@ -280,8 +280,8 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Tab Selector (Elevated Split-Screen Tabs) */}
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-6 shadow-inner border border-slate-200/80">
+          {/* Role Tab Selector (Harmonious Rounded Pill Navigation) */}
+          <div className="flex bg-slate-100/90 p-1.5 rounded-full mb-6 border border-slate-200/80 shadow-inner">
             {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((tab) => {
               const isSelected = activeTab === tab;
               return (
@@ -293,9 +293,9 @@ export default function Login() {
                     setUsername('');
                     setPassword('');
                   }}
-                  className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer ${
+                  className={`flex-1 py-2 text-xs font-bold rounded-full transition-all duration-200 cursor-pointer ${
                     isSelected
-                      ? 'bg-white text-slate-950 shadow-md ring-1 ring-black/5 -translate-y-0.5 scale-[1.02] z-10'
+                      ? 'bg-white text-slate-950 shadow-sm ring-1 ring-black/5'
                       : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50'
                   }`}
                 >
