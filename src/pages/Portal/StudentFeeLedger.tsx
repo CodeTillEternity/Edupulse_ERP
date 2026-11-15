@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiClient } from '../../config/api';
 import { PageFrame } from '../../components/ui/PageFrame';
 import {
   CheckCircle2,
@@ -96,16 +97,10 @@ export const StudentFeeLedger: React.FC = () => {
   useEffect(() => {
     const fetchInvoices = async () => {
       try {
-        const response = await fetch('/api/v1/finance/invoices', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token') || ''}`
-          }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (Array.isArray(data) && data.length > 0) {
-            setInvoices(data);
-          }
+        const response = await apiClient.get('/api/v1/finance/invoices');
+        const data = response.data;
+        if (Array.isArray(data) && data.length > 0) {
+          setInvoices(data);
         }
       } catch {
         // Fallback to seeded demo invoices
