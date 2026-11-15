@@ -29,7 +29,12 @@ export const useAuthStore = create<AuthState>()(
       isInitializing: isTauriDesktop(), // Desktop starts in initializing state to query DPAPI vault
 
       login: (token, refreshToken, user) => {
-        set({ token, refreshToken, user, isAuthenticated: true, isInitializing: false });
+        const sanitizedUser: User = {
+          username: user.username || 'admin',
+          role: (user.role || 'ADMIN').toUpperCase().replace(/^ROLE_/, ''),
+          permissions: user.permissions || [],
+        };
+        set({ token, refreshToken, user: sanitizedUser, isAuthenticated: true, isInitializing: false });
       },
 
       logout: async () => {
@@ -191,6 +196,11 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        if (state?.user && !state.user.role) {
+          state.user.role = 'ADMIN';
+        }
+      },
       partialize: (state) => {
         // Enforce Rule: Zero token persistence in browser localStorage when in desktop mode (P2.1)
         if (isTauriDesktop()) {

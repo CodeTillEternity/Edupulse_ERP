@@ -5,11 +5,11 @@ import ParentDashboard from './ParentDashboard';
 import FinanceDashboardHome from './FinanceDashboardHome';
 import ManagementDashboard from './ManagementDashboard';
 import ApplicantDashboard from './ApplicantDashboard';
-import { PageFrame } from '../components/ui/PageFrame';
 
 export default function Dashboard() {
   const { user } = useAuthStore();
-  const role = user?.role || '';
+  const rawRole = user?.role || '';
+  const role = (rawRole || 'ADMIN').toUpperCase().replace(/^ROLE_/, '');
 
   switch (role) {
     case 'FACULTY':
@@ -20,18 +20,11 @@ export default function Dashboard() {
       return <ParentDashboard />;
     case 'FINANCE':
       return <FinanceDashboardHome />;
-    case 'SUPER_ADMIN':
-    case 'ADMIN':
-      return <ManagementDashboard />;
     case 'APPLICANT':
       return <ApplicantDashboard />;
+    case 'SUPER_ADMIN':
+    case 'ADMIN':
     default:
-      return (
-        <PageFrame title={`Dashboard — Welcome, ${user?.username || 'User'}`} description="Welcome back.">
-          <div className="flex h-64 items-center justify-center bg-white border border-slate-200">
-            <p className="text-slate-500">Welcome to EduPulse ERP. Please select a navigation option from the menu.</p>
-          </div>
-        </PageFrame>
-      );
+      return <ManagementDashboard />;
   }
 }

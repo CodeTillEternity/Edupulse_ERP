@@ -128,7 +128,9 @@ export default function Login() {
         console.error('[Login] Failed to store secure token in native vault:', vaultErr);
       }
       
-      login(token, refreshToken, { username: user, role, permissions });
+      const finalRole = (role || activeTab || 'ADMIN').toUpperCase().replace(/^ROLE_/, '');
+      const finalUsername = user || username || (activeTab === 'ADMIN' ? 'admin' : activeTab.toLowerCase());
+      login(token, refreshToken, { username: finalUsername, role: finalRole, permissions: permissions || [] });
       toast.success('Login successful!');
       navigate('/dashboard');
     } catch (err: any) {

@@ -124,7 +124,8 @@ export default function Layout() {
     </div>
   );
 
-  const role = user?.role || '';
+  const rawRole = user?.role || '';
+  const role = (rawRole || 'ADMIN').toUpperCase().replace(/^ROLE_/, '');
 
   const renderSidebarContent = () => {
     switch (role) {
@@ -273,7 +274,48 @@ export default function Layout() {
         );
         
       default:
-        return null;
+        return (
+          <>
+            <NavGroup title="Admin Portal">
+              <NavItem path="/dashboard" icon={LayoutDashboard} label="Dashboard" />
+            </NavGroup>
+
+            <NavGroup title="Operations">
+              <NavItem path="/dashboard/students" icon={Users} label="Students Directory" />
+              <NavItem path="/dashboard/admissions" icon={UserCheck} label="Admissions" />
+              <NavItem path="/dashboard/admissions/enroll" icon={UserPlus} label="Enroll Student" />
+              <NavItem path="/dashboard/attendance" icon={CalendarCheck} label="Attendance Oversight" />
+              <NavItem path="/dashboard/operations/attendance" icon={Clock} label="Live Attendance Tracker" />
+              <NavItem path="/dashboard/operations/timetable" icon={CalendarCheck} label="Timetable Scheduler" />
+              <NavItem path="/dashboard/operations/library" icon={BookOpen} label="Library Management" />
+              <NavItem path="/dashboard/operations/transport" icon={Bus} label="Fleet & Transport" />
+            </NavGroup>
+
+            <NavGroup title="Academics">
+              <NavItem path="/dashboard/departments" icon={Store} label="Programs & Departments" />
+              <NavItem path="/dashboard/academics" icon={GraduationCap} label="Course Catalog" />
+              <NavItem path="/dashboard/academic/courses" icon={BookOpen} label="Course Manager" />
+              <NavItem path="/dashboard/academic/exams" icon={Award} label="Examinations" />
+              <NavItem path="/dashboard/academic/transcripts" icon={FileText} label="Transcripts & GPA" />
+              <NavItem path="/dashboard/academic/classroom" icon={Video} label="Virtual Classroom" />
+              <NavItem path="/dashboard/academic/materials" icon={FileText} label="Course Materials" />
+            </NavGroup>
+
+            <NavGroup title="Finance & HR">
+              <NavItem path="/dashboard/finance" icon={Wallet} label="Fee Management" />
+              <NavItem path="/dashboard/finance/fees" icon={CreditCard} label="Fee Structures & Heads" />
+              <NavItem path="/dashboard/finance/ledger" icon={Receipt} label="Student Fee Ledger" />
+              <NavItem path="/dashboard/hr/leaves" icon={CalendarCheck} label="Staff Leave Requests" />
+              <NavItem path="/dashboard/hr/payroll" icon={Briefcase} label="Payroll Dashboard" />
+            </NavGroup>
+
+            <NavGroup title="System Setup">
+              <NavItem path="/dashboard/institution-profile" icon={Building2} label="Institution Profile" />
+              <NavItem path="/dashboard/admin/users" icon={ShieldAlert} label="Access Control" />
+              <NavItem path="/dashboard/campuses" icon={Store} label="Campuses & Nodes" />
+            </NavGroup>
+          </>
+        );
     }
   };
 
