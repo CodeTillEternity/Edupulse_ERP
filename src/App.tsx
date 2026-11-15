@@ -49,25 +49,46 @@ import StudentPortalLayout from './layouts/StudentPortalLayout';
 import StudentPortalDashboard from './pages/Portal/StudentDashboard';
 import FeeCenter from './pages/Portal/FeeCenter';
 
-class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
-  state = { hasError: false };
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught component error:', error, errorInfo);
   }
 
+  handleReset = () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch {}
+    window.location.href = '/';
+  };
+
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 text-center">
-          <div className="space-y-4">
-            <h1 className="text-3xl font-bold text-slate-900">Something went wrong.</h1>
-            <p className="text-slate-600">The application encountered an unexpected error.</p>
-            <Button onClick={() => window.location.reload()}>Try Again</Button>
+        <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-center">
+          <div className="max-w-md w-full space-y-4 bg-white p-8 rounded-xl shadow-md border border-slate-200">
+            <h1 className="text-2xl font-bold text-slate-900">Something went wrong</h1>
+            <p className="text-sm text-slate-600">The application encountered an unexpected error.</p>
+            {this.state.error && (
+              <p className="text-xs text-rose-600 font-mono bg-rose-50 p-3 rounded text-left overflow-auto max-h-32">
+                {this.state.error.message}
+              </p>
+            )}
+            <div className="flex justify-center space-x-3 pt-2">
+              <Button onClick={() => window.location.reload()}>Try Again</Button>
+              <Button variant="outline" onClick={this.handleReset}>Reset to Login</Button>
+            </div>
           </div>
         </div>
       );

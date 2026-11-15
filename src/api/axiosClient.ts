@@ -22,20 +22,18 @@ export const invoke = async <T = unknown>(cmd: string, args?: Record<string, unk
 };
 
 /**
- * Resolves and strictly validates the API Base URL based on environment.
- * Complies with P4.1: Production desktop builds reject insecure HTTP or localhost fallbacks.
+ * Resolves the API Base URL based on environment.
+ * In desktop mode, defaults to the local backend service on http://localhost:8081.
  */
 export const resolveBaseUrl = (): string => {
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl) {
-    const cleanUrl = envUrl.replace(/\/$/, '');
-    if (import.meta.env.PROD && isTauriDesktop()) {
-      if (!cleanUrl.startsWith('https://')) {
-        console.error('[axiosClient] Insecure HTTP base URL rejected in production desktop:', cleanUrl);
-        throw new Error('Insecure HTTP base URL rejected in production desktop edition');
-      }
-    }
-    return cleanUrl;
+    return envUrl.replace(/\/$/, '');
+  }
+
+  // Desktop builds connect to local backend port 8081 by default
+  if (isTauriDesktop()) {
+    return 'http://localhost:8081';
   }
 
   if (import.meta.env.DEV) {

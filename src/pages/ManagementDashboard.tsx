@@ -57,12 +57,12 @@ export default function ManagementDashboard() {
     queryFn: async () => (await apiClient.get('/api/v1/admission-applications')).data
   });
 
-  const totalUsersCount = usersData ? usersData.length : null;
-  const activeUsers = usersData ? usersData.filter(u => u.enabled).length : null;
-  const lockedUsers = usersData ? usersData.filter(u => !u.enabled).length : null;
-  const totalDepts = departmentsData?.length || 0;
-  const totalStudents = studentsData?.totalElements || 0;
-  const pendingApps = appsData?.filter(a => a.status === 'SUBMITTED' || a.status === 'UNDER_REVIEW')?.length || 0;
+  const totalUsersCount = Array.isArray(usersData) ? usersData.length : null;
+  const activeUsers = Array.isArray(usersData) ? usersData.filter(u => u?.enabled).length : null;
+  const lockedUsers = Array.isArray(usersData) ? usersData.filter(u => u && !u.enabled).length : null;
+  const totalDepts = Array.isArray(departmentsData) ? departmentsData.length : 0;
+  const totalStudents = studentsData?.totalElements || (Array.isArray(studentsData) ? (studentsData as any).length : 0);
+  const pendingApps = Array.isArray(appsData) ? appsData.filter(a => a?.status === 'SUBMITTED' || a?.status === 'UNDER_REVIEW').length : 0;
 
   const adminName = user?.username || (isSuperAdmin ? 'Super Admin' : 'Admin');
 
@@ -136,16 +136,16 @@ export default function ManagementDashboard() {
           
           {loadingStudents ? (
             <div className="flex justify-center p-6"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
-          ) : studentsData?.content && studentsData.content.length > 0 ? (
+          ) : Array.isArray(studentsData?.content) && studentsData.content.length > 0 ? (
             <div className="divide-y divide-slate-100 border border-slate-200 bg-white shadow-sm">
               {studentsData.content.map(s => (
                 <div key={s.id} className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center space-x-3.5">
                     <div className="h-9 w-9 sm:h-10 sm:w-10 bg-slate-900 text-white flex items-center justify-center font-bold text-xs sm:text-sm rounded">
-                      {s.firstName.charAt(0)}
+                      {s.firstName ? s.firstName.charAt(0) : 'S'}
                     </div>
                     <div>
-                      <p className="text-sm sm:text-base font-semibold text-slate-900">{s.firstName} {s.lastName}</p>
+                      <p className="text-sm sm:text-base font-semibold text-slate-900">{s.firstName || 'Student'} {s.lastName || ''}</p>
                       <p className="text-xs sm:text-sm font-medium text-slate-500">{s.rollNumber || 'Pending ID'}</p>
                     </div>
                   </div>
@@ -181,7 +181,7 @@ export default function ManagementDashboard() {
                       <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 sm:px-6 py-3 sm:py-3.5 font-medium text-slate-900">{u.username}</td>
                         <td className="px-4 sm:px-6 py-3 sm:py-3.5 text-right">
-                          <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-slate-600 bg-slate-100 px-2.5 py-1 rounded">{u.role.replace('ROLE_', '')}</span>
+                          <span className="text-xs sm:text-sm font-bold tracking-wider uppercase text-slate-600 bg-slate-100 px-2.5 py-1 rounded">{u.role ? u.role.replace('ROLE_', '') : 'USER'}</span>
                         </td>
                       </tr>
                     ))}
