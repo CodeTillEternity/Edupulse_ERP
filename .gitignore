@@ -78,8 +78,11 @@ $RECYCLE.BIN/
 .eslintcache
 .stylelintcache
 
-# Built Desktop Executable
+# Built Desktop Executable & Backend JAR
 EduPulse-ERP-Desktop.exe
+EduPulse-ERP-Desktop-v2.exe
 *.exe
+*.jar
+backend/
 
 start-desktop.bat
