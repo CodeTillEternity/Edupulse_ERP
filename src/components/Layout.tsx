@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -11,16 +11,35 @@ import {
   Store, ShieldAlert, UserCheck, 
   Menu, X, LogOut, ChevronDown, UserCircle, Bell,
   Check, KeyRound, ZoomIn, ZoomOut, Building2,
-  BookOpen, FileText, Bus, CreditCard, Video, Award, Receipt, Briefcase, UserPlus, Clock
+  BookOpen, FileText, Bus, CreditCard, Video, Award, Receipt, Briefcase, UserPlus, Clock,
+  Server, Settings
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ChangePasswordModal } from './ChangePasswordModal';
+import { ServerSettingsModal } from './ServerSettingsModal';
+import { OfflineSyncBadge } from './OfflineSyncBadge';
+import { ClassroomCallOverlay } from './classroom/ClassroomCallOverlay';
+import { resolveBaseUrl } from '../api/axiosClient';
 
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [currentServerUrl, setCurrentServerUrl] = useState(() => resolveBaseUrl());
+
+  // Administrator shortcut (Ctrl + Shift + S) to open Server Settings Modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        setIsServerModalOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
@@ -384,7 +403,33 @@ export default function Layout() {
         
         {/* Desktop Header */}
         <header className="hidden md:flex h-16 lg:h-18 bg-white border-b border-slate-200 items-center justify-between px-6 lg:px-8 sticky top-0 z-10 shrink-0">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-3">
+            {/* Cloud / Server Connection Indicator */}
+            {user?.role === 'SUPER_ADMIN' ? (
+              <button
+                type="button"
+                onClick={() => setIsServerModalOpen(true)}
+                title={`Target Backend: ${currentServerUrl} (Click to switch server, or Ctrl+Shift+S)`}
+                className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition-colors cursor-pointer shadow-xs"
+              >
+                <span className={cn("w-2 h-2 rounded-full", isOnline ? "bg-emerald-500 animate-pulse" : "bg-red-500")}></span>
+                <Server className="w-3.5 h-3.5 text-blue-600" />
+                <span className="font-mono text-[11px] max-w-[140px] truncate">{currentServerUrl.replace(/^https?:\/\//, '')}</span>
+                <Settings className="w-3 h-3 text-slate-400" />
+              </button>
+            ) : (
+              <div
+                className="hidden sm:inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-50 text-slate-600 border border-slate-200"
+                title={isOnline ? "Connected to Central EduPulse Cloud" : "Offline Mode"}
+              >
+                <span className={cn("w-2 h-2 rounded-full", isOnline ? "bg-emerald-500" : "bg-red-500")}></span>
+                <span className="text-[11px] font-medium">{isOnline ? "Cloud Online" : "Offline"}</span>
+              </div>
+            )}
+
+            {/* Offline Mutation Sync Queue Badge */}
+            <OfflineSyncBadge />
+
             {/* Left side context - reserved for breadcrumbs or title injected by pages */}
             {!isOnline && (
               <div className="flex items-center space-x-2">
@@ -609,10 +654,17 @@ export default function Layout() {
         )}
 
         {/* Main Outlet */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 relative">
+        <main className="flex-1 overflow-y-auto bg-slate-50 relative flex flex-col min-h-0">
           <Outlet />
+          <ClassroomCallOverlay />
         </main>
       </div>
+
+      <ServerSettingsModal 
+        isOpen={isServerModalOpen} 
+        onClose={() => setIsServerModalOpen(false)} 
+        onSaved={(newUrl) => setCurrentServerUrl(newUrl)} 
+      />
     </div>
   );
 }

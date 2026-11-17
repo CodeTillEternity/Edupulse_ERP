@@ -29,8 +29,8 @@ export default function StudentLedger() {
   const queryClient = useQueryClient();
 
   // Search state
-  const [searchInput, setSearchInput] = useState('ENR-2026-001');
-  const [activeEnrollment, setActiveEnrollment] = useState('ENR-2026-001');
+  const [searchInput, setSearchInput] = useState('23CSM001');
+  const [activeEnrollment, setActiveEnrollment] = useState('23CSM001');
 
   // Active view tab: 'invoices' | 'payments'
   const [activeTab, setActiveTab] = useState('invoices');

@@ -4,7 +4,7 @@ export const BASE_URL = resolveBaseUrl();
 
 export const getStudentPhotoUrl = (studentId: number | string | undefined | null, timestamp?: number) => {
   if (!studentId) return '';
-  const base = BASE_URL ? BASE_URL.replace(/\/$/, '') : '';
+  const base = resolveBaseUrl();
   const ts = timestamp ? `?t=${timestamp}` : '';
   return `${base}/api/v1/students/${studentId}/photo${ts}`;
 };

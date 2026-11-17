@@ -13,8 +13,10 @@ import {
   Loader2, 
   Eye, 
   EyeOff, 
-  Building2 
+  Building2
 } from 'lucide-react';
+import { ServerSettingsModal } from '../components/ServerSettingsModal';
+import { resolveBaseUrl } from '../api/axiosClient';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -35,6 +37,8 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [activeServerUrl, setActiveServerUrl] = useState<string>(() => resolveBaseUrl());
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
@@ -88,6 +92,18 @@ export default function Login() {
       active = false;
     };
   }, [institution.logoUrl, institution.brandPrimary, institution.brandSecondary, institution.name]);
+
+  // Administrator keyboard shortcut (Ctrl + Shift + S) to configure cloud backend
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        setIsServerModalOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     const role = searchParams.get('role');
@@ -263,10 +279,10 @@ export default function Login() {
         
         {/* Mobile Header (visible only on small viewports) */}
         <div className="lg:hidden flex items-center space-x-3 mb-6">
-          <img src="/logo.jpg" alt="EduPulse Logo" className="w-10 h-10 rounded-lg shadow-sm" />
+          <img src="/logo.jpg" alt="EduPulse Logo" className="w-9 h-9 rounded-lg shadow-sm" />
           <div>
-            <h1 className="text-lg font-bold text-slate-900">EduPulse ERP</h1>
-            <p className="text-xs text-slate-500">Institutional Workspace</p>
+            <h1 className="text-base font-bold text-slate-900">EduPulse ERP</h1>
+            <p className="text-[11px] text-slate-500">Institutional Workspace</p>
           </div>
         </div>
 
@@ -377,12 +393,28 @@ export default function Login() {
 
         </div>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-slate-400 pt-4">
-          &copy; {new Date().getFullYear()} EduPulse ERP Technologies. All rights reserved.
+        {/* Footer with Discreet Admin Shortcut Access */}
+        <div className="flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-100">
+          <span>&copy; {new Date().getFullYear()} EduPulse ERP Technologies.</span>
+          <button
+            type="button"
+            onClick={() => setIsServerModalOpen(true)}
+            title={`Backend: ${activeServerUrl} (Ctrl + Shift + S to change)`}
+            className="text-[11px] font-mono text-slate-400 hover:text-slate-600 transition-colors flex items-center space-x-1.5 cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+            <span>v1.0.0</span>
+          </button>
         </div>
 
       </div>
+
+      {/* Cloud & Server Connection Settings Modal */}
+      <ServerSettingsModal
+        isOpen={isServerModalOpen}
+        onClose={() => setIsServerModalOpen(false)}
+        onSaved={(newUrl) => setActiveServerUrl(newUrl)}
+      />
 
     </div>
   );

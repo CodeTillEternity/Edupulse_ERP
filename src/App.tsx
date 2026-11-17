@@ -215,6 +215,9 @@ function App() {
                 <Route index element={<StudentPortalDashboard />} />
                 <Route path="fees" element={<FeeCenter />} />
                 <Route path="ledger" element={<StudentFeeLedger />} />
+                <Route path="fee-ledger" element={<StudentFeeLedger />} />
+                <Route path="schedule" element={<TimetableManager />} />
+                <Route path="academics" element={<TranscriptViewer />} />
                 <Route path="materials" element={<AcademicMaterialView />} />
                 <Route path="classroom" element={<VirtualClassroom />} />
               </Route>
@@ -252,6 +255,7 @@ function App() {
                 <Route path="academic/transcripts" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT']}><TranscriptViewer /></RoleProtectedRoute>} />
                 <Route path="academic/materials" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT']}><AcademicMaterialView /></RoleProtectedRoute>} />
                 <Route path="academic/classroom" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT']}><VirtualClassroom /></RoleProtectedRoute>} />
+                <Route path="classroom" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT']}><VirtualClassroom /></RoleProtectedRoute>} />
 
                 {/* Operations Functional Modules */}
                 <Route path="operations/attendance" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}><AttendanceTracker /></RoleProtectedRoute>} />

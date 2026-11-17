@@ -15,10 +15,13 @@ import {
   Building2,
 } from 'lucide-react';
 import { getStudentTranscript } from '../../api/examService';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function TranscriptViewer() {
-  const [searchInput, setSearchInput] = useState('');
-  const [activeEnrollmentNumber, setActiveEnrollmentNumber] = useState('');
+  const user = useAuthStore((state) => state.user);
+  const defaultEnrollment = '23CSM001';
+  const [searchInput, setSearchInput] = useState(defaultEnrollment);
+  const [activeEnrollmentNumber, setActiveEnrollmentNumber] = useState(defaultEnrollment);
 
   const {
     data: transcript,

@@ -18,6 +18,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { ClassroomCallOverlay } from '../components/classroom/ClassroomCallOverlay';
 
 export default function StudentPortalLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -234,8 +235,9 @@ export default function StudentPortalLayout() {
       </header>
 
       {/* Main Page Body Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col min-h-0 relative">
         <Outlet />
+        <ClassroomCallOverlay />
       </main>
 
       {/* Footer */}

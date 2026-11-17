@@ -1,0 +1,95 @@
+version: '3.8'
+
+# ==============================================================================
+# EduPulse ERP - Production AWS Cloud Docker Compose Stack
+# Connects Web Client & Native Windows Desktop Edition to Central SaaS Backend
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # Central SaaS Backend (Spring Boot 3 + Java 21)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ../../Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/backend
+      dockerfile: Dockerfile
+    image: edupulse-backend:latest
+    container_name: edupulse_backend_prod
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      # AWS RDS PostgreSQL Connection (Set in .env or pass directly)
+      - SPRING_DATASOURCE_URL=${DATABASE_URL:-jdbc:postgresql://postgres:5432/edupulse_erp}
+      - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME:-postgres}
+      - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
+      - DB_SSL_MODE=${DB_SSL_MODE:-prefer}
+      - HIBERNATE_DDL_AUTO=${HIBERNATE_DDL_AUTO:-update}
+      
+      # JWT Authentication & RBAC Security
+      - JWT_SECRET=${JWT_SECRET}
+      
+      # AWS S3 Cloud Storage Driver
+      - APP_STORAGE_TYPE=${APP_STORAGE_TYPE:-s3}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-edupulse-erp-production}
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_S3_ENDPOINT=${AWS_S3_ENDPOINT:-}
+      
+      # Container-Aware JVM Optimization
+      - JAVA_OPTS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0 -Djava.security.egd=file:/dev/./urandom
+    ports:
+      - "8081:8081"
+    volumes:
+      - edupulse_uploads:/var/lib/edupulse/data/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # PostgreSQL 16 (Operational fallback when external AWS RDS is not configured)
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: edupulse_postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=edupulse_erp
+      - POSTGRES_USER=${DATABASE_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-postgres} -d edupulse_erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------------------------------------------
+  # Frontend Web Client (Nginx + React SPA)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ../../Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0
+      dockerfile: Dockerfile.frontend
+    image: edupulse-frontend:latest
+    container_name: edupulse_frontend_prod
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local
+  edupulse_uploads:
+    driver: local

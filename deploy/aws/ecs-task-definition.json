@@ -1,0 +1,65 @@
+{
+  "family": "edupulse-erp-saas",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "1024",
+  "memory": "2048",
+  "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::ACCOUNT_ID:role/EduPulseS3AccessRole",
+  "containerDefinitions": [
+    {
+      "name": "edupulse-backend",
+      "image": "ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/edupulse-backend:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8081,
+          "hostPort": 8081,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        { "name": "SPRING_PROFILES_ACTIVE", "value": "prod" },
+        { "name": "APP_STORAGE_TYPE", "value": "s3" },
+        { "name": "AWS_REGION", "value": "us-east-1" },
+        { "name": "AWS_S3_BUCKET", "value": "edupulse-erp-production" },
+        { "name": "DB_SSL_MODE", "value": "require" },
+        { "name": "HIBERNATE_DDL_AUTO", "value": "update" },
+        { "name": "JAVA_OPTS", "value": "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -Djava.security.egd=file:/dev/./urandom" }
+      ],
+      "secrets": [
+        {
+          "name": "SPRING_DATASOURCE_URL",
+          "valueFrom": "arn:aws:ssm:AWS_REGION:ACCOUNT_ID:parameter/edupulse/database_url"
+        },
+        {
+          "name": "SPRING_DATASOURCE_USERNAME",
+          "valueFrom": "arn:aws:ssm:AWS_REGION:ACCOUNT_ID:parameter/edupulse/database_username"
+        },
+        {
+          "name": "SPRING_DATASOURCE_PASSWORD",
+          "valueFrom": "arn:aws:ssm:AWS_REGION:ACCOUNT_ID:parameter/edupulse/database_password"
+        },
+        {
+          "name": "JWT_SECRET",
+          "valueFrom": "arn:aws:ssm:AWS_REGION:ACCOUNT_ID:parameter/edupulse/jwt_secret"
+        }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "curl -f http://localhost:8081/api/health || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 45
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/edupulse-erp",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "backend"
+        }
+      }
+    }
+  ]
+}

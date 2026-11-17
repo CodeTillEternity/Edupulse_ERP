@@ -23,9 +23,17 @@ export const invoke = async <T = unknown>(cmd: string, args?: Record<string, unk
 
 /**
  * Resolves the API Base URL based on environment.
- * In desktop mode, defaults to the local backend service on http://localhost:8081.
+ * In desktop mode, checks for administrator configured server endpoint in localStorage first,
+ * then falls back to VITE_API_BASE_URL, and finally defaults to local sidecar http://localhost:8081.
  */
 export const resolveBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const customUrl = localStorage.getItem('edupulse_server_url');
+    if (customUrl && customUrl.trim()) {
+      return customUrl.trim().replace(/\/$/, '');
+    }
+  }
+
   const envUrl = import.meta.env.VITE_API_BASE_URL;
   if (envUrl) {
     return envUrl.replace(/\/$/, '');
@@ -45,8 +53,108 @@ export const resolveBaseUrl = (): string => {
 };
 
 /**
+ * Resolves the multi-tenant identifier (e.g., 'arya-main', 'default', 'campus-01').
+ */
+export const resolveTenantId = (): string => {
+  if (typeof window !== 'undefined') {
+    const tenant = localStorage.getItem('edupulse_tenant_id');
+    if (tenant && tenant.trim()) {
+      return tenant.trim();
+    }
+  }
+  return 'default';
+};
+
+/**
+ * Updates the active server endpoint and multi-tenant identifier at runtime.
+ */
+export const setServerConfiguration = (url: string, tenantId?: string) => {
+  const cleanUrl = url.trim().replace(/\/$/, '');
+  localStorage.setItem('edupulse_server_url', cleanUrl);
+  axiosClient.defaults.baseURL = cleanUrl;
+  if (tenantId !== undefined) {
+    localStorage.setItem('edupulse_tenant_id', tenantId.trim());
+  }
+};
+
+/**
+ * Clears custom server configuration and resets to default endpoint.
+ */
+export const resetServerConfiguration = () => {
+  localStorage.removeItem('edupulse_server_url');
+  localStorage.removeItem('edupulse_tenant_id');
+  axiosClient.defaults.baseURL = resolveBaseUrl();
+};
+
+/**
+ * Tests reachability and measures response latency to a target backend endpoint.
+ */
+export const testServerConnection = async (
+  targetUrl: string,
+  timeoutMs = 5000
+): Promise<{ ok: boolean; status?: number; latencyMs: number; message: string }> => {
+  const cleanUrl = targetUrl.trim().replace(/\/$/, '');
+  const startTime = performance.now();
+
+  try {
+    const res = await axios.get(`${cleanUrl}/api/health`, {
+      timeout: timeoutMs,
+      validateStatus: () => true,
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+
+    const latencyMs = Math.round(performance.now() - startTime);
+
+    if (res.status >= 200 && res.status < 400) {
+      return {
+        ok: true,
+        status: res.status,
+        latencyMs,
+        message: `Connected successfully (${latencyMs}ms)`,
+      };
+    } else if (res.status === 401 || res.status === 403 || res.status === 404) {
+      return {
+        ok: true,
+        status: res.status,
+        latencyMs,
+        message: `Endpoint reached (HTTP ${res.status} • ${latencyMs}ms)`,
+      };
+    } else {
+      return {
+        ok: false,
+        status: res.status,
+        latencyMs,
+        message: `Server returned HTTP ${res.status}`,
+      };
+    }
+  } catch (err: any) {
+    try {
+      const fallback = await axios.get(`${cleanUrl}/auth/session`, {
+        timeout: Math.max(1500, timeoutMs - 1500),
+        validateStatus: () => true,
+      });
+      const latencyMs = Math.round(performance.now() - startTime);
+      return {
+        ok: true,
+        status: fallback.status,
+        latencyMs,
+        message: `Endpoint reached (HTTP ${fallback.status} • ${latencyMs}ms)`,
+      };
+    } catch {
+      const latencyMs = Math.round(performance.now() - startTime);
+      const isTimeout = err?.code === 'ECONNABORTED' || err?.message?.toLowerCase().includes('timeout');
+      return {
+        ok: false,
+        latencyMs,
+        message: isTimeout ? 'Connection timed out' : 'Server endpoint unreachable',
+      };
+    }
+  }
+};
+
+/**
  * Axios instance for EduPulse ERP Desktop.
- * Base URL is strictly driven by Vite environment variable VITE_API_BASE_URL.
+ * Base URL dynamically checks runtime config, Vite env, or local sidecar.
  */
 export const axiosClient: AxiosInstance = axios.create({
   baseURL: resolveBaseUrl(),
@@ -61,10 +169,17 @@ export const axiosClient: AxiosInstance = axios.create({
  * Asynchronously retrieves the JWT from the native Rust DPAPI vault via Tauri IPC (get_secure_token)
  * instead of reading from insecure browser localStorage.
  * Injects request correlation ID (X-Correlation-Id) for distributed traceability (P4.2).
+ * Injects multi-tenant partition header (X-Tenant-Id) for SaaS routing.
  */
 axiosClient.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
+      // Synchronize baseURL dynamically with current configuration
+      const activeBase = resolveBaseUrl();
+      if (!config.baseURL || config.baseURL === 'http://localhost:8081' || config.baseURL === '') {
+        config.baseURL = activeBase;
+      }
+
       let token: string | null = null;
 
       if (isTauriDesktop()) {
@@ -81,6 +196,11 @@ axiosClient.interceptors.request.use(
             ? crypto.randomUUID()
             : `req-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
           config.headers['X-Correlation-Id'] = correlationId;
+        }
+
+        const tenantId = resolveTenantId();
+        if (tenantId && !config.headers['X-Tenant-Id']) {
+          config.headers['X-Tenant-Id'] = tenantId;
         }
 
         if (token) {
