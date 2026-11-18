@@ -12,13 +12,14 @@ import {
   Menu, X, LogOut, ChevronDown, UserCircle, Bell,
   Check, KeyRound, ZoomIn, ZoomOut, Building2,
   BookOpen, FileText, Bus, CreditCard, Video, Award, Receipt, Briefcase, UserPlus, Clock,
-  Server, Settings
+  Server, Settings, MessageSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ChangePasswordModal } from './ChangePasswordModal';
 import { ServerSettingsModal } from './ServerSettingsModal';
 import { OfflineSyncBadge } from './OfflineSyncBadge';
 import { ClassroomCallOverlay } from './classroom/ClassroomCallOverlay';
+import { CommunicationOutboxDrawer } from './communication/CommunicationOutboxDrawer';
 import { resolveBaseUrl } from '../api/axiosClient';
 
 export default function Layout() {
@@ -27,6 +28,7 @@ export default function Layout() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [isCommunicationOutboxOpen, setIsCommunicationOutboxOpen] = useState(false);
   const [currentServerUrl, setCurrentServerUrl] = useState(() => resolveBaseUrl());
 
   // Administrator shortcut (Ctrl + Shift + S) to open Server Settings Modal
@@ -482,6 +484,16 @@ export default function Layout() {
               </button>
             </div>
 
+            {/* Parent & Student Communication Rails Outbox Trigger */}
+            <button
+              onClick={() => setIsCommunicationOutboxOpen(true)}
+              className="text-slate-500 hover:text-emerald-700 transition-colors relative p-2 rounded-full hover:bg-emerald-50 focus:outline-none cursor-pointer"
+              title="Parent & Student Communication Rails (WhatsApp & SMS Outbox Logs)"
+            >
+              <MessageSquare className="w-5 h-5 text-emerald-600" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </button>
+
             {/* Real Notifications Dropdown */}
             <div className="relative">
               <button 
@@ -659,6 +671,11 @@ export default function Layout() {
           <ClassroomCallOverlay />
         </main>
       </div>
+
+      <CommunicationOutboxDrawer
+        isOpen={isCommunicationOutboxOpen}
+        onClose={() => setIsCommunicationOutboxOpen(false)}
+      />
 
       <ServerSettingsModal 
         isOpen={isServerModalOpen} 

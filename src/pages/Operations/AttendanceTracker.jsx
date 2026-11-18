@@ -14,6 +14,8 @@ import {
   Clock3,
   HelpCircle,
   Search,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 import {
   getTimetableByBatch,
@@ -21,6 +23,8 @@ import {
   getAttendanceByTimetableAndDate,
   markAttendance,
 } from '../../api/operationsService';
+import { communicationService } from '../../api/communicationService';
+import { CommunicationOutboxDrawer } from '../../components/communication/CommunicationOutboxDrawer';
 import { TableSkeleton, Skeleton } from '../../components/ui/SkeletonLoader';
 
 const EMPTY_ARRAY = [];
@@ -65,6 +69,8 @@ export default function AttendanceTracker() {
 
   // Attendance user overrides: { [studentId]: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED' }
   const [attendanceOverrides, setAttendanceOverrides] = useState({});
+  const [autoNotifyAbsent, setAutoNotifyAbsent] = useState(true);
+  const [isOutboxOpen, setIsOutboxOpen] = useState(false);
 
   // 1. Fetch Timetable Entries for selected Batch
   const timetableQuery = useQuery({
@@ -121,6 +127,40 @@ export default function AttendanceTracker() {
       toast.success(
         `Attendance successfully saved for ${data?.length || students.length} students!`
       );
+
+      // Trigger Parent WhatsApp Absence Alerts if option is checked
+      if (autoNotifyAbsent) {
+        const absentStudentIds = students
+          .filter((s) => getStudentStatus(s.id) === 'ABSENT')
+          .map((s) => s.id);
+
+        if (absentStudentIds.length > 0) {
+          communicationService
+            .dispatchAbsenceAlerts({
+              timetableEntryId: Number(activeTimetableId),
+              date: selectedDate,
+              absentStudentIds,
+              courseName: activeSlot?.courseOffering?.course?.name || activeSlot?.courseOffering?.courseCode || 'Scheduled Lecture',
+              roomNumber: activeSlot?.roomNumber || 'Room 304',
+              timeSlot: activeSlot ? `${activeSlot.startTime} - ${activeSlot.endTime}` : undefined,
+              autoDispatch: true,
+            })
+            .then((res) => {
+              toast.success(
+                `WhatsApp Absence Alerts dispatched to ${res.length} guardian(s)!`,
+                {
+                  action: {
+                    label: 'View Outbox',
+                    onClick: () => setIsOutboxOpen(true),
+                  },
+                }
+              );
+            })
+            .catch((commErr) => {
+              console.warn('[AttendanceTracker] Absence alert dispatch warning:', commErr);
+            });
+        }
+      }
     },
     onError: (err) => {
       const message =
@@ -237,6 +277,29 @@ export default function AttendanceTracker() {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2 cursor-pointer bg-white border border-slate-200 px-3 py-2 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-2xs transition-colors">
+              <input
+                type="checkbox"
+                checked={autoNotifyAbsent}
+                onChange={(e) => setAutoNotifyAbsent(e.target.checked)}
+                className="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer"
+              />
+              <span className="flex items-center gap-1.5 font-semibold">
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Auto-notify parents on Absent (WhatsApp)</span>
+              </span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setIsOutboxOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+              title="Open Parent WhatsApp Communication Outbox"
+            >
+              <Send className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Outbox</span>
+            </button>
+
             <button
               type="button"
               onClick={handleMarkAllPresent}
@@ -522,6 +585,13 @@ export default function AttendanceTracker() {
           )}
         </div>
       </div>
+
+      {/* WhatsApp & SMS Communication Outbox Drawer */}
+      <CommunicationOutboxDrawer
+        isOpen={isOutboxOpen}
+        onClose={() => setIsOutboxOpen(false)}
+        defaultFilter="ABSENCE_ALERT"
+      />
     </div>
   );
 }

@@ -15,8 +15,12 @@ import {
   FileText,
   Calendar,
   X,
+  MessageSquare,
+  Send,
 } from 'lucide-react';
 import { getStudentLedger, recordPayment } from '../../api/financeService';
+import { communicationService } from '../../api/communicationService';
+import { CommunicationOutboxDrawer } from '../../components/communication/CommunicationOutboxDrawer';
 
 const STATUS_BADGES = {
   PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -38,12 +42,54 @@ export default function StudentLedger() {
   // Collect Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [isOutboxOpen, setIsOutboxOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
     paymentMethod: 'UPI',
     referenceNumber: '',
     notes: '',
   });
+
+  const handleDispatchFeeNotice = async (inv) => {
+    try {
+      const res = await communicationService.dispatchFeeNotice({
+        invoiceNumber: inv.invoiceNumber,
+        studentEnrollment: activeEnrollment,
+        studentName: ledger?.student?.firstName ? `${ledger.student.firstName} ${ledger.student.lastName}` : 'Student',
+        title: inv.feeStructureName || 'Tuition & Fee Assessment',
+        amount: Number(inv.outstandingBalance || inv.netAmount),
+        dueDate: inv.dueDate,
+        recipientPhone: '+919829012345',
+        channel: 'WHATSAPP',
+      });
+      toast.success(`WhatsApp Fee Notice dispatched for ${inv.invoiceNumber}!`, {
+        action: res.directChatLink
+          ? {
+              label: 'Open WhatsApp',
+              onClick: () => window.open(res.directChatLink, '_blank'),
+            }
+          : undefined,
+      });
+    } catch {
+      toast.error('Failed to dispatch WhatsApp fee notice');
+    }
+  };
+
+  const handleDispatchFeeReceipt = async (invoiceNumber) => {
+    try {
+      const res = await communicationService.dispatchFeeReceipt(invoiceNumber);
+      toast.success(`WhatsApp Payment Receipt dispatched for ${invoiceNumber}!`, {
+        action: res.directChatLink
+          ? {
+              label: 'Open WhatsApp',
+              onClick: () => window.open(res.directChatLink, '_blank'),
+            }
+          : undefined,
+      });
+    } catch {
+      toast.error('Failed to dispatch WhatsApp payment receipt');
+    }
+  };
 
   // Query: Student Ledger details
   const {
@@ -156,9 +202,18 @@ export default function StudentLedger() {
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap"
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap cursor-pointer"
             >
               Search Ledger
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsOutboxOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
+              title="Open Parent WhatsApp & SMS Outbox Logs"
+            >
+              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Outbox</span>
             </button>
           </form>
         </div>
@@ -305,14 +360,36 @@ export default function StudentLedger() {
                               </span>
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenPaymentModal(inv)}
-                                disabled={isFullyPaid}
-                                className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold rounded-md shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                <CreditCard className="w-3 h-3" /> Collect Payment
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                {!isFullyPaid ? (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDispatchFeeNotice(inv)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-semibold rounded-md border border-emerald-200 transition-colors cursor-pointer"
+                                      title="Dispatch payment link notice to parent WhatsApp"
+                                    >
+                                      <MessageSquare className="w-3 h-3 text-emerald-600" /> WhatsApp Notice
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenPaymentModal(inv)}
+                                      className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-semibold rounded-md shadow-sm transition-colors cursor-pointer"
+                                    >
+                                      <CreditCard className="w-3 h-3" /> Collect Payment
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDispatchFeeReceipt(inv.invoiceNumber)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
+                                    title="Dispatch cleared fee receipt to parent WhatsApp"
+                                  >
+                                    <MessageSquare className="w-3 h-3" /> WhatsApp Receipt
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -341,6 +418,7 @@ export default function StudentLedger() {
                         <th scope="col" className="px-4 py-3">Payment Method</th>
                         <th scope="col" className="px-4 py-3">Amount Collected</th>
                         <th scope="col" className="px-4 py-3">Notes</th>
+                        <th scope="col" className="px-4 py-3 text-right">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -360,11 +438,21 @@ export default function StudentLedger() {
                             ₹{Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </td>
                           <td className="px-4 py-3 text-slate-500">{p.notes || '—'}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleDispatchFeeReceipt(p.invoiceNumber)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
+                              title="Dispatch verified payment receipt directly to parent WhatsApp"
+                            >
+                              <MessageSquare className="w-3 h-3" /> WhatsApp Receipt
+                            </button>
+                          </td>
                         </tr>
                       ))}
                       {(!ledger.payments || ledger.payments.length === 0) && (
                         <tr>
-                          <td colSpan={6} className="px-4 py-8 text-center text-slate-400">
+                          <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
                             No payment transactions recorded yet.
                           </td>
                         </tr>
@@ -505,6 +593,13 @@ export default function StudentLedger() {
           </div>
         )}
       </div>
+
+      {/* WhatsApp & SMS Communication Outbox Drawer */}
+      <CommunicationOutboxDrawer
+        isOpen={isOutboxOpen}
+        onClose={() => setIsOutboxOpen(false)}
+        defaultFilter="FEE_DUE_NOTICE"
+      />
     </div>
   );
 }

@@ -15,13 +15,16 @@ import {
   X,
   User,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ClassroomCallOverlay } from '../components/classroom/ClassroomCallOverlay';
+import { CommunicationOutboxDrawer } from '../components/communication/CommunicationOutboxDrawer';
 
 export default function StudentPortalLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isOutboxOpen, setIsOutboxOpen] = useState(false);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -141,6 +144,17 @@ export default function StudentPortalLayout() {
 
             {/* Profile Snapshot & Logout (Desktop) */}
             <div className="hidden md:flex items-center space-x-3">
+              {/* WhatsApp Communication Outbox Trigger */}
+              <button
+                type="button"
+                onClick={() => setIsOutboxOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+                title="Open WhatsApp & SMS Outbox Logs"
+              >
+                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="hidden lg:inline">WhatsApp Outbox</span>
+              </button>
+
               <div className="flex items-center space-x-3 pl-3 border-l border-slate-200">
                 <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-100 to-purple-100 border border-indigo-200/60 flex items-center justify-center text-indigo-700 font-bold text-sm shadow-xs">
                   {user?.username ? user.username.charAt(0).toUpperCase() : 'S'}
@@ -253,6 +267,12 @@ export default function StudentPortalLayout() {
           </div>
         </div>
       </footer>
+
+      {/* WhatsApp & SMS Communication Outbox Drawer */}
+      <CommunicationOutboxDrawer
+        isOpen={isOutboxOpen}
+        onClose={() => setIsOutboxOpen(false)}
+      />
     </div>
   );
 }

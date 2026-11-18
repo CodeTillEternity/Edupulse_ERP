@@ -13,6 +13,8 @@ import {
   BookOpen,
   GraduationCap,
   Sparkles,
+  MessageSquare,
+  Loader2,
 } from 'lucide-react';
 import {
   createExam,
@@ -22,6 +24,8 @@ import {
   recordStudentResults,
 } from '../../api/examService';
 import { getCourseOfferings } from '../../api/academicService';
+import { communicationService } from '../../api/communicationService';
+import { CommunicationOutboxDrawer } from '../../components/communication/CommunicationOutboxDrawer';
 
 export default function ExamManager() {
   const queryClient = useQueryClient();
@@ -38,6 +42,34 @@ export default function ExamManager() {
   // Grade Entry State
   const [selectedExamId, setSelectedExamId] = useState('');
   const [marksState, setMarksState] = useState({}); // { [studentId]: { marksObtained: '', remarks: '' } }
+  const [isOutboxOpen, setIsOutboxOpen] = useState(false);
+  const [dispatchingExamId, setDispatchingExamId] = useState(null);
+
+  const handleBulkDispatchHallTickets = async (exam) => {
+    try {
+      setDispatchingExamId(exam.id);
+      const res = await communicationService.dispatchHallTickets({
+        examId: exam.id,
+        examTitle: exam.name || exam.title,
+        examDate: exam.examDate,
+        hallLocation: 'Academic Block C, Hall 304',
+        channel: 'WHATSAPP',
+      });
+      toast.success(
+        `Exam Hall Tickets dispatched to ${res.length} student(s) & guardians!`,
+        {
+          action: {
+            label: 'View Outbox',
+            onClick: () => setIsOutboxOpen(true),
+          },
+        }
+      );
+    } catch {
+      toast.error('Failed to dispatch exam hall tickets');
+    } finally {
+      setDispatchingExamId(null);
+    }
+  };
 
   // Queries
   const { data: exams = [], isLoading: isExamsLoading } = useQuery({
@@ -183,30 +215,41 @@ export default function ExamManager() {
           </p>
         </div>
 
-        {/* Tab Controls */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => setActiveTab('exams')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'exams'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={() => setIsOutboxOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            title="Open WhatsApp & SMS Outbox Logs"
           >
-            <Calendar className="w-4 h-4" />
-            Exams
+            <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Admit Card Outbox</span>
           </button>
-          <button
-            onClick={() => setActiveTab('grades')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'grades'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Award className="w-4 h-4" />
-            Grade Entry
-          </button>
+
+          {/* Tab Controls */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setActiveTab('exams')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'exams'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              Exams
+            </button>
+            <button
+              onClick={() => setActiveTab('grades')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'grades'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              Grade Entry
+            </button>
+          </div>
         </div>
       </div>
 
@@ -357,16 +400,31 @@ export default function ExamManager() {
                           {exam.totalMarks} pts
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          <button
-                            onClick={() => {
-                              setSelectedExamId(String(exam.id));
-                              setActiveTab('grades');
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors"
-                          >
-                            <Award className="w-3.5 h-3.5" />
-                            Enter Grades
-                          </button>
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => handleBulkDispatchHallTickets(exam)}
+                              disabled={dispatchingExamId === exam.id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
+                              title="1-Click WhatsApp Bulk Dispatch of Admit Cards to all candidates"
+                            >
+                              {dispatchingExamId === exam.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                              )}
+                              <span>Dispatch Hall Tickets</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSelectedExamId(String(exam.id));
+                                setActiveTab('grades');
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-md transition-colors cursor-pointer"
+                            >
+                              <Award className="w-3.5 h-3.5" />
+                              Enter Grades
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -523,6 +581,13 @@ export default function ExamManager() {
           </div>
         </div>
       )}
+
+      {/* WhatsApp & SMS Communication Outbox Drawer */}
+      <CommunicationOutboxDrawer
+        isOpen={isOutboxOpen}
+        onClose={() => setIsOutboxOpen(false)}
+        defaultFilter="EXAM_HALL_TICKET"
+      />
     </div>
   );
 }
