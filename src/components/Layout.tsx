@@ -12,7 +12,7 @@ import {
   Menu, X, LogOut, ChevronDown, UserCircle, Bell,
   Check, KeyRound, ZoomIn, ZoomOut, Building2,
   BookOpen, FileText, Bus, CreditCard, Video, Award, Receipt, Briefcase, UserPlus, Clock,
-  Server, Settings, MessageSquare
+  Server, Settings, MessageSquare, UploadCloud
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ChangePasswordModal } from './ChangePasswordModal';
@@ -191,6 +191,9 @@ export default function Layout() {
               <NavItem path="/dashboard/institution-profile" icon={Building2} label="Institution Profile" />
               <NavItem path="/dashboard/admin/users" icon={ShieldAlert} label="Access Control" />
               <NavItem path="/dashboard/campuses" icon={Store} label="Campuses & Nodes" />
+              <NavItem path="/dashboard/migration" icon={UploadCloud} label="Bulk Data Ingestion" />
+              <NavItem path="/dashboard/compliance" icon={Award} label="NAAC / NIRF Compliance" />
+              <NavItem path="/dashboard/audit-logs" icon={ShieldAlert} label="System Audit Trail" />
             </NavGroup>
           </>
         );
@@ -334,6 +337,9 @@ export default function Layout() {
               <NavItem path="/dashboard/institution-profile" icon={Building2} label="Institution Profile" />
               <NavItem path="/dashboard/admin/users" icon={ShieldAlert} label="Access Control" />
               <NavItem path="/dashboard/campuses" icon={Store} label="Campuses & Nodes" />
+              <NavItem path="/dashboard/migration" icon={UploadCloud} label="Bulk Data Ingestion" />
+              <NavItem path="/dashboard/compliance" icon={Award} label="NAAC / NIRF Compliance" />
+              <NavItem path="/dashboard/audit-logs" icon={ShieldAlert} label="System Audit Trail" />
             </NavGroup>
           </>
         );

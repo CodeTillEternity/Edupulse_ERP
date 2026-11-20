@@ -48,6 +48,9 @@ import ResetPassword from './pages/ResetPassword';
 import StudentPortalLayout from './layouts/StudentPortalLayout';
 import StudentPortalDashboard from './pages/Portal/StudentDashboard';
 import FeeCenter from './pages/Portal/FeeCenter';
+import { DataMigration } from './pages/DataMigration';
+import { ComplianceDashboard } from './pages/ComplianceDashboard';
+import { AuditLogs } from './pages/AuditLogs';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -247,6 +250,9 @@ function App() {
                 <Route path="sections" element={<RoleProtectedRoute allowedRoles={['FACULTY']}><FacultySections /></RoleProtectedRoute>} />
                 <Route path="guardians" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><GuardiansList /></RoleProtectedRoute>} />
                 <Route path="admin/users" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><AdminUsersList /></RoleProtectedRoute>} />
+                <Route path="migration" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><DataMigration /></RoleProtectedRoute>} />
+                <Route path="compliance" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><ComplianceDashboard /></RoleProtectedRoute>} />
+                <Route path="audit-logs" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><AuditLogs /></RoleProtectedRoute>} />
 
                 {/* Academic Functional Modules */}
                 <Route path="academic/courses" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}><CourseManager /></RoleProtectedRoute>} />

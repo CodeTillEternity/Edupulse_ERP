@@ -67,10 +67,28 @@ fn start_backend_if_needed() -> Option<Child> {
 
     println!("[Desktop Shell] Auto-spawning backend service from: {:?}", jar_path);
 
+    let log_file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .open("backend_sidecar.log")
+        .map(std::process::Stdio::from)
+        .unwrap_or_else(|_| std::process::Stdio::null());
+
+    let err_file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open("backend_sidecar_err.log")
+        .map(std::process::Stdio::from)
+        .unwrap_or_else(|_| std::process::Stdio::null());
+
     let mut cmd = Command::new("java");
     cmd.arg("-jar")
        .arg(&jar_path)
-       .arg("--spring.profiles.active=dev");
+       .arg("--spring.profiles.active=dev")
+       .stdout(log_file)
+       .stderr(err_file);
 
     #[cfg(target_os = "windows")]
     cmd.creation_flags(CREATE_NO_WINDOW);
@@ -103,7 +121,7 @@ fn main() {
             clear_account_tokens,
         ])
         .on_window_event(move |_window, event| {
-            if let WindowEvent::Destroyed = event {
+            if matches!(event, WindowEvent::Destroyed | WindowEvent::CloseRequested { .. }) {
                 let mut guard = child_clone.lock().unwrap();
                 if let Some(mut child) = guard.take() {
                     println!("[Desktop Shell] Terminating backend child process (PID: {})...", child.id());
