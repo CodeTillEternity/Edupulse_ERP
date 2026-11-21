@@ -48,6 +48,7 @@ scratch/
 tmp/
 temp/
 coverage/
+uploads/
 .nyc_output/
 
 # IDE & Editor Specific Files
