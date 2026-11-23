@@ -38,6 +38,8 @@ fn locate_backend_jar() -> Option<PathBuf> {
         if let Some(exe_dir) = exe_path.parent() {
             candidates.push(exe_dir.join("backend").join("institutional-erp-backend.jar"));
             candidates.push(exe_dir.join("institutional-erp-backend.jar"));
+            candidates.push(exe_dir.join("resources").join("backend").join("institutional-erp-backend.jar"));
+            candidates.push(exe_dir.join("..").join("resources").join("backend").join("institutional-erp-backend.jar"));
             candidates.push(exe_dir.join("Institutioanl_ERP_v1.0-main").join("Institutioanl_ERP_v1.0").join("backend").join("target").join("institutional-erp-backend-1.0.0-SNAPSHOT.jar"));
         }
     }
@@ -49,6 +51,48 @@ fn locate_backend_jar() -> Option<PathBuf> {
     }
 
     candidates.into_iter().find(|p| p.exists())
+}
+
+fn locate_java_executable() -> PathBuf {
+    let mut candidates = Vec::new();
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(exe_dir) = exe_path.parent() {
+            candidates.push(exe_dir.join("jre").join("bin").join("java.exe"));
+            candidates.push(exe_dir.join("backend").join("jre").join("bin").join("java.exe"));
+            candidates.push(exe_dir.join("resources").join("jre").join("bin").join("java.exe"));
+            candidates.push(exe_dir.join("..").join("resources").join("jre").join("bin").join("java.exe"));
+        }
+    }
+
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("jre").join("bin").join("java.exe"));
+        candidates.push(cwd.join("backend").join("jre").join("bin").join("java.exe"));
+    }
+
+    if let Ok(java_home) = std::env::var("JAVA_HOME") {
+        candidates.push(PathBuf::from(java_home).join("bin").join("java.exe"));
+    }
+
+    for candidate in candidates {
+        if candidate.exists() {
+            println!("[Desktop Shell] Found bundled Java runtime at: {:?}", candidate);
+            return candidate;
+        }
+    }
+
+    println!("[Desktop Shell] No bundled JRE found; falling back to system PATH 'java'.");
+    PathBuf::from("java")
+}
+
+fn resolve_log_path(filename: &str) -> PathBuf {
+    if let Ok(local_app_data) = std::env::var("LOCALAPPDATA") {
+        let log_dir = PathBuf::from(local_app_data).join("EduPulseERP").join("logs");
+        if std::fs::create_dir_all(&log_dir).is_ok() {
+            return log_dir.join(filename);
+        }
+    }
+    PathBuf::from(filename)
 }
 
 fn start_backend_if_needed() -> Option<Child> {
@@ -65,13 +109,17 @@ fn start_backend_if_needed() -> Option<Child> {
         }
     };
 
-    println!("[Desktop Shell] Auto-spawning backend service from: {:?}", jar_path);
+    let java_bin = locate_java_executable();
+    println!("[Desktop Shell] Auto-spawning backend service using runtime {:?} from JAR {:?}", java_bin, jar_path);
+
+    let stdout_path = resolve_log_path("backend_sidecar.log");
+    let stderr_path = resolve_log_path("backend_sidecar_err.log");
 
     let log_file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
-        .open("backend_sidecar.log")
+        .open(&stdout_path)
         .map(std::process::Stdio::from)
         .unwrap_or_else(|_| std::process::Stdio::null());
 
@@ -79,11 +127,11 @@ fn start_backend_if_needed() -> Option<Child> {
         .create(true)
         .write(true)
         .append(true)
-        .open("backend_sidecar_err.log")
+        .open(&stderr_path)
         .map(std::process::Stdio::from)
         .unwrap_or_else(|_| std::process::Stdio::null());
 
-    let mut cmd = Command::new("java");
+    let mut cmd = Command::new(&java_bin);
     cmd.arg("-jar")
        .arg(&jar_path)
        .arg("--spring.profiles.active=dev")
@@ -99,7 +147,7 @@ fn start_backend_if_needed() -> Option<Child> {
             Some(child)
         }
         Err(err) => {
-            eprintln!("[Desktop Shell] Failed to launch backend process with java: {}", err);
+            eprintln!("[Desktop Shell] Failed to launch backend process with {:?}: {}", java_bin, err);
             None
         }
     }
