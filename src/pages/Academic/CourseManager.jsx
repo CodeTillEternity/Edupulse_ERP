@@ -11,6 +11,8 @@ import {
   Layers,
   Calendar,
   Sparkles,
+  Download,
+  Printer,
 } from 'lucide-react';
 import academicService from '../../api/academicService';
 
@@ -69,6 +71,7 @@ export default function CourseManager() {
       }),
     onSuccess: (newFaculty) => {
       queryClient.invalidateQueries({ queryKey: ['academic', 'faculty'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(
         `Faculty member ${newFaculty.firstName} ${newFaculty.lastName} (${newFaculty.employeeId}) registered successfully!`
       );
@@ -99,6 +102,8 @@ export default function CourseManager() {
       }),
     onSuccess: (newCourse) => {
       queryClient.invalidateQueries({ queryKey: ['academic', 'courses'] });
+      queryClient.invalidateQueries({ queryKey: ['courseOfferings'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(`Course ${newCourse.code} - ${newCourse.name} created successfully!`);
       setCourseForm({
         code: '',
@@ -126,6 +131,7 @@ export default function CourseManager() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['academic', 'offerings'] });
+      queryClient.invalidateQueries({ queryKey: ['courseOfferings'] });
       toast.success('Instructor successfully assigned to Course Offering!');
       setOfferingForm({
         courseId: '',
@@ -175,6 +181,55 @@ export default function CourseManager() {
     assignOfferingMutation.mutate(offeringForm);
   };
 
+  const exportData = () => {
+    if (activeTab === 'faculty') {
+      if (facultyList.length === 0) {
+        toast.error('No faculty records to export');
+        return;
+      }
+      const headers = ['Employee ID', 'Full Name', 'Designation', 'Department', 'Email'];
+      const rows = facultyList.map((f) => [
+        `"${f.employeeId || ''}"`,
+        `"${f.firstName} ${f.lastName}"`,
+        `"${f.designation || 'Faculty'}"`,
+        `"${f.departmentName || f.department?.name || 'General'}"`,
+        `"${f.email || ''}"`,
+      ]);
+      const csv =
+        'data:text/csv;charset=utf-8,' +
+        [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.href = encodeURI(csv);
+      link.download = `Faculty_Roster_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Exported ${facultyList.length} faculty members to CSV.`);
+    } else {
+      if (courseList.length === 0) {
+        toast.error('No courses to export');
+        return;
+      }
+      const headers = ['Course Code', 'Course Name', 'Credits', 'Department'];
+      const rows = courseList.map((c) => [
+        `"${c.code}"`,
+        `"${c.name}"`,
+        `"${c.credits}"`,
+        `"${c.departmentName || c.department?.name || 'General'}"`,
+      ]);
+      const csv =
+        'data:text/csv;charset=utf-8,' +
+        [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.href = encodeURI(csv);
+      link.download = `Course_Catalog_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Exported ${courseList.length} courses to CSV.`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -193,32 +248,53 @@ export default function CourseManager() {
             </p>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200/60 self-start md:self-auto">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               type="button"
-              onClick={() => setActiveTab('faculty')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'faculty'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              onClick={exportData}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+              title="Export current tab records to CSV"
             >
-              <Users className="h-4 w-4" />
-              <span>Faculty Directory</span>
+              <Download className="w-3.5 h-3.5 text-slate-600" />
+              <span>Export CSV</span>
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab('courses')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'courses'
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              onClick={() => window.print()}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+              title="Print current tab records"
             >
-              <BookOpen className="h-4 w-4" />
-              <span>Courses & Curriculum</span>
+              <Printer className="w-3.5 h-3.5 text-slate-600" />
+              <span>Print</span>
             </button>
+
+            {/* Tab Navigation */}
+            <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200/60">
+              <button
+                type="button"
+                onClick={() => setActiveTab('faculty')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'faculty'
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                <span>Faculty Directory</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('courses')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'courses'
+                    ? 'bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Courses & Curriculum</span>
+              </button>
+            </div>
           </div>
         </div>
 
