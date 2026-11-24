@@ -13,6 +13,8 @@ import {
   TrendingUp,
   User,
   Building2,
+  ShieldCheck,
+  ExternalLink,
 } from 'lucide-react';
 import { getStudentTranscript } from '../../api/examService';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -92,13 +94,24 @@ export default function TranscriptViewer() {
           </form>
 
           {transcript && (
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-xl shadow-sm transition-colors"
-            >
-              <Printer className="w-4 h-4" />
-              Print Transcript
-            </button>
+            <>
+              <a
+                href={`/verify/${transcript.verificationToken || transcript.enrollmentNumber}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl shadow-sm transition-colors"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Verify Credential Online
+              </a>
+              <button
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm rounded-xl shadow-sm transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                Print Transcript
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -150,11 +163,41 @@ export default function TranscriptViewer() {
               </p>
             </div>
 
-            <div className="text-right text-xs text-slate-500 space-y-0.5">
-              <p className="font-mono">Date Issued: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-              <p className="text-emerald-700 font-semibold flex items-center justify-end gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Official Institutional Record
-              </p>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 flex items-center gap-3 shadow-sm">
+                <div className="w-14 h-14 bg-white p-1 rounded-lg border border-slate-200 flex items-center justify-center shrink-0 shadow-sm">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                      `${window.location.origin}/verify/${transcript.verificationToken || transcript.enrollmentNumber}`
+                    )}`}
+                    alt="Verification QR"
+                    className="w-12 h-12"
+                  />
+                </div>
+                <div className="text-left text-xs space-y-0.5">
+                  <span className="font-bold text-slate-800 flex items-center gap-1 text-[11px]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Tamper-Proof Seal
+                  </span>
+                  <p className="font-mono text-[10px] text-indigo-700 font-bold">
+                    {transcript.verificationToken || `EDP-VRF-${transcript.enrollmentNumber}`}
+                  </p>
+                  <a
+                    href={`/verify/${transcript.verificationToken || transcript.enrollmentNumber}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold underline inline-flex items-center gap-0.5 print:hidden"
+                  >
+                    Verify Online <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="text-right text-xs text-slate-500 space-y-0.5 hidden sm:block">
+                <p className="font-mono">Date Issued: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <p className="text-emerald-700 font-semibold flex items-center justify-end gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Official Record
+                </p>
+              </div>
             </div>
           </div>
 
@@ -267,11 +310,21 @@ export default function TranscriptViewer() {
           </div>
 
           {/* Transcript Footer Signatures for Print */}
-          <div className="pt-12 mt-12 border-t border-slate-200 grid grid-cols-2 gap-12 text-center text-xs text-slate-600">
+          <div className="pt-10 mt-10 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-8 items-center text-center text-xs text-slate-600">
             <div>
               <div className="border-b border-slate-400 w-48 mx-auto mb-2" />
               <p className="font-semibold text-slate-800">Academic Dean / Registrar</p>
               <p className="text-[11px] text-slate-400">Office of Academic Affairs</p>
+            </div>
+            <div className="flex flex-col items-center justify-center">
+              <div className="w-16 h-16 rounded-full border-2 border-dashed border-emerald-600/50 bg-emerald-50/60 flex flex-col items-center justify-center p-1 shadow-inner">
+                <ShieldCheck className="w-5 h-5 text-emerald-600 mb-0.5" />
+                <span className="text-[8px] font-bold text-emerald-800 uppercase tracking-tight leading-none">
+                  OFFICIAL SEAL
+                </span>
+                <span className="text-[7px] font-mono text-emerald-700">SHA-256</span>
+              </div>
+              <p className="text-[10px] text-slate-400 font-mono mt-1">Tamper-Evident Ledger</p>
             </div>
             <div>
               <div className="border-b border-slate-400 w-48 mx-auto mb-2" />

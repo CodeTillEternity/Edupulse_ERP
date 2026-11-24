@@ -51,6 +51,7 @@ import FeeCenter from './pages/Portal/FeeCenter';
 import { DataMigration } from './pages/DataMigration';
 import { ComplianceDashboard } from './pages/ComplianceDashboard';
 import { AuditLogs } from './pages/AuditLogs';
+import PublicVerification from './pages/PublicVerification';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -202,6 +203,8 @@ function App() {
               <Route path="/admissions" element={<PublicAdmissions />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/verify/:token" element={<PublicVerification />} />
+              <Route path="/verify" element={<PublicVerification />} />
               <Route path="/403" element={<Forbidden />} />
 
               {/* Student Self-Service Dedicated Portal */}
