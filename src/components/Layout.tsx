@@ -22,6 +22,53 @@ import { ClassroomCallOverlay } from './classroom/ClassroomCallOverlay';
 import { CommunicationOutboxDrawer } from './communication/CommunicationOutboxDrawer';
 import { resolveBaseUrl } from '../api/axiosClient';
 
+interface NavItemProps {
+  path: string;
+  icon: React.ElementType;
+  label: string;
+  disabled?: boolean;
+}
+
+const NavItem = React.memo(({ path, icon: Icon, label, disabled = false }: NavItemProps) => {
+  const location = useLocation();
+  const isActive = location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path));
+
+  if (disabled) {
+    return (
+      <div className="flex items-center justify-between px-3.5 py-2.5 rounded-md text-slate-400 cursor-not-allowed opacity-75">
+        <div className="flex items-center space-x-3">
+          <Icon className="w-4 h-4 lg:w-5 lg:h-5 shrink-0" />
+          <span className="text-sm lg:text-base font-medium">{label}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <Link 
+      to={path} 
+      className={cn(
+        "flex items-center justify-between px-3.5 py-2.5 rounded-md transition-colors",
+        isActive 
+          ? "bg-primary/10 text-primary font-semibold" 
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium"
+      )}
+    >
+      <div className="flex items-center space-x-3">
+        <Icon className={cn("w-4 h-4 lg:w-5 lg:h-5 shrink-0", isActive ? "text-primary" : "text-slate-500")} />
+        <span className="text-sm lg:text-base">{label}</span>
+      </div>
+    </Link>
+  );
+});
+
+const NavGroup = React.memo(({ title, children }: { title: string, children: React.ReactNode }) => (
+  <div className="mb-6">
+    <div className="px-3.5 text-xs lg:text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">{title}</div>
+    <nav className="space-y-0.5">{children}</nav>
+  </div>
+));
+
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -105,45 +152,19 @@ export default function Layout() {
     }
   };
 
-  const NavItem = ({ path, icon: Icon, label, disabled = false }: { path: string, icon: React.ElementType, label: string, disabled?: boolean }) => {
-    const isActive = location.pathname === path || (path !== '/dashboard' && location.pathname.startsWith(path));
-    
-    if (disabled) {
-      return (
-        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-md text-slate-400 cursor-not-allowed opacity-75">
-          <div className="flex items-center space-x-3">
-            <Icon className="w-4 h-4 lg:w-5 lg:h-5 shrink-0" />
-            <span className="text-sm lg:text-base font-medium">{label}</span>
-          </div>
-        </div>
-      );
+  const sidebarScrollRef = React.useRef<HTMLDivElement>(null);
+
+  // Preserve sidebar scroll position across route changes
+  React.useLayoutEffect(() => {
+    const saved = sessionStorage.getItem('edupulse_sidebar_scroll_top');
+    if (sidebarScrollRef.current && saved !== null) {
+      sidebarScrollRef.current.scrollTop = Number(saved);
     }
+  }, [location.pathname]);
 
-    return (
-      <Link 
-        onClick={() => setIsMobileMenuOpen(false)} 
-        to={path} 
-        className={cn(
-          "flex items-center justify-between px-3.5 py-2.5 rounded-md transition-colors",
-          isActive 
-            ? "bg-primary/10 text-primary font-semibold" 
-            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium"
-        )}
-      >
-        <div className="flex items-center space-x-3">
-          <Icon className={cn("w-4 h-4 lg:w-5 lg:h-5 shrink-0", isActive ? "text-primary" : "text-slate-500")} />
-          <span className="text-sm lg:text-base">{label}</span>
-        </div>
-      </Link>
-    );
+  const handleSidebarScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    sessionStorage.setItem('edupulse_sidebar_scroll_top', String(e.currentTarget.scrollTop));
   };
-
-  const NavGroup = ({ title, children }: { title: string, children: React.ReactNode }) => (
-    <div className="mb-6">
-      <div className="px-3.5 text-xs lg:text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">{title}</div>
-      <nav className="space-y-0.5">{children}</nav>
-    </div>
-  );
 
   const rawRole = user?.role || '';
   const role = (rawRole || 'ADMIN').toUpperCase().replace(/^ROLE_/, '');
@@ -389,7 +410,16 @@ export default function Layout() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 lg:p-5 custom-scrollbar">
+        <div 
+          ref={sidebarScrollRef}
+          onScroll={handleSidebarScroll}
+          onClick={(e) => {
+            if ((e.target as HTMLElement).closest('a')) {
+              setIsMobileMenuOpen(false);
+            }
+          }}
+          className="flex-1 overflow-y-auto p-4 lg:p-5 custom-scrollbar"
+        >
           {renderSidebarContent()}
         </div>
 
