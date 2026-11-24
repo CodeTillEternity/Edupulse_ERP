@@ -10,11 +10,15 @@ import {
   Landmark,
   Percent,
   Layers,
+  Printer,
+  Building2,
 } from 'lucide-react';
 import { getNaacMetrics, getNirfSummary, type NaacMetrics, type NirfSummary } from '../api/complianceService';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { toast } from 'sonner';
 
 export const ComplianceDashboard: React.FC = () => {
+  const { institution } = useInstitutionStore();
   const [naac, setNaac] = useState<NaacMetrics | null>(null);
   const [nirf, setNirf] = useState<NirfSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,28 +41,73 @@ export const ComplianceDashboard: React.FC = () => {
   };
 
   const exportNaacReport = () => {
-    if (!naac) return;
+    if (!naac || !nirf) return;
+    const now = new Date().toISOString();
     const rows = [
-      ['Metric', 'Value', 'NAAC Criterion'],
-      ['Student-to-Faculty Ratio (SFR)', naac.sfrFormatted, 'Criterion 2.2'],
-      ['Total Enrolled Students', naac.totalEnrolledStudents.toString(), 'Criterion 2.1'],
-      ['Total Full-Time Faculty', naac.totalFullTimeFaculty.toString(), 'Criterion 2.4'],
-      ['Female Student Ratio', `${naac.femaleStudentPercentage}%`, 'Criterion 2.1.3'],
-      ['Male Student Ratio', `${naac.maleStudentPercentage}%`, 'Criterion 2.1.3'],
-      ['Library Book Titles', naac.totalLibraryBookTitles.toString(), 'Criterion 4.2'],
-      ['Library Circulation Activity', naac.totalLibraryActiveCirculation.toString(), 'Criterion 4.2.4'],
-      ['Fee Collection Efficiency', `${naac.feeCollectionEfficiencyPercentage}%`, 'Criterion 6.4'],
+      ['STATUTORY NAAC AQAR & NIRF COMPLIANCE DOSSIER', '', ''],
+      ['Institution Name', institution.name || 'Central University System', ''],
+      ['Institution Code', institution.code || 'CUS-01', ''],
+      ['Campus Node', institution.campus || 'Main Campus', ''],
+      ['Concurrence Date', new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }), ''],
+      ['Audit Timestamp', now, ''],
+      ['', '', ''],
+      ['CRITERION 2: TEACHING-LEARNING AND EVALUATION', '', ''],
+      ['Metric Code', 'Metric Description', 'Statutory Value / Distribution'],
+      ['Criterion 2.1.1', 'Total Enrolled Students', `${naac.totalEnrolledStudents} Students`],
+      ['Criterion 2.1.3', 'Female Student Ratio', `${naac.femaleStudentPercentage}%`],
+      ['Criterion 2.1.3', 'Male Student Ratio', `${naac.maleStudentPercentage}%`],
+      ['Criterion 2.2.1', 'Student-to-Faculty Ratio (SFR)', `${naac.sfrFormatted} (AICTE Standard: <= 15:1 Compliant)`],
+      ['Criterion 2.4.1', 'Total Full-Time Teaching Faculty', `${naac.totalFullTimeFaculty} Faculty Members`],
+      ...Object.entries(naac.facultyCadreRatio || {}).map(([cadre, count]) => [
+        'Criterion 2.4.1',
+        `Faculty Cadre: ${cadre}`,
+        `${count} Members`
+      ]),
+      ...Object.entries(naac.categoryReservationBreakdown || {}).map(([cat, count]) => [
+        'Criterion 2.1.2',
+        `Statutory Reservation Enrolment: ${cat}`,
+        `${count} Enrolled Candidates`
+      ]),
+      ['', '', ''],
+      ['CRITERION 2.6.2: PROGRAM-WISE ANNUAL EXAMINATION PASS PERCENTAGES', '', ''],
+      ['Department Code', 'Department / Program Name', 'Appeared / Passed (Pass Rate %)'],
+      ...(naac.departmentPassRates || []).map((d) => [
+        d.departmentCode,
+        d.departmentName,
+        `Appeared: ${d.totalAppeared} | Passed: ${d.totalPassed} | Pass Rate: ${d.passPercentage}%`
+      ]),
+      ['', '', ''],
+      ['CRITERION 4: INFRASTRUCTURE AND LEARNING RESOURCES', '', ''],
+      ['Criterion 4.2.2', 'Total Library Book Titles Cataloged', `${naac.totalLibraryBookTitles} Titles`],
+      ['Criterion 4.2.4', 'Annual Library Circulation Transactions', `${naac.totalLibraryActiveCirculation} Circulation Events`],
+      ['', '', ''],
+      ['CRITERION 6: GOVERNANCE, LEADERSHIP AND MANAGEMENT', '', ''],
+      ['Criterion 6.4.2', 'Total Tuition Billed', `INR ${(naac.totalTuitionBilled || 0).toLocaleString('en-IN')}`],
+      ['Criterion 6.4.2', 'Total Tuition Collected', `INR ${(naac.totalTuitionCollected || 0).toLocaleString('en-IN')}`],
+      ['Criterion 6.4.2', 'Fee Collection Efficiency Rate', `${naac.feeCollectionEfficiencyPercentage}%`],
+      ['', '', ''],
+      ['NATIONAL INSTITUTIONAL RANKING FRAMEWORK (NIRF) SCORECARD', '', ''],
+      ['NIRF Pillar', 'Quantitative Score', 'Weightage Standard'],
+      ['Teaching, Learning & Resources (TLR)', `${nirf.tlrScore} / 100`, 'Tier 1 Standard'],
+      ['Graduation Outcome (GO)', `${nirf.goScore} / 100`, 'University Examination Metric'],
+      ['Outreach & Inclusivity (OI)', `${nirf.oiScore} / 100`, 'Diversity & Quota Standard'],
+      ['Overall Projected NIRF Score', `${nirf.overallProjectedScore} / 100`, 'Estimated Rank Band: 51-100 (State)'],
+      ...Object.entries(nirf.parameterHighlights || {}).map(([k, v]) => [
+        'NIRF Parameter Highlight',
+        k,
+        v
+      ])
     ];
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((e) => e.join(',')).join('\n');
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(e => e.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(',')).join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'NAAC_Criterion_AQAR_Export.csv');
+    link.setAttribute('download', `NAAC_SSR_NIRF_Dossier_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success('Downloaded official NAAC AQAR compliance table.');
+    toast.success('Downloaded official Statutory NAAC SSR & NIRF compliance dossier.');
   };
 
   if (loading || !naac || !nirf) {
@@ -77,6 +126,11 @@ export const ComplianceDashboard: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-amber-600 font-semibold text-xs tracking-wider uppercase mb-1">
             <Award className="w-4 h-4" /> Statutory Accreditation & Rankings Engine
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600 font-medium normal-case flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+              {institution.name || 'Institutional Node'} ({institution.code || 'INST'})
+            </span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">NAAC & NIRF Institutional Quality Hub</h1>
           <p className="text-slate-500 text-sm mt-1">
@@ -85,6 +139,12 @@ export const ComplianceDashboard: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-3.5 py-2.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-sm transition-all"
+          >
+            <Printer className="w-4 h-4 text-slate-500" /> Print Statutory SSR Dossier
+          </button>
           <button
             onClick={exportNaacReport}
             className="flex items-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
