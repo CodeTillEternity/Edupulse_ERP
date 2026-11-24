@@ -20,9 +20,11 @@ import {
 } from 'lucide-react';
 import { getStudentTranscript } from '../../api/examService';
 import { openExternalUrl } from '../../api/axiosClient';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 export default function TranscriptViewer() {
   const navigate = useNavigate();
+  const { institution } = useInstitutionStore();
   const defaultEnrollment = '23CSM001';
   const [searchInput, setSearchInput] = useState(defaultEnrollment);
   const [activeEnrollmentNumber, setActiveEnrollmentNumber] = useState(defaultEnrollment);
@@ -80,9 +82,15 @@ export default function TranscriptViewer() {
   const marksObtainedSum = results.reduce((acc, r) => acc + Number(r.marksObtained || 0), 0);
   const percentage = totalMarksSum > 0 ? ((marksObtainedSum / totalMarksSum) * 100).toFixed(1) : '88.5';
 
+  const instName = institution?.name || 'EduPulse Institute of Technology & Advanced Studies';
+  const instCode = institution?.code || 'INST-2026-ENG';
+  const instCampus = institution?.campus || 'Main Campus';
+  const instTagline = institution?.tagline || 'Autonomous Institution Affiliated to State Technological University';
+  const instLogo = institution?.logoUrl;
+
   const verificationToken = transcript?.verificationToken || `EDP-VRF-${activeEnrollmentNumber}-3BF2C1FC`;
   const verificationUrl = `${window.location.origin}/verify/${verificationToken}`;
-  const browserVerificationUrl = `http://localhost:8081/api/v1/verify/portal/${encodeURIComponent(verificationToken)}`;
+  const browserVerificationUrl = `http://localhost:8081/api/v1/verify/portal/${encodeURIComponent(verificationToken)}?instName=${encodeURIComponent(instName)}&instCode=${encodeURIComponent(instCode)}`;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto px-4 sm:px-6 py-8">
@@ -181,29 +189,35 @@ export default function TranscriptViewer() {
           {/* Subtle Security Guilloche Background Watermark */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-[0.035] select-none">
             <div className="text-center transform -rotate-45">
-              <span className="text-8xl font-black uppercase tracking-widest block font-sans">EDUPULSE</span>
-              <span className="text-4xl font-bold tracking-widest block font-sans mt-2">OFFICIAL ACADEMIC RECORD</span>
-              <span className="text-2xl font-mono tracking-widest block font-sans mt-2">SEALED & NON-REPUDIABLE</span>
+              <span className="text-6xl sm:text-7xl font-black uppercase tracking-widest block font-sans">{instName}</span>
+              <span className="text-3xl sm:text-4xl font-bold tracking-widest block font-sans mt-2">OFFICIAL ACADEMIC RECORD</span>
+              <span className="text-xl sm:text-2xl font-mono tracking-widest block font-sans mt-2">SEALED & NON-REPUDIABLE</span>
             </div>
           </div>
 
           {/* 1. Formal University Header */}
           <div className="border-b-2 border-slate-900 pb-5 text-center relative z-10 space-y-1">
-            <div className="flex items-center justify-center gap-3 mb-1">
-              {/* University Seal Crest */}
-              <div className="w-14 h-14 rounded-full border-2 border-amber-600 bg-amber-50 flex items-center justify-center shadow-inner text-amber-800">
-                <Award className="w-8 h-8 text-amber-700" />
-              </div>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              {/* Dynamic University Crest / Logo */}
+              {instLogo ? (
+                <div className="w-16 h-16 rounded-xl border border-slate-300 bg-white p-1.5 flex items-center justify-center shadow-sm">
+                  <img src={instLogo} alt={instName} className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-14 h-14 rounded-full border-2 border-amber-600 bg-amber-50 flex items-center justify-center shadow-inner text-amber-800">
+                  <Award className="w-8 h-8 text-amber-700" />
+                </div>
+              )}
             </div>
             
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-950 uppercase font-sans">
-              EduPulse Institute of Technology & Advanced Studies
+              {instName}
             </h1>
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-700 font-sans">
-              (An Autonomous Institution Affiliated to State Technological University)
+              {instCampus ? `${instCampus} • ` : ''}({instTagline})
             </p>
             <p className="text-[11px] text-slate-600 font-sans">
-              Approved by AICTE, New Delhi • Accredited with <strong className="text-indigo-900">NAAC 'A+' Grade</strong> • UGC Recognized under Sec 2(f) & 12(B)
+              Statutory Autonomous Higher Education Authority • NAAC 'A+' / Global Quality Standard • Institutional Code: <strong className="text-indigo-900 font-mono">{instCode}</strong>
             </p>
 
             <div className="pt-3">
@@ -219,8 +233,8 @@ export default function TranscriptViewer() {
           {/* 2. Document Control & Anti-Counterfeiting Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 items-center justify-between gap-4 py-2 px-3 bg-slate-50 border border-slate-300 text-xs font-sans relative z-10 rounded-sm">
             <div className="space-y-0.5 text-left">
-              <p><span className="font-semibold text-slate-600">Transcript Sl. No:</span> <strong className="font-mono text-slate-900">EDP/2026/TR-00482</strong></p>
-              <p><span className="font-semibold text-slate-600">Folio Reference:</span> <span className="font-mono text-slate-700">FOL-9842-X</span></p>
+              <p><span className="font-semibold text-slate-600">Transcript Sl. No:</span> <strong className="font-mono text-slate-900">{instCode.toUpperCase()}/2026/TR-00482</strong></p>
+              <p><span className="font-semibold text-slate-600">Folio Reference:</span> <span className="font-mono text-slate-700">FOL-{instCode.toUpperCase()}-X</span></p>
             </div>
 
             <div className="text-center space-y-0.5">
@@ -290,7 +304,7 @@ export default function TranscriptViewer() {
               </div>
               <div className="p-2.5">
                 <span className="text-[10px] uppercase font-bold text-slate-500 block">Institutional Code</span>
-                <span className="font-mono font-semibold text-slate-800">INST-2026-ENG</span>
+                <span className="font-mono font-semibold text-slate-800">{instCode}</span>
               </div>
               <div className="p-2.5">
                 <span className="text-[10px] uppercase font-bold text-slate-500 block">Grading Standard</span>
@@ -396,7 +410,7 @@ export default function TranscriptViewer() {
             <div>
               <div className="border-b border-slate-400 w-44 mx-auto mb-1.5" />
               <p className="font-bold text-slate-900 text-xs">Dean of Academic Affairs</p>
-              <p className="text-[10px] text-slate-500">Office of Academic Administration</p>
+              <p className="text-[10px] text-slate-500">{instName}</p>
             </div>
 
             {/* University Embossed Gold / Holographic Seal */}
@@ -404,7 +418,7 @@ export default function TranscriptViewer() {
               <div className="w-20 h-20 rounded-full border-2 border-amber-600/70 bg-gradient-to-tr from-amber-100 via-amber-50 to-amber-200 flex flex-col items-center justify-center p-1.5 text-center shadow-md">
                 <ShieldCheck className="w-6 h-6 text-amber-800 mb-0.5" />
                 <span className="text-[7px] font-black text-amber-950 uppercase tracking-tighter leading-none">
-                  OFFICIAL SEAL
+                  {instCode} SEAL
                 </span>
                 <span className="text-[6.5px] font-mono text-amber-900 font-bold mt-0.5">SHA-256 VERIFIED</span>
               </div>
@@ -414,7 +428,7 @@ export default function TranscriptViewer() {
             <div>
               <div className="border-b border-slate-400 w-44 mx-auto mb-1.5" />
               <p className="font-bold text-slate-900 text-xs">Controller of Examinations</p>
-              <p className="text-[10px] text-slate-500">Institutional Evaluation Board</p>
+              <p className="text-[10px] text-slate-500">{instName} Board</p>
             </div>
           </div>
 
@@ -485,7 +499,7 @@ export default function TranscriptViewer() {
                   <div>
                     <span className="text-slate-400 text-[10px] block">Issuing Authority</span>
                     <strong className="text-slate-200">Controller of Examinations</strong>
-                    <span className="text-[10px] text-slate-400 block">EduPulse Institute of Tech</span>
+                    <span className="text-[10px] text-slate-400 block">{instName}</span>
                   </div>
                 </div>
               </div>

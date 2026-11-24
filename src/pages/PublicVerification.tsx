@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { openExternalUrl } from '../api/axiosClient';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 
 interface CourseRecord {
   courseCode: string;
@@ -56,6 +57,7 @@ interface VerifiedCredential {
 
 export default function PublicVerification() {
   const navigate = useNavigate();
+  const { institution } = useInstitutionStore();
   const { token } = useParams<{ token?: string }>();
   const [searchParams] = useSearchParams();
   const queryId = searchParams.get('id');
@@ -63,6 +65,9 @@ export default function PublicVerification() {
   const initialIdentifier = token || queryId || '23CSM001';
   const [searchInput, setSearchInput] = useState(initialIdentifier);
   const [activeIdentifier, setActiveIdentifier] = useState(initialIdentifier);
+
+  const instLogo = institution?.logoUrl;
+  const instCampus = institution?.campus || '';
 
   const { data: credential, isLoading, isError } = useQuery<VerifiedCredential>({
     queryKey: ['publicVerify', activeIdentifier],
@@ -74,6 +79,8 @@ export default function PublicVerification() {
     enabled: Boolean(activeIdentifier),
     retry: false,
   });
+
+  const effectiveInstitutionName = institution?.name || credential?.institutionName || 'University of OXFORD';
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,7 +98,7 @@ export default function PublicVerification() {
 
   const handleOpenInSystemBrowser = () => {
     const targetToken = credential?.verificationToken || activeIdentifier;
-    const url = `http://localhost:8081/api/v1/verify/portal/${encodeURIComponent(targetToken)}`;
+    const url = `http://localhost:8081/api/v1/verify/portal/${encodeURIComponent(targetToken)}?instName=${encodeURIComponent(institution?.name || '')}&instCode=${encodeURIComponent(institution?.code || '')}`;
     openExternalUrl(url);
     toast.success('Launching official verification portal in your system web browser...');
   };
@@ -117,17 +124,23 @@ export default function PublicVerification() {
             <div className="h-5 w-px bg-slate-200 hidden sm:block" />
 
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-xs">
-                <GraduationCap className="w-4 h-4" />
-              </div>
+              {instLogo ? (
+                <div className="w-8 h-8 rounded-lg border border-slate-300 bg-white p-0.5 flex items-center justify-center shadow-xs">
+                  <img src={instLogo} alt={effectiveInstitutionName} className="w-full h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-xs">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+              )}
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-xs sm:text-sm text-slate-900 tracking-tight">EduPulse Public Credential Registry</span>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900 tracking-tight">{effectiveInstitutionName} • Public Registry</span>
                   <span className="hidden sm:inline-block text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
                     Statutory Attestation
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 hidden sm:block">Office of the Controller of Examinations</p>
+                <p className="text-[11px] text-slate-500 hidden sm:block">Office of the Controller of Examinations {instCampus ? `• ${instCampus}` : ''}</p>
               </div>
             </div>
           </div>
@@ -247,16 +260,23 @@ export default function PublicVerification() {
           <div className="bg-white rounded-2xl border border-slate-200 p-8 space-y-8 shadow-xs print:p-0 print:border-none">
             {/* Institution Letterhead Banner */}
             <div className="border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <span className="text-xs font-extrabold tracking-widest text-indigo-700 uppercase flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5" /> {credential.institutionName}
-                </span>
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight mt-1">
-                  OFFICE OF THE CONTROLLER OF EXAMINATIONS
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Statutory University Credential Attestation & Non-Repudiation Certificate
-                </p>
+              <div className="flex items-center gap-3">
+                {instLogo && (
+                  <div className="w-14 h-14 rounded-xl border border-slate-200 bg-white p-1 flex items-center justify-center shadow-xs shrink-0">
+                    <img src={instLogo} alt={effectiveInstitutionName} className="w-full h-full object-contain" />
+                  </div>
+                )}
+                <div>
+                  <span className="text-xs font-extrabold tracking-widest text-indigo-700 uppercase flex items-center gap-1.5">
+                    <Building2 className="w-3.5 h-3.5" /> {effectiveInstitutionName}
+                  </span>
+                  <h2 className="text-xl font-bold text-slate-900 tracking-tight mt-0.5">
+                    OFFICE OF THE CONTROLLER OF EXAMINATIONS
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Statutory University Credential Attestation & Non-Repudiation Certificate {instCampus ? `(${instCampus})` : ''}
+                  </p>
+                </div>
               </div>
 
               <div className="text-left sm:text-right text-xs space-y-1">
