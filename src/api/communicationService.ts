@@ -1,4 +1,5 @@
 import apiClient from './axiosClient';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 
 export type CommunicationChannel = 'WHATSAPP' | 'SMS';
 export type TriggerType = 'ABSENCE_ALERT' | 'FEE_DUE_NOTICE' | 'FEE_PAYMENT_RECEIPT' | 'EXAM_HALL_TICKET';
@@ -89,6 +90,7 @@ export const communicationService = {
       return response.data;
     } catch {
       // Fallback baseline logs for offline/demo operation
+      const instName = useInstitutionStore.getState().institution.name || 'EduPulse University';
       return [
         {
           id: 1,
@@ -100,11 +102,11 @@ export const communicationService = {
           studentName: 'Aarav Sharma',
           subject: 'Morning Attendance Absence Alert - CS301',
           messageContent:
-            '🔔 *Arya College of Engineering & IT — Daily Attendance Alert*\n\nDear Parent/Guardian of *Aarav Sharma* (Roll: *23CSM001*),\n\nYour ward was marked *ABSENT* for *CS301 (Advanced Distributed Systems)* during morning session on *Nov 18, 2026*.\n\nInstitutional Policy requires 75% minimum attendance for semester examination eligibility.',
+            `🔔 *${instName} — Daily Attendance Alert*\n\nDear Parent/Guardian of *Aarav Sharma* (Roll: *23CSM001*),\n\nYour ward was marked *ABSENT* for *CS301 (Advanced Distributed Systems)* during morning session on *Nov 18, 2026*.\n\nInstitutional Policy requires 75% minimum attendance for semester examination eligibility.`,
           deliveryStatus: 'SIMULATED',
           gatewayReferenceId: 'SIM_WA_ABS_23CSM001',
           directChatLink:
-            'https://wa.me/919829012345?text=%F0%9F%94%94%20*Arya%20College%20of%20Engineering%20%26%20IT%20%E2%80%94%20Daily%20Attendance%20Alert*',
+            `https://wa.me/919829012345?text=%F0%9F%94%94%20*${encodeURIComponent(instName)}%20%E2%80%94%20Daily%20Attendance%20Alert*`,
           sentAt: new Date(Date.now() - 3600000 * 2).toISOString()
         },
         {
@@ -117,11 +119,11 @@ export const communicationService = {
           studentName: 'Aarav Sharma',
           subject: 'Fee Notice: INV-2026-LAB-0192 (₹15,000.00 Outstanding)',
           messageContent:
-            '💳 *Arya College of Engineering & IT — Tuition & Special Lab Dues Notice*\n\nDear Parent/Guardian of *Aarav Sharma* (Roll: *23CSM001*),\n\nInvoice: *INV-2026-LAB-0192*\nHead: Advanced Distributed Systems — Special Lab Fee\nOutstanding Amount: *₹15,000.00*\nDue Date: Dec 20, 2026',
+            `💳 *${instName} — Tuition & Special Lab Dues Notice*\n\nDear Parent/Guardian of *Aarav Sharma* (Roll: *23CSM001*),\n\nInvoice: *INV-2026-LAB-0192*\nHead: Advanced Distributed Systems — Special Lab Fee\nOutstanding Amount: *₹15,000.00*\nDue Date: Dec 20, 2026`,
           deliveryStatus: 'SIMULATED',
           gatewayReferenceId: 'SIM_WA_FEE_INV-2026-LAB-0192',
           directChatLink:
-            'https://wa.me/919829012345?text=%F0%9F%92%B3%20*Arya%20College%20of%20Engineering%20%26%20IT%20%E2%80%94%20Fee%20Notice*',
+            `https://wa.me/919829012345?text=%F0%9F%92%B3%20*${encodeURIComponent(instName)}%20%E2%80%94%20Fee%20Notice*`,
           sentAt: new Date(Date.now() - 3600000 * 24).toISOString()
         },
         {
@@ -134,11 +136,11 @@ export const communicationService = {
           studentName: 'Aarav Sharma',
           subject: 'Payment Receipt: INV-2026-HOSTEL-0044 (₹45,000.00 Cleared)',
           messageContent:
-            '✅ *Arya College of Engineering & IT — Official Fee Settlement Clearance*\n\nDear Parent/Guardian of *Aarav Sharma*,\n\nWe acknowledge receipt of *₹45,000.00* settled via Razorpay/Bank Clearance.\nInvoice: *INV-2026-HOSTEL-0044*\nTransaction Ref: *PAY_SETTLED_H982134*\nStatus: CLEARED & RECONCILED.',
+            `✅ *${instName} — Official Fee Settlement Clearance*\n\nDear Parent/Guardian of *Aarav Sharma*,\n\nWe acknowledge receipt of *₹45,000.00* settled via Razorpay/Bank Clearance.\nInvoice: *INV-2026-HOSTEL-0044*\nTransaction Ref: *PAY_SETTLED_H982134*\nStatus: CLEARED & RECONCILED.`,
           deliveryStatus: 'SIMULATED',
           gatewayReferenceId: 'SIM_WA_RCP_INV-2026-HOSTEL-0044',
           directChatLink:
-            'https://wa.me/919829012345?text=%E2%9C%85%20*Arya%20College%20of%20Engineering%20%26%20IT%20%E2%80%94%20Payment%20Receipt*',
+            `https://wa.me/919829012345?text=%E2%9C%85%20*${encodeURIComponent(instName)}%20%E2%80%94%20Payment%20Receipt*`,
           sentAt: new Date(Date.now() - 3600000 * 72).toISOString()
         }
       ];
