@@ -22,6 +22,24 @@ export const invoke = async <T = unknown>(cmd: string, args?: Record<string, unk
 };
 
 /**
+ * Safely launches a URL in the user's default system browser (Chrome/Edge/etc.).
+ * Uses Tauri native command in desktop mode, falling back to window.open.
+ */
+export const openExternalUrl = async (url: string): Promise<void> => {
+  if (isTauriDesktop()) {
+    try {
+      const res = await invoke('open_external_url', { url });
+      if (res !== null) return;
+    } catch (err) {
+      console.warn('[Desktop Shell] Failed to invoke open_external_url, falling back to window.open:', err);
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+};
+
+/**
  * Resolves the API Base URL based on environment.
  * In desktop mode, checks for administrator configured server endpoint in localStorage first,
  * then falls back to VITE_API_BASE_URL, and finally defaults to local sidecar http://localhost:8081.

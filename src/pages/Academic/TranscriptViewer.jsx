@@ -15,9 +15,11 @@ import {
   X,
   FileCheck,
   QrCode,
-  Sparkles
+  Sparkles,
+  Globe
 } from 'lucide-react';
 import { getStudentTranscript } from '../../api/examService';
+import { openExternalUrl } from '../../api/axiosClient';
 
 export default function TranscriptViewer() {
   const navigate = useNavigate();
@@ -80,6 +82,7 @@ export default function TranscriptViewer() {
 
   const verificationToken = transcript?.verificationToken || `EDP-VRF-${activeEnrollmentNumber}-3BF2C1FC`;
   const verificationUrl = `${window.location.origin}/verify/${verificationToken}`;
+  const browserVerificationUrl = `http://localhost:8081/api/v1/verify/portal/${encodeURIComponent(verificationToken)}`;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto px-4 sm:px-6 py-8">
@@ -127,6 +130,18 @@ export default function TranscriptViewer() {
               >
                 <ShieldCheck className="w-4 h-4" />
                 Verify Credential Online
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  openExternalUrl(browserVerificationUrl);
+                  toast.success('Launching official verification certificate in your default web browser...');
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold text-xs rounded-xl shadow-sm transition-colors"
+                title="Open directly in system web browser (Edge/Chrome)"
+              >
+                <Globe className="w-4 h-4 text-indigo-600" />
+                Open in Web Browser
               </button>
               <button
                 type="button"
@@ -497,23 +512,34 @@ export default function TranscriptViewer() {
             </div>
 
             {/* Actions */}
-            <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 relative z-10">
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2 relative z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  openExternalUrl(browserVerificationUrl);
+                  toast.success('Launching official certificate in default web browser...');
+                }}
+                className="w-full sm:flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+              >
+                <Globe className="w-4 h-4" /> Open in Web Browser (Edge / Chrome)
+              </button>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(browserVerificationUrl, 'Verification Portal URL')}
+                className="w-full sm:w-auto py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2"
+              >
+                <Copy className="w-4 h-4" /> Copy Web URL
+              </button>
               <button
                 type="button"
                 onClick={() => {
                   setIsVerifyModalOpen(false);
                   navigate(`/verify/${verificationToken}`);
                 }}
-                className="w-full sm:flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+                className="w-full sm:w-auto py-2.5 px-3 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white text-xs rounded-xl border border-slate-700/80 transition flex items-center justify-center gap-1.5"
+                title="View in-app attestation gateway"
               >
-                <ExternalLink className="w-4 h-4" /> Open Full Public Registry Page
-              </button>
-              <button
-                type="button"
-                onClick={() => copyToClipboard(verificationUrl, 'Public Verification URL')}
-                className="w-full sm:w-auto py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium text-xs rounded-xl border border-slate-700 transition flex items-center justify-center gap-2"
-              >
-                <Copy className="w-4 h-4" /> Copy Verification Link
+                <ExternalLink className="w-3.5 h-3.5" /> In-App Gateway
               </button>
             </div>
           </div>

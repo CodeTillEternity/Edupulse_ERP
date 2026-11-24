@@ -153,6 +153,30 @@ fn start_backend_if_needed() -> Option<Child> {
     }
 }
 
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    println!("[Desktop Shell] Launching external URL in system browser: {}", url);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        let _ = std::process::Command::new("rundll32")
+            .args(["url.dll,FileProtocolHandler", &url])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Failed to launch default browser: {}", e))?;
+        Ok(())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| format!("Failed to open URL: {}", e))?;
+        Ok(())
+    }
+}
+
 fn main() {
     let child_handle = start_backend_if_needed();
     let backend_state = BackendProcessState(Arc::new(Mutex::new(child_handle)));
@@ -167,6 +191,7 @@ fn main() {
             store_account_tokens,
             get_account_tokens,
             clear_account_tokens,
+            open_external_url,
         ])
         .on_window_event(move |_window, event| {
             if matches!(event, WindowEvent::Destroyed | WindowEvent::CloseRequested { .. }) {
