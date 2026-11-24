@@ -17,10 +17,12 @@ import {
   X,
   MessageSquare,
   Send,
+  Printer,
 } from 'lucide-react';
 import { getStudentLedger, recordPayment } from '../../api/financeService';
 import { communicationService } from '../../api/communicationService';
 import { CommunicationOutboxDrawer } from '../../components/communication/CommunicationOutboxDrawer';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 const STATUS_BADGES = {
   PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -31,6 +33,7 @@ const STATUS_BADGES = {
 
 export default function StudentLedger() {
   const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
 
   // Search state
   const [searchInput, setSearchInput] = useState('23CSM001');
@@ -42,6 +45,8 @@ export default function StudentLedger() {
   // Collect Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [selectedReceiptForPrint, setSelectedReceiptForPrint] = useState(null);
+  const [autoSendReceiptWhatsApp, setAutoSendReceiptWhatsApp] = useState(true);
   const [isOutboxOpen, setIsOutboxOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: '',
@@ -108,9 +113,27 @@ export default function StudentLedger() {
     mutationFn: (data) => recordPayment(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['studentLedger', activeEnrollment] });
-      toast.success(
-        `Payment of ₹${Number(data.amount).toLocaleString('en-IN')} recorded successfully!`
-      );
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['complianceMetrics'] });
+
+      const invNum = selectedInvoice?.invoiceNumber;
+      if (autoSendReceiptWhatsApp && invNum) {
+        communicationService.dispatchFeeReceipt(invNum).catch(() => {});
+        toast.success(
+          `Payment of ₹${Number(data.amount).toLocaleString('en-IN')} recorded & WhatsApp receipt dispatched!`,
+          {
+            action: {
+              label: 'View Outbox',
+              onClick: () => setIsOutboxOpen(true),
+            },
+          }
+        );
+      } else {
+        toast.success(
+          `Payment of ₹${Number(data.amount).toLocaleString('en-IN')} recorded successfully!`
+        );
+      }
+
       setShowPaymentModal(false);
       setSelectedInvoice(null);
       setPaymentForm({
@@ -439,14 +462,24 @@ export default function StudentLedger() {
                           </td>
                           <td className="px-4 py-3 text-slate-500">{p.notes || '—'}</td>
                           <td className="px-4 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => handleDispatchFeeReceipt(p.invoiceNumber)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
-                              title="Dispatch verified payment receipt directly to parent WhatsApp"
-                            >
-                              <MessageSquare className="w-3 h-3" /> WhatsApp Receipt
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setSelectedReceiptForPrint(p)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-semibold rounded-md border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+                                title="Print Official Institutional Fee Receipt"
+                              >
+                                <Printer className="w-3 h-3 text-slate-600" /> Receipt
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDispatchFeeReceipt(p.invoiceNumber)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
+                                title="Dispatch verified payment receipt directly to parent WhatsApp"
+                              >
+                                <MessageSquare className="w-3 h-3" /> WhatsApp
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -572,6 +605,19 @@ export default function StudentLedger() {
                   />
                 </div>
 
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    id="autoSendReceipt"
+                    type="checkbox"
+                    checked={autoSendReceiptWhatsApp}
+                    onChange={(e) => setAutoSendReceiptWhatsApp(e.target.checked)}
+                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <label htmlFor="autoSendReceipt" className="text-xs text-slate-700 cursor-pointer select-none">
+                    Dispatch official fee receipt to guardian WhatsApp upon clearance
+                  </label>
+                </div>
+
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                   <button
                     type="button"
@@ -589,6 +635,87 @@ export default function StudentLedger() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Printable Official Receipt Modal */}
+        {selectedReceiptForPrint && (
+          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+              {/* Receipt Header */}
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-5 h-5 text-indigo-600" />
+                  <span className="font-bold text-sm text-slate-900">Official Fee Receipt</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => window.print()}
+                    className="flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> Print
+                  </button>
+                  <button
+                    onClick={() => setSelectedReceiptForPrint(null)}
+                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Receipt Content */}
+              <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-slate-50/50 text-xs">
+                <div className="text-center border-b border-slate-200 pb-3">
+                  <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-tight">
+                    {institution.name || 'Central University System'}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">{institution.campus || 'Main Campus'} • Code: {institution.code || 'INST-01'}</p>
+                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">Statutory Fee Settlement Voucher</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-slate-700">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Receipt Voucher #</span>
+                    <span className="font-mono font-bold text-slate-900">{selectedReceiptForPrint.referenceNumber || `RCP-2026-${selectedReceiptForPrint.id}`}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Payment Date</span>
+                    <span className="font-medium text-slate-900">{selectedReceiptForPrint.paymentDate ? selectedReceiptForPrint.paymentDate.substring(0, 10) : new Date().toISOString().substring(0, 10)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Candidate Full Name</span>
+                    <span className="font-bold text-slate-900">{ledger?.student?.firstName} {ledger?.student?.lastName}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Enrollment Identifier</span>
+                    <span className="font-mono font-bold text-indigo-700">{activeEnrollment}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Associated Invoice</span>
+                    <span className="font-mono text-slate-800">{selectedReceiptForPrint.invoiceNumber}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Payment Gateway / Mode</span>
+                    <span className="font-semibold text-slate-800">{selectedReceiptForPrint.paymentMethod}</span>
+                  </div>
+                </div>
+
+                <div className="border-t border-b border-slate-200 py-3 flex items-center justify-between">
+                  <span className="font-bold text-slate-700">Total Cleared Amount:</span>
+                  <span className="text-lg font-black font-mono text-emerald-700">
+                    ₹{Number(selectedReceiptForPrint.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Reconciled & Concurred
+                  </span>
+                  <span>Accounts / Bursar Office</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
