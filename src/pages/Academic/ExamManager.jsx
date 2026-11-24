@@ -27,6 +27,27 @@ import { getCourseOfferings } from '../../api/academicService';
 import { communicationService } from '../../api/communicationService';
 import { CommunicationOutboxDrawer } from '../../components/communication/CommunicationOutboxDrawer';
 
+/**
+ * Calculates standard UGC Choice Based Credit System (CBCS) 10-point scale grades
+ */
+export const calculateUgcGrade = (marks, totalMarks = 100) => {
+  if (marks === '' || marks === null || marks === undefined || isNaN(marks)) {
+    return null;
+  }
+  const max = Number(totalMarks) > 0 ? Number(totalMarks) : 100;
+  const numMarks = Number(marks);
+  const pct = (numMarks / max) * 100;
+
+  if (pct >= 90) return { letter: 'O', point: 10.0, description: 'Outstanding', badge: 'bg-emerald-50 text-emerald-800 border-emerald-200' };
+  if (pct >= 80) return { letter: 'A+', point: 9.0, description: 'Excellent', badge: 'bg-indigo-50 text-indigo-700 border-indigo-200' };
+  if (pct >= 70) return { letter: 'A', point: 8.0, description: 'Very Good', badge: 'bg-blue-50 text-blue-700 border-blue-200' };
+  if (pct >= 60) return { letter: 'B+', point: 7.0, description: 'Good', badge: 'bg-cyan-50 text-cyan-800 border-cyan-200' };
+  if (pct >= 55) return { letter: 'B', point: 6.0, description: 'Above Average', badge: 'bg-amber-50 text-amber-800 border-amber-200' };
+  if (pct >= 50) return { letter: 'C', point: 5.0, description: 'Average', badge: 'bg-orange-50 text-orange-800 border-orange-200' };
+  if (pct >= 40) return { letter: 'P', point: 4.0, description: 'Pass', badge: 'bg-teal-50 text-teal-800 border-teal-200' };
+  return { letter: 'F', point: 0.0, description: 'Fail / Re-appear', badge: 'bg-rose-50 text-rose-800 border-rose-200' };
+};
+
 export default function ExamManager() {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('exams'); // 'exams' | 'grades'
@@ -132,7 +153,20 @@ export default function ExamManager() {
     mutationFn: ({ examId, payload }) => recordStudentResults(examId, payload),
     onSuccess: (savedResults) => {
       queryClient.invalidateQueries({ queryKey: ['examResults', selectedExamId] });
-      toast.success(`Successfully recorded grades for ${savedResults.length} students!`);
+      queryClient.invalidateQueries({ queryKey: ['studentTranscript'] });
+      queryClient.invalidateQueries({ queryKey: ['academicExams'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+      toast.success(`Successfully recorded grades for ${savedResults.length} students!`, {
+        action: {
+          label: 'View Transcript',
+          onClick: () => {
+            const firstStudent = enrolledStudents.find(s => s.id === savedResults[0]?.studentId);
+            if (firstStudent?.enrollmentNumber) {
+              window.location.href = `/dashboard/transcripts?enrollment=${firstStudent.enrollmentNumber}`;
+            }
+          }
+        }
+      });
     },
     onError: (error) => {
       const msg = error.response?.data?.message || error.message || 'Failed to submit grades';
@@ -179,17 +213,27 @@ export default function ExamManager() {
       return;
     }
 
+    const maxMarks = activeExam ? Number(activeExam.totalMarks) : 100;
     const payload = [];
-    enrolledStudents.forEach((student) => {
+    for (const student of enrolledStudents) {
       const entry = marksState[student.id];
       if (entry && entry.marksObtained !== '' && entry.marksObtained !== undefined) {
+        const val = Number(entry.marksObtained);
+        if (isNaN(val) || val < 0) {
+          toast.error(`Marks for ${student.firstName} ${student.lastName} must be 0 or higher.`);
+          return;
+        }
+        if (val > maxMarks) {
+          toast.error(`Marks for ${student.firstName} ${student.lastName} (${val}) exceeds exam total marks (${maxMarks}).`);
+          return;
+        }
         payload.push({
           studentId: student.id,
-          marksObtained: Number(entry.marksObtained),
+          marksObtained: val,
           remarks: entry.remarks || '',
         });
       }
-    });
+    }
 
     if (payload.length === 0) {
       toast.error('Please enter marks for at least one student');
@@ -527,6 +571,11 @@ export default function ExamManager() {
                     const studentMarks = marksState[student.id]?.marksObtained ?? '';
                     const studentRemarks = marksState[student.id]?.remarks ?? '';
                     const existingRes = existingResults.find((r) => r.studentId === student.id);
+                    const maxMarks = activeExam ? Number(activeExam.totalMarks) : 100;
+                    const isExceeding = studentMarks !== '' && Number(studentMarks) > maxMarks;
+                    const liveGrade = studentMarks !== '' && !isNaN(studentMarks)
+                      ? calculateUgcGrade(studentMarks, maxMarks)
+                      : (existingRes ? { letter: existingRes.gradeLabel, point: existingRes.gradePoint, description: 'Recorded Grade', badge: 'bg-emerald-50 text-emerald-800 border-emerald-200' } : null);
 
                     return (
                       <tr key={student.id} className="hover:bg-slate-50/75 transition-colors">
@@ -537,27 +586,39 @@ export default function ExamManager() {
                           {student.enrollmentNumber}
                         </td>
                         <td className="py-3.5 px-4">
-                          <input
-                            aria-label={`Marks for ${student.firstName} ${student.lastName}`}
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max={activeExam ? activeExam.totalMarks : 100}
-                            placeholder="0.00"
-                            value={studentMarks}
-                            onChange={(e) =>
-                              handleMarkChange(student.id, 'marksObtained', e.target.value)
-                            }
-                            className="w-28 px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-semibold text-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                          />
+                          <div className="flex flex-col gap-1">
+                            <input
+                              aria-label={`Marks for ${student.firstName} ${student.lastName}`}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max={maxMarks}
+                              placeholder="0.00"
+                              value={studentMarks}
+                              onChange={(e) =>
+                                handleMarkChange(student.id, 'marksObtained', e.target.value)
+                              }
+                              className={`w-28 px-3 py-1.5 border rounded-lg text-sm font-semibold focus:outline-none transition-all ${
+                                isExceeding
+                                  ? 'border-rose-400 bg-rose-50 text-rose-700 focus:ring-2 focus:ring-rose-500'
+                                  : 'border-slate-300 text-indigo-700 focus:ring-2 focus:ring-indigo-500 bg-white'
+                              }`}
+                            />
+                            {isExceeding && (
+                              <span className="text-[10px] text-rose-600 font-medium">
+                                Max {maxMarks} pts
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3.5 px-4 text-center">
-                          {existingRes ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                              {existingRes.gradeLabel} ({existingRes.gradePoint} pts)
+                          {liveGrade ? (
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border shadow-2xs ${liveGrade.badge}`}>
+                              <span>Grade {liveGrade.letter}</span>
+                              <span className="text-[10px] font-mono opacity-80">({Number(liveGrade.point).toFixed(1)} pts)</span>
                             </span>
                           ) : (
-                            <span className="text-xs text-slate-400 italic">Auto-calculated</span>
+                            <span className="text-xs text-slate-400 italic">Enter marks for preview</span>
                           )}
                         </td>
                         <td className="py-3.5 px-4">
@@ -569,7 +630,7 @@ export default function ExamManager() {
                             onChange={(e) =>
                               handleMarkChange(student.id, 'remarks', e.target.value)
                             }
-                            className="w-full max-w-xs px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full max-w-xs px-3 py-1.5 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
                           />
                         </td>
                       </tr>

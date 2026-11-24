@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Search,
@@ -24,11 +24,20 @@ import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 export default function TranscriptViewer() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { institution } = useInstitutionStore();
-  const defaultEnrollment = '23CSM001';
+  const queryEnrollment = searchParams.get('enrollment');
+  const defaultEnrollment = queryEnrollment || '23CSM001';
   const [searchInput, setSearchInput] = useState(defaultEnrollment);
   const [activeEnrollmentNumber, setActiveEnrollmentNumber] = useState(defaultEnrollment);
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (queryEnrollment && queryEnrollment !== activeEnrollmentNumber) {
+      setSearchInput(queryEnrollment);
+      setActiveEnrollmentNumber(queryEnrollment);
+    }
+  }, [queryEnrollment]);
 
   const {
     data: transcript,
