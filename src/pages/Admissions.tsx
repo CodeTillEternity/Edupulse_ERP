@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { UserCheck, Search, FileText, CheckCircle, XCircle, Eye, AlertCircle, Loader2 } from 'lucide-react';
+import { UserCheck, Search, FileText, CheckCircle, XCircle, Eye, AlertCircle, Loader2, Download, Printer } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -134,6 +134,54 @@ export default function Admissions() {
       },
       onError: (err: any) => toast.error(err.response?.data?.message || 'Failed to update application')
     });
+  };
+
+  const exportAdmissionsReport = () => {
+    if (activeTab === 'inquiries') {
+      if (filteredApplicants.length === 0) {
+        toast.error('No inquiries to export');
+        return;
+      }
+      const headers = ['Applicant ID', 'Full Name', 'Email', 'Phone', 'Inquiry Date', 'Status'];
+      const rows = filteredApplicants.map(a => [
+        `"#${a.id}"`,
+        `"${a.firstName} ${a.lastName}"`,
+        `"${a.email}"`,
+        `"${a.phone}"`,
+        `"${a.inquiryDate ? new Date(a.inquiryDate).toLocaleDateString() : 'N/A'}"`,
+        '"INQUIRY"'
+      ]);
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csvContent));
+      link.setAttribute('download', `Admissions_Inquiries_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Exported ${filteredApplicants.length} inquiries to CSV.`);
+    } else {
+      if (filteredApplications.length === 0) {
+        toast.error('No applications to export');
+        return;
+      }
+      const headers = ['Application ID', 'Applicant Name', 'Program', 'Application Date', 'Status', 'Academic Year ID'];
+      const rows = filteredApplications.map(app => [
+        `"APP-${app.id}"`,
+        `"${getApplicantName(app.applicantId)}"`,
+        `"${getProgramName(app.programId)}"`,
+        `"${app.applicationDate ? new Date(app.applicationDate).toLocaleDateString() : 'N/A'}"`,
+        `"${app.status}"`,
+        `"${app.academicYearId || ''}"`
+      ]);
+      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      const link = document.createElement('a');
+      link.setAttribute('href', encodeURI(csvContent));
+      link.setAttribute('download', `Admissions_Applications_${activeTab}_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Exported ${filteredApplications.length} admission applications to CSV.`);
+    }
   };
 
   const getTableContent = () => {
@@ -306,13 +354,33 @@ export default function Admissions() {
           <h1 className="text-3xl font-bold text-slate-900 mb-1">Admissions</h1>
           <p className="text-slate-500 text-sm">Manage new inquiries, applications, document verification, and final enrollment decisions.</p>
         </div>
-        <Button 
-          className="bg-black text-white hover:bg-black/80 px-6 rounded-full h-11"
-          onClick={() => setIsNewInquiryOpen(true)}
-        >
-          <UserCheck className="w-4 h-4 mr-2" />
-          New Inquiry
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs h-11 px-4 rounded-xl cursor-pointer"
+            onClick={exportAdmissionsReport}
+            title="Export filtered records to CSV"
+          >
+            <Download className="w-4 h-4 mr-1.5" />
+            Export CSV
+          </Button>
+          <Button
+            variant="outline"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs h-11 px-4 rounded-xl cursor-pointer"
+            onClick={() => window.print()}
+            title="Print current admissions list"
+          >
+            <Printer className="w-4 h-4 mr-1.5" />
+            Print
+          </Button>
+          <Button 
+            className="bg-black text-white hover:bg-black/80 px-6 rounded-xl h-11"
+            onClick={() => setIsNewInquiryOpen(true)}
+          >
+            <UserCheck className="w-4 h-4 mr-2" />
+            New Inquiry
+          </Button>
+        </div>
       </div>
 
       <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
@@ -425,7 +493,7 @@ export default function Admissions() {
                         }`}>
                           {doc.verificationStatus}
                         </span>
-                        {doc.remarks && <span className="text-xs text-slate-500 font-medium">â€¢ {doc.remarks}</span>}
+                        {doc.remarks && <span className="text-xs text-slate-500 font-medium">• {doc.remarks}</span>}
                       </div>
                       <a href={doc.fileUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-blue-600 hover:underline mt-2 inline-block">
                         View Attached File
