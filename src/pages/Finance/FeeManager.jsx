@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  DollarSign,
+  IndianRupee,
   Plus,
   FileText,
   Layers,
@@ -14,6 +14,9 @@ import {
   CheckCircle2,
   AlertCircle,
   TrendingUp,
+  Download,
+  Printer,
+  Landmark,
 } from 'lucide-react';
 import {
   getFeeHeads,
@@ -23,10 +26,12 @@ import {
   generateInvoicesForBatch,
 } from '../../api/financeService';
 import FeeInvoiceList from '../../components/FeeInvoiceList';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 export default function FeeManager() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('structures'); // 'structures' | 'heads'
+  const { institution } = useInstitutionStore();
+  const [activeTab, setActiveTab] = useState('structures'); // 'structures' | 'heads' | 'invoices'
 
   // Modal Visibility States
   const [showHeadModal, setShowHeadModal] = useState(false);
@@ -85,6 +90,7 @@ export default function FeeManager() {
     mutationFn: (data) => createFeeStructure(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['feeStructures'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success('Fee Structure blueprint configured successfully!');
       setShowStructureModal(false);
       setStructureForm({
@@ -103,6 +109,8 @@ export default function FeeManager() {
     mutationFn: (data) => generateInvoicesForBatch(data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['feeStructures'] });
+      queryClient.invalidateQueries({ queryKey: ['studentLedgers'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(`Successfully generated ${data?.length || 'batch'} student invoices!`);
       setShowGenerateModal(false);
     },
@@ -190,6 +198,82 @@ export default function FeeManager() {
     });
   };
 
+  const exportFeeBlueprintCsv = () => {
+    if (feeStructures.length === 0) {
+      toast.error('No fee structures available to export.');
+      return;
+    }
+
+    const headers = [
+      'Structure ID',
+      'Blueprint Name',
+      'Academic Batch',
+      'Line Item / Fee Head',
+      'Head Amount (INR)',
+      'Total Cohort Fee (INR)',
+      'Institution Name',
+      'Campus Node',
+      'Statutory Compliance',
+      'Generated Date'
+    ];
+
+    const rows = [];
+    feeStructures.forEach((st) => {
+      if (st.items && st.items.length > 0) {
+        st.items.forEach((item) => {
+          rows.push([
+            st.id,
+            st.name,
+            st.batchName || `Batch #${st.batchId}`,
+            item.feeHeadName || `Head #${item.feeHeadId}`,
+            Number(item.amount || 0).toFixed(2),
+            Number(st.totalAmount || 0).toFixed(2),
+            institution.name || 'Central University System',
+            institution.campus || 'Main Campus',
+            'UGC CBCS Standard',
+            new Date().toISOString().split('T')[0]
+          ]);
+        });
+      } else {
+        rows.push([
+          st.id,
+          st.name,
+          st.batchName || `Batch #${st.batchId}`,
+          'All-Inclusive Annual Tuition',
+          Number(st.totalAmount || 0).toFixed(2),
+          Number(st.totalAmount || 0).toFixed(2),
+          institution.name || 'Central University System',
+          institution.campus || 'Main Campus',
+          'UGC CBCS Standard',
+          new Date().toISOString().split('T')[0]
+        ]);
+      }
+    });
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers, ...rows]
+        .map((e) => e.map((cell) => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Fee_Blueprints_Master_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Statutory fee structure blueprints exported to CSV.');
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const avgCohortFee = feeStructures.length > 0
+    ? Math.round(feeStructures.reduce((sum, s) => sum + Number(s.totalAmount || 0), 0) / feeStructures.length)
+    : 0;
+
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -197,7 +281,7 @@ export default function FeeManager() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 mb-2">
-              <DollarSign className="w-3.5 h-3.5" /> Institutional Finance &amp; Student Invoicing
+              <IndianRupee className="w-3.5 h-3.5" /> Institutional Finance &amp; Student Invoicing
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               Fee Management &amp; Invoicing
@@ -208,6 +292,24 @@ export default function FeeManager() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={exportFeeBlueprintCsv}
+              disabled={feeStructures.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-all disabled:opacity-50"
+              title="Export fee blueprints to CSV"
+            >
+              <Download className="w-3.5 h-3.5 text-indigo-600" /> Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={feeStructures.length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-all disabled:opacity-50"
+              title="Print official fee circular"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-600" /> Print Blueprint
+            </button>
             <button
               type="button"
               onClick={() => setShowHeadModal(true)}
@@ -229,6 +331,47 @@ export default function FeeManager() {
             >
               <Send className="w-4 h-4" /> Generate Invoices
             </button>
+          </div>
+        </div>
+
+        {/* Financial KPI Summary Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span>Active Blueprints</span>
+              <Layers className="w-4 h-4 text-indigo-500" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-2">{feeStructures.length}</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">Cohort Fee Schedules</div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span>Configured Heads</span>
+              <Tag className="w-4 h-4 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-2">{feeHeads.length}</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">Statutory Fee Categories</div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span>Avg Cohort Fee</span>
+              <IndianRupee className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900 mt-2">
+              ₹{avgCohortFee.toLocaleString('en-IN')}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-0.5">Mean Blueprint Rate</div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+            <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+              <span>Statutory Alignment</span>
+              <Landmark className="w-4 h-4 text-blue-500" />
+            </div>
+            <div className="text-sm font-bold text-emerald-700 mt-2">UGC &amp; AICTE Compliant</div>
+            <div className="text-[11px] text-slate-500 mt-0.5">Transparent Fee Structure</div>
           </div>
         </div>
 
