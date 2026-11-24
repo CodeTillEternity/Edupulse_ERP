@@ -80,6 +80,7 @@ export default function LibraryManager() {
     mutationFn: addBook,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['libraryBooks'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(`Book "${data.title}" added to inventory successfully!`);
       setIsAddBookModalOpen(false);
       setNewBookForm({ title: '', author: '', isbn: '', totalCopies: 5 });
@@ -95,6 +96,7 @@ export default function LibraryManager() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['libraryIssues'] });
       queryClient.invalidateQueries({ queryKey: ['libraryBooks'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(`Book issued successfully! Due date: ${data.dueDate}`);
       setIssueForm({ bookId: '', studentId: '' });
     },
@@ -109,6 +111,7 @@ export default function LibraryManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['libraryIssues'] });
       queryClient.invalidateQueries({ queryKey: ['libraryBooks'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success('Book returned successfully and inventory updated!');
     },
     onError: (err) => {

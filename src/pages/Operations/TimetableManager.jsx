@@ -90,6 +90,10 @@ export default function TimetableManager() {
       toast.error('Room number is required');
       return;
     }
+    if (formData.startTime >= formData.endTime) {
+      toast.error('Class end time must be after start time');
+      return;
+    }
 
     scheduleMutation.mutate({
       courseOfferingId: Number(formData.courseOfferingId),
