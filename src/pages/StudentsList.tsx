@@ -5,11 +5,12 @@ import { StudentAvatar } from '../components/StudentAvatar';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageFrame } from '../components/ui/PageFrame';
 import { Input } from '../components/ui/input';
-import { Search, Loader2, Filter, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Search, Loader2, Filter, ChevronLeft, ChevronRight, Eye, Download, Printer } from 'lucide-react';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { CreateStudentDialog } from '../components/CreateStudentDialog';
 import type { PaginatedResponse, Student } from '../types/student';
 import { useAuthStore } from '../store/useAuthStore';
+import { toast } from 'sonner';
 
 function formatDateDisplay(val: any): string {
   if (!val) return 'N/A';
@@ -37,6 +38,7 @@ export default function StudentsList() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [departmentFilter, setDepartmentFilter] = useState<string>('');
 
   React.useEffect(() => {
     const handler = setTimeout(() => {
@@ -47,7 +49,7 @@ export default function StudentsList() {
   }, [search]);
 
   const { data, isLoading, isError } = useQuery<PaginatedResponse<Student>>({
-    queryKey: ['students', page, size, debouncedSearch, statusFilter],
+    queryKey: ['students', page, size, debouncedSearch, statusFilter, departmentFilter],
     queryFn: async () => {
       const res = await apiClient.get('/api/v1/students', {
         params: { 
@@ -55,6 +57,7 @@ export default function StudentsList() {
           size, 
           search: debouncedSearch || undefined,
           status: statusFilter || undefined,
+          department: departmentFilter || undefined,
           sortBy: 'id',
           sortDir: 'desc'
         }
@@ -67,15 +70,80 @@ export default function StudentsList() {
   const totalPages = (data as PaginatedResponse<Student>)?.totalPages || 0;
   const totalElements = (data as PaginatedResponse<Student>)?.totalElements || 0;
 
+  const exportStudentRoster = () => {
+    if (students.length === 0) {
+      toast.error('No student records available to export.');
+      return;
+    }
+    const headers = [
+      'Internal ID',
+      'Enrollment Number',
+      'Roll Number',
+      'First Name',
+      'Last Name',
+      'Email',
+      'Phone',
+      'Department',
+      'Batch',
+      'Status',
+      'Enrollment Date',
+    ];
+
+    const rows = students.map((s) => [
+      `"#${s.id}"`,
+      `"${s.enrollmentNumber || 'Pending'}"`,
+      `"${s.rollNumber || 'N/A'}"`,
+      `"${s.firstName}"`,
+      `"${s.lastName}"`,
+      `"${s.email}"`,
+      `"${s.phone || 'N/A'}"`,
+      `"${s.department || 'General'}"`,
+      `"${s.batch || 'Current'}"`,
+      `"${s.status}"`,
+      `"${formatDateDisplay(s.enrollmentDate || s.createdAt)}"`,
+    ]);
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers.map((h) => `"${h}"`).join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute(
+      'download',
+      `Student_Roster_${statusFilter || 'ALL'}_${new Date().toISOString().slice(0, 10)}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${students.length} student records to CSV.`);
+  };
+
   return (
     <PageFrame
       title="Student Directory"
       description="Manage institutional student records and profiles."
       breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Students' }]}
       actions={
-        isAdmin && (
-          <CreateStudentDialog />
-        )
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportStudentRoster}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+            title="Export filtered student roster to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-600" />
+            <span>Export CSV</span>
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+            title="Print current student roster"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-600" />
+            <span>Print</span>
+          </button>
+          {isAdmin && <CreateStudentDialog />}
+        </div>
       }
     >
       <div className="flex flex-col min-h-[500px] border border-slate-200 bg-white">
@@ -90,10 +158,26 @@ export default function StudentsList() {
             />
           </div>
           
-          <div className="flex items-center space-x-2 w-full md:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Filter className="w-4 h-4 text-slate-400 hidden md:block" />
             <select 
-              className="w-full md:w-auto bg-white border border-slate-300 text-xs rounded px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              className="bg-white border border-slate-300 text-xs rounded px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              value={departmentFilter}
+              onChange={(e) => {
+                setDepartmentFilter(e.target.value);
+                setPage(0);
+              }}
+            >
+              <option value="">All Departments</option>
+              <option value="Computer Science & Engineering">Computer Science & Engineering</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Electronics & Communication">Electronics & Communication</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+            </select>
+
+            <select 
+              className="bg-white border border-slate-300 text-xs rounded px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900"
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
