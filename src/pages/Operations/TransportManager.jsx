@@ -201,6 +201,11 @@ export default function TransportManager() {
       toast.error('Please select a route and enter a student ID');
       return;
     }
+    const targetRoute = routes.find((r) => r.id === Number(assignForm.routeId));
+    if (targetRoute && targetRoute.vehicleCapacity && (targetRoute.assignedCount || 0) >= targetRoute.vehicleCapacity) {
+      toast.error(`Route "${targetRoute.routeName}" has reached maximum vehicle capacity of ${targetRoute.vehicleCapacity} passengers.`);
+      return;
+    }
     assignStudentMutation.mutate({
       routeId: Number(assignForm.routeId),
       studentId: Number(assignForm.studentId),
@@ -435,7 +440,7 @@ export default function TransportManager() {
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                       <div>
                         <span className="text-xs text-slate-400 block">Monthly Fare</span>
-                        <span className="text-sm font-bold text-slate-900">${route.monthlyFee}</span>
+                        <span className="text-sm font-bold text-slate-900 font-mono">₹{route.monthlyFee}</span>
                       </div>
 
                       <button
@@ -750,7 +755,7 @@ export default function TransportManager() {
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Monthly Fee ($) *
+                  Monthly Commuter Fee (₹) *
                 </label>
                 <input
                   type="number"
