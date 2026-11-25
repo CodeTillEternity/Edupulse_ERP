@@ -9,7 +9,10 @@ import {
   TrendingDown, 
   ShieldAlert, 
   ExternalLink,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Printer,
+  Filter
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Input } from '../components/ui/input';
@@ -21,6 +24,8 @@ import {
   type StudentFee 
 } from '../hooks/queries/useFinance';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
+import { toast } from 'sonner';
 import { useMyStudentId } from '../hooks/useMyStudentId';
 import { StudentFeesTab } from '../components/StudentFeesTab';
 import { Skeleton } from '../components/ui/skeleton';
@@ -39,7 +44,9 @@ import {
 
 export default function FinanceDashboard() {
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [activeTab, setActiveTab] = useState<'invoices' | 'structures'>('invoices');
 
   const isStaff = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'FINANCE';
@@ -120,6 +127,8 @@ export default function FinanceDashboard() {
 
   const allFees = fees || [];
   const filteredFees = allFees.filter((fee: StudentFee) => {
+    const matchesStatus = statusFilter === 'ALL' || fee.status === statusFilter;
+    if (!matchesStatus) return false;
     if (!searchTerm.trim()) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -130,17 +139,59 @@ export default function FinanceDashboard() {
     );
   });
 
+  const exportReceivablesCsv = () => {
+    const headers = ['Fee ID', 'Student ID', 'Fee Structure ID', 'Academic Year ID', 'Net Payable (INR)', 'Paid Amount (INR)', 'Outstanding (INR)', 'Status'];
+    const rows = filteredFees.map((f: StudentFee) => [
+      `FEE-${f.id}`,
+      `STD-${f.studentId}`,
+      String(f.feeStructureId || ''),
+      String(f.academicYearId || ''),
+      String(parseAmount(f.netPayable)),
+      String(parseAmount(f.paidAmount)),
+      String(parseAmount(f.outstandingAmount)),
+      f.status,
+    ]);
+    const metaRows = [
+      ['INSTITUTIONAL STUDENT FEE RECEIVABLES LEDGER', '', '', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', '', '', '', ''],
+      ['Filter Status', statusFilter, '', '', '', '', '', ''],
+      ['Generated On', new Date().toISOString(), '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Student_Receivables_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported student receivables ledger (CSV).');
+  };
+
   return (
     <div className="p-4 md:p-8 space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 mb-1">
-            Finance & Accounts — Welcome, {user?.username || 'Finance'}
+            Finance &amp; Accounts — {institution.name || 'Institutional Bursar'}
           </h1>
           <p className="text-slate-500 text-sm">Manage institutional revenue, assign fee structures, and track student dues.</p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center flex-wrap gap-2">
+          {activeTab === 'invoices' && (
+            <>
+              <Button variant="outline" size="sm" onClick={() => window.print()} className="h-9 text-xs font-semibold border-slate-300 bg-white">
+                <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" /> Print Ledger
+              </Button>
+              <Button variant="outline" size="sm" onClick={exportReceivablesCsv} className="h-9 text-xs font-semibold border-slate-300 bg-white">
+                <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Export CSV
+              </Button>
+            </>
+          )}
           <CreateInvoiceDialog />
         </div>
       </div>
@@ -153,7 +204,7 @@ export default function FinanceDashboard() {
             activeTab === 'invoices' ? 'border-black text-black font-bold' : 'border-transparent text-slate-400 hover:text-slate-700'
           }`}
         >
-          1. Student Invoices & Receivables
+          1. Student Invoices &amp; Receivables
         </button>
         <button
           onClick={() => setActiveTab('structures')}
@@ -161,7 +212,7 @@ export default function FinanceDashboard() {
             activeTab === 'structures' ? 'border-black text-black font-bold' : 'border-transparent text-slate-400 hover:text-slate-700'
           }`}
         >
-          2. Fee Structures & Heads
+          2. Fee Structures &amp; Heads
         </button>
       </div>
 
@@ -171,22 +222,22 @@ export default function FinanceDashboard() {
         <>
           {/* Metric Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-black text-white p-6 rounded-3xl shadow-sm relative overflow-hidden">
-          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-6">
-            <DollarSign className="w-5 h-5 text-white" />
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-emerald-200/80 relative overflow-hidden">
+          <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center mb-6">
+            <DollarSign className="w-5 h-5 text-emerald-700" />
           </div>
-          <div className="text-slate-400 text-sm mb-1">Total Collected</div>
+          <div className="text-slate-500 text-sm mb-1">Total Collected</div>
           {isLoadingSummary && !derivedMetrics ? (
-             <Skeleton className="h-10 w-32 bg-slate-700 mb-4" />
+             <Skeleton className="h-10 w-32 mb-4" />
           ) : (summary?.totalCollected !== undefined || derivedMetrics?.paid !== undefined) ? (
-             <div className="text-3xl font-bold mb-4">{formatCurrency(summary?.totalCollected ?? derivedMetrics?.paid)}</div>
+             <div className="text-3xl font-bold text-emerald-700 mb-4">{formatCurrency(summary?.totalCollected ?? derivedMetrics?.paid)}</div>
           ) : (
-             <div className="text-xs text-red-400 mb-4 h-10 flex items-center space-x-1.5">
+             <div className="text-xs text-red-500 mb-4 h-10 flex items-center space-x-1.5">
                <span>Failed to load</span>
-               <button onClick={() => { refetchSummary(); refetchFees(); }} className="underline text-white font-bold ml-1">Retry</button>
+               <button onClick={() => { refetchSummary(); refetchFees(); }} className="underline text-slate-800 font-bold ml-1">Retry</button>
              </div>
           )}
-          <div className="flex items-center text-xs text-slate-300 font-medium">
+          <div className="flex items-center text-xs text-emerald-700 font-medium">
             <ArrowUpRight className="w-3 h-3 mr-1" />
             Verified collections
           </div>
@@ -236,8 +287,8 @@ export default function FinanceDashboard() {
       </div>
 
       {/* Table Filter Bar */}
-      <div className="bg-white p-4 rounded-t-2xl border-b border-slate-100 flex justify-between items-center shadow-sm mt-4">
-        <div className="flex items-center space-x-4">
+      <div className="bg-white p-4 rounded-t-2xl border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3 shadow-sm mt-4">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input 
@@ -247,6 +298,20 @@ export default function FinanceDashboard() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 pr-4 py-2 bg-slate-50 border-slate-200 rounded-lg text-sm w-full sm:w-80 h-10"
             />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="ALL">All Statuses</option>
+              <option value="PAID">Paid</option>
+              <option value="PARTIALLY_PAID">Partially Paid</option>
+              <option value="PENDING">Pending</option>
+              <option value="OVERDUE">Overdue / Defaulters</option>
+            </select>
           </div>
         </div>
         <div className="text-sm text-slate-500 font-medium">

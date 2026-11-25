@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { PageFrame } from '../components/ui/PageFrame';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Button } from '../components/ui/button';
@@ -13,8 +14,11 @@ import {
   AlertCircle, 
   Users, 
   Receipt as ReceiptIcon,
-  ChevronRight 
+  ChevronRight,
+  Download,
+  Printer
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { 
   useFinanceSummary, 
   useAllStudentFees, 
@@ -33,6 +37,7 @@ import {
 
 export default function FinanceDashboardHome() {
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const financeName = user?.username || 'Finance';
   const { data: summary, isLoading: loadingSummary, isError: isErrorSummary } = useFinanceSummary();
   const { data: allFees, isLoading: loadingFees, isError: isErrorFees } = useAllStudentFees();
@@ -51,10 +56,52 @@ export default function FinanceDashboardHome() {
     return [...allFees].slice(0, 8);
   }, [allFees]);
 
+  const exportTreasurySnapshotCsv = () => {
+    const rows = [
+      ['INSTITUTIONAL TREASURY & RECEIVABLES SNAPSHOT', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', ''],
+      ['Gross Receivables', `INR ${(metrics?.gross || 0).toLocaleString('en-IN')}`, '', '', ''],
+      ['Total Collected', `INR ${(metrics?.collected || 0).toLocaleString('en-IN')}`, '', '', ''],
+      ['Outstanding Dues', `INR ${(metrics?.outstanding || 0).toLocaleString('en-IN')}`, '', '', ''],
+      ['Collection Efficiency', `${metrics?.collectionRate || 0}%`, '', '', ''],
+      ['Generated On', new Date().toISOString(), '', '', ''],
+      ['', '', '', '', ''],
+      ['Invoice ID', 'Student ID', 'Gross Amount (INR)', 'Paid Amount (INR)', 'Outstanding (INR)', 'Status'],
+      ...(allFees || []).map((f: StudentFee) => [
+        `INV-${f.id}`,
+        `Student #${f.studentId}`,
+        String(parseAmount(f.grossAmount)),
+        String(parseAmount(f.paidAmount)),
+        String(parseAmount(f.outstandingAmount)),
+        f.status,
+      ]),
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Treasury_Receivables_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported institutional treasury receivables ledger (CSV).');
+  };
+
   return (
     <PageFrame
       title={`Institutional Treasury & Receivables — Welcome, ${financeName}`}
-      description="Live financial ledger, revenue collections, and student receivables oversight."
+      description={`${institution.name || 'Institutional'} live financial ledger, revenue collections, and student receivables oversight.`}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" /> Print Ledger
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportTreasurySnapshotCsv} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Export CSV
+          </Button>
+        </div>
+      }
     >
       {isErrorSummary && (
         <div className="mb-6 p-4 bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center space-x-2">
