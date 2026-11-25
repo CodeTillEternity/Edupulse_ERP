@@ -12,6 +12,10 @@ import {
   FileText,
   AlertCircle,
   Filter,
+  Download,
+  Printer,
+  BookmarkCheck,
+  Briefcase,
 } from 'lucide-react';
 import {
   applyForLeave,
@@ -20,14 +24,17 @@ import {
   getAllLeaves,
 } from '../../api/hrService';
 import { getFaculty } from '../../api/academicService';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 export default function LeaveManager() {
   const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
   const [activeTab, setActiveTab] = useState('my-leaves'); // 'my-leaves' | 'pending'
 
   // Application form state
   const [leaveForm, setLeaveForm] = useState({
     facultyId: '',
+    leaveType: 'CASUAL_LEAVE',
     startDate: '',
     endDate: '',
     reason: '',
@@ -55,9 +62,11 @@ export default function LeaveManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allLeaves'] });
       queryClient.invalidateQueries({ queryKey: ['pendingLeaves'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success('Leave application submitted successfully!');
       setLeaveForm({
         facultyId: facultyList.length > 0 ? String(facultyList[0].id) : '',
+        leaveType: 'CASUAL_LEAVE',
         startDate: '',
         endDate: '',
         reason: '',
@@ -76,6 +85,7 @@ export default function LeaveManager() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pendingLeaves'] });
       queryClient.invalidateQueries({ queryKey: ['allLeaves'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       const action = variables.status === 'APPROVED' ? 'approved' : 'rejected';
       toast.success(`Leave request ${action} successfully!`);
     },
@@ -106,9 +116,10 @@ export default function LeaveManager() {
 
     applyMutation.mutate({
       facultyId: Number(leaveForm.facultyId),
+      leaveType: leaveForm.leaveType,
       startDate: leaveForm.startDate,
       endDate: leaveForm.endDate,
-      reason: leaveForm.reason.trim(),
+      reason: `[${leaveForm.leaveType}] ${leaveForm.reason.trim()}`,
     });
   };
 
@@ -116,8 +127,108 @@ export default function LeaveManager() {
     reviewMutation.mutate({
       leaveId,
       status,
-      reviewNotes: status === 'APPROVED' ? 'Approved by HR Manager' : 'Rejected by HR Manager',
+      reviewNotes: status === 'APPROVED' ? 'Approved by HR Directorate' : 'Rejected by HR Directorate',
     });
+  };
+
+  const exportLeaveLedgerCsv = () => {
+    if (allLeaves.length === 0) {
+      toast.error('No leave records to export.');
+      return;
+    }
+
+    const headers = [
+      'Sl No',
+      'Faculty Member',
+      'Employee Code',
+      'Leave Cadre',
+      'Start Date',
+      'End Date',
+      'Duration (Days)',
+      'Statutory Status',
+      'Reason',
+      'Institution Name',
+      'Campus Node',
+      'Export Date',
+    ];
+
+    const rows = allLeaves.map((l, idx) => {
+      const type = l.reason?.startsWith('[') ? l.reason.substring(1, l.reason.indexOf(']')) : 'CASUAL_LEAVE';
+      return [
+        idx + 1,
+        l.facultyName || 'Faculty',
+        l.employeeId || `EMP-${l.facultyId}`,
+        type,
+        l.startDate,
+        l.endDate,
+        l.daysCount || 1,
+        l.status,
+        l.reason || 'N/A',
+        institution.name || 'Central University System',
+        institution.campus || 'Main Campus',
+        new Date().toISOString().split('T')[0],
+      ];
+    });
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers, ...rows]
+        .map((e) => e.map((cell) => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Staff_Leave_Ledger_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Staff leave ledger exported to CSV successfully.');
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const renderLeaveTypeBadge = (reasonStr) => {
+    const isDuty = reasonStr?.includes('DUTY_LEAVE');
+    const isEarned = reasonStr?.includes('EARNED_LEAVE');
+    const isMedical = reasonStr?.includes('MEDICAL_LEAVE');
+    const isStudy = reasonStr?.includes('STUDY_LEAVE');
+
+    if (isDuty) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+          <Briefcase className="w-3 h-3 text-blue-600" /> Duty (DL)
+        </span>
+      );
+    }
+    if (isEarned) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+          <BookmarkCheck className="w-3 h-3 text-purple-600" /> Earned (EL)
+        </span>
+      );
+    }
+    if (isMedical) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+          <AlertCircle className="w-3 h-3 text-amber-600" /> Medical (ML)
+        </span>
+      );
+    }
+    if (isStudy) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+          <FileText className="w-3 h-3 text-indigo-600" /> Research (SCL)
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+        <Calendar className="w-3 h-3 text-emerald-600" /> Casual (CL)
+      </span>
+    );
   };
 
   // Status Badge Component
@@ -162,35 +273,56 @@ export default function LeaveManager() {
           </p>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={() => setActiveTab('my-leaves')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'my-leaves'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            type="button"
+            onClick={exportLeaveLedgerCsv}
+            disabled={allLeaves.length === 0}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-all disabled:opacity-50"
+            title="Export staff leave ledger to CSV"
           >
-            <Calendar className="w-4 h-4" />
-            My Leaves
+            <Download className="w-3.5 h-3.5 text-indigo-600" /> Export CSV
           </button>
           <button
-            onClick={() => setActiveTab('pending')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all relative ${
-              activeTab === 'pending'
-                ? 'bg-white text-indigo-600 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            type="button"
+            onClick={handlePrint}
+            disabled={allLeaves.length === 0}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-all disabled:opacity-50"
+            title="Print official staff leave register"
           >
-            <UserCheck className="w-4 h-4" />
-            Pending Approvals
-            {pendingLeaves.length > 0 && (
-              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-indigo-600 rounded-full">
-                {pendingLeaves.length}
-              </span>
-            )}
+            <Printer className="w-3.5 h-3.5 text-slate-600" /> Print Register
           </button>
+
+          {/* Tab Switcher */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setActiveTab('my-leaves')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'my-leaves'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              My Leaves
+            </button>
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all relative ${
+                activeTab === 'pending'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              Pending Approvals
+              {pendingLeaves.length > 0 && (
+                <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-indigo-600 rounded-full">
+                  {pendingLeaves.length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -277,6 +409,26 @@ export default function LeaveManager() {
                 )}
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  Leave Cadre (UGC Standard) <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  aria-label="Leave Cadre"
+                  name="leaveType"
+                  value={leaveForm.leaveType}
+                  onChange={(e) => setLeaveForm({ ...leaveForm, leaveType: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                  required
+                >
+                  <option value="CASUAL_LEAVE">Casual Leave (CL) - Routine Personal Absence</option>
+                  <option value="DUTY_LEAVE">Duty Leave (DL) - Academic Exam Duty / Conference</option>
+                  <option value="EARNED_LEAVE">Earned Leave (EL) - Vacation / Service Credit</option>
+                  <option value="MEDICAL_LEAVE">Medical Leave (ML) - Health / Convalescence</option>
+                  <option value="STUDY_LEAVE">Research / Sabbatical Leave (SCL)</option>
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">
@@ -350,6 +502,7 @@ export default function LeaveManager() {
                 <thead className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4 font-semibold">Faculty</th>
+                    <th className="py-3 px-4 font-semibold">Cadre</th>
                     <th className="py-3 px-4 font-semibold">Dates</th>
                     <th className="py-3 px-4 font-semibold">Duration</th>
                     <th className="py-3 px-4 font-semibold">Reason</th>
@@ -359,13 +512,13 @@ export default function LeaveManager() {
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {isAllLoading ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400">
+                      <td colSpan={6} className="py-8 text-center text-slate-400">
                         Loading leave records...
                       </td>
                     </tr>
                   ) : allLeaves.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-400">
+                      <td colSpan={6} className="py-12 text-center text-slate-400">
                         No leave records recorded yet.
                       </td>
                     </tr>
@@ -376,6 +529,7 @@ export default function LeaveManager() {
                           <div className="font-medium text-slate-900">{leave.facultyName}</div>
                           <div className="text-xs text-slate-500">{leave.employeeId || 'ID: ' + leave.facultyId}</div>
                         </td>
+                        <td className="py-3 px-4">{renderLeaveTypeBadge(leave.reason)}</td>
                         <td className="py-3 px-4 text-xs">
                           <div>{leave.startDate}</div>
                           <div className="text-slate-400">to {leave.endDate}</div>
@@ -384,7 +538,7 @@ export default function LeaveManager() {
                           {leave.daysCount} {leave.daysCount === 1 ? 'day' : 'days'}
                         </td>
                         <td className="py-3 px-4 text-xs text-slate-600 max-w-xs truncate" title={leave.reason}>
-                          {leave.reason}
+                          {leave.reason?.replace(/^\[.*?\]\s*/, '') || leave.reason}
                         </td>
                         <td className="py-3 px-4">{renderStatusBadge(leave.status)}</td>
                       </tr>
@@ -421,6 +575,7 @@ export default function LeaveManager() {
                 <tr>
                   <th className="py-3 px-4 font-semibold">Faculty Details</th>
                   <th className="py-3 px-4 font-semibold">Department</th>
+                  <th className="py-3 px-4 font-semibold">Cadre</th>
                   <th className="py-3 px-4 font-semibold">Dates</th>
                   <th className="py-3 px-4 font-semibold">Days</th>
                   <th className="py-3 px-4 font-semibold">Reason</th>
@@ -430,13 +585,13 @@ export default function LeaveManager() {
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {isPendingLoading ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
+                    <td colSpan={7} className="py-12 text-center text-slate-400">
                       Loading pending approval queue...
                     </td>
                   </tr>
                 ) : pendingLeaves.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-16 text-center text-slate-400">
+                    <td colSpan={7} className="py-16 text-center text-slate-400">
                       <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-75" />
                       <p className="font-medium text-slate-600">All caught up!</p>
                       <p className="text-xs text-slate-400">No pending leave requests awaiting approval.</p>
@@ -454,6 +609,7 @@ export default function LeaveManager() {
                       <td className="py-4 px-4 text-xs text-slate-600">
                         {leave.departmentName || 'General Academic'}
                       </td>
+                      <td className="py-4 px-4">{renderLeaveTypeBadge(leave.reason)}</td>
                       <td className="py-4 px-4 text-xs font-medium">
                         <div>{leave.startDate}</div>
                         <div className="text-slate-400">to {leave.endDate}</div>
@@ -463,7 +619,7 @@ export default function LeaveManager() {
                       </td>
                       <td className="py-4 px-4 text-xs text-slate-600 max-w-sm">
                         <p className="line-clamp-2" title={leave.reason}>
-                          {leave.reason}
+                          {leave.reason?.replace(/^\[.*?\]\s*/, '') || leave.reason}
                         </p>
                       </td>
                       <td className="py-4 px-4 text-right">
