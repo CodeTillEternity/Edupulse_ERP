@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../config/api';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { StudentAvatar } from '../components/StudentAvatar';
 import { PageFrame } from '../components/ui/PageFrame';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -14,10 +15,14 @@ import {
   AlertCircle, 
   User, 
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Download,
+  Printer,
+  FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatCurrency, parseAmount, type StudentFee } from '../hooks/queries/useFinance';
+import { toast } from 'sonner';
 import type { AttendanceResponse } from '../types/attendance';
 import {
   Table,
@@ -56,6 +61,7 @@ interface StudentMeResponse {
 }
 
 export default function StudentDashboard() {
+  const { institution } = useInstitutionStore();
   // 1. Fetch personal student profile
   const { 
     data: student, 
@@ -173,14 +179,91 @@ export default function StudentDashboard() {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 5);
 
+  const isUgcDebarred = attendancePercentage !== null && attendancePercentage < 75;
+  const totalRegisteredCredits = registrations.reduce((sum: number, r: any) => {
+    const cr = Number(r.courseOffering?.course?.credits ?? r.credits ?? 0);
+    return sum + (isNaN(cr) ? 0 : cr);
+  }, 0);
+
+  const exportStudentOverviewCsv = () => {
+    const rows = [
+      ['STUDENT ACADEMIC & FEE SUMMARY DOSSIER', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', ''],
+      ['Student Name', student.fullName, '', ''],
+      ['Roll / Enrollment Number', student.rollNumber, '', ''],
+      ['Department & Batch', `${student.department || 'N/A'} (${student.batch || 'N/A'})`, '', ''],
+      ['Cumulative Attendance', attendancePercentage !== null ? `${attendancePercentage}%` : 'N/A', '', ''],
+      ['UGC Exam Clearance', isUgcDebarred ? 'AT-RISK (<75%)' : 'ELIGIBLE (>=75%)', '', ''],
+      ['Total Tuition Paid', `INR ${totalPaid.toLocaleString('en-IN')}`, '', ''],
+      ['Outstanding Balance', `INR ${totalOutstanding.toLocaleString('en-IN')}`, '', ''],
+      ['Generated On', new Date().toISOString(), '', ''],
+      ['', '', '', ''],
+      ['Registered Course Code', 'Course Title', 'Credits', 'Status'],
+      ...registrations.map((reg: any) => [
+        reg.courseOffering?.course?.code || reg.courseCode || `CR-${reg.courseOfferingId}`,
+        reg.courseOffering?.course?.name || reg.courseName || `Course Offering #${reg.courseOfferingId}`,
+        String(reg.courseOffering?.course?.credits ?? reg.credits ?? '-'),
+        reg.status,
+      ]),
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Student_Overview_${student.rollNumber || student.id}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported academic & financial summary (CSV).');
+  };
+
   return (
     <PageFrame
       title={`Student Workspace — Welcome, ${student.firstName || student.fullName || 'Student'}`}
-      description={`Welcome back, ${student.firstName}. Here is your academic and account overview.`}
+      description={`${institution.name || 'Institutional'} Student Portal • Academic registrations, attendance standing, and billing summary.`}
       breadcrumbs={[{ label: "Dashboard" }]}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" /> Print Summary
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportStudentOverviewCsv} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Export CSV
+          </Button>
+        </div>
+      }
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         
+        {/* UGC 75% Attendance Clearance / Debarment Alert */}
+        {attendancePercentage !== null && (
+          isUgcDebarred ? (
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-center justify-between gap-3">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-rose-800">
+                    UGC 75% Attendance Warning ({attendancePercentage}% &lt; 75%)
+                  </h4>
+                  <p className="text-xs text-rose-700 mt-0.5">
+                    Your cumulative attendance is below the mandatory 75% UGC threshold required for end-semester university examinations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 flex items-center justify-between gap-3">
+              <div className="flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="text-xs font-bold text-emerald-800">
+                  UGC Compliant Attendance ({attendancePercentage}% ≥ 75%)
+                </span>
+                <span className="text-xs text-emerald-600 hidden sm:inline">• Eligible for university examination hall tickets</span>
+              </div>
+            </div>
+          )
+        )}
+
         {/* Student Identity Card Banner */}
         <div className="bg-white border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start md:items-center space-x-4">
@@ -201,19 +284,26 @@ export default function StudentDashboard() {
                 <span>Roll No: <strong className="text-slate-800">{student.rollNumber}</strong></span>
                 <span>Department: <strong className="text-slate-800">{student.department || 'N/A'}</strong></span>
                 <span>Batch: <strong className="text-slate-800">{student.batch || 'N/A'}</strong></span>
+                <span>Registered Credits: <strong className="text-indigo-700">{totalRegisteredCredits}</strong></span>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700 hover:bg-slate-50">
+          <div className="flex items-center flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs">
+              <Link to={`/dashboard/transcripts?roll=${student.rollNumber}`} className="flex items-center space-x-1.5">
+                <FileText className="w-3.5 h-3.5" />
+                <span>Transcript</span>
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs">
               <Link to={`/dashboard/students/${student.id}`} className="flex items-center space-x-1.5">
-                <User className="w-4 h-4" />
+                <User className="w-3.5 h-3.5" />
                 <span>My Profile</span>
               </Link>
             </Button>
-            <Button asChild size="sm" className="bg-slate-900 text-white hover:bg-slate-800">
+            <Button asChild size="sm" className="bg-slate-900 text-white hover:bg-slate-800 text-xs">
               <Link to="/dashboard/finance" className="flex items-center space-x-1.5">
-                <Wallet className="w-4 h-4" />
+                <Wallet className="w-3.5 h-3.5" />
                 <span>Fee Account</span>
               </Link>
             </Button>
