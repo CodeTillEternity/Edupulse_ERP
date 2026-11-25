@@ -1,13 +1,15 @@
 import { useState, useMemo } from 'react';
-import { Search, Loader2 } from 'lucide-react';
+import { Search, Loader2, Download, Printer, CheckCircle2, AlertCircle } from 'lucide-react';
 import { apiClient } from '../config/api';
 import { Input } from '../components/ui/input';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { useMyStudentId } from '../hooks/useMyStudentId';
 import type { AttendanceResponse } from '../types/attendance';
 import FacultyAttendance from './FacultyAttendance';
 import { AdminAttendanceWorkspace } from '../components/attendance/AdminAttendanceWorkspace';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -19,6 +21,7 @@ import {
 
 function StandardAttendance() {
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const { data: myStudentId, isLoading: isLoadingId } = useMyStudentId();
   const isPersonalView = user?.role === 'STUDENT' || user?.role === 'PARENT';
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
@@ -61,15 +64,85 @@ function StandardAttendance() {
     );
   }
 
+  const exportAttendanceLedgerCsv = () => {
+    const list = isPersonalView ? (records || []) : filteredRecords;
+    if (list.length === 0) {
+      toast.error('No attendance records available to export.');
+      return;
+    }
+    const formatDateCell = (d: any) =>
+      Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : String(d || '—');
+
+    const headers = isPersonalView
+      ? ['Date', 'Course/Subject', 'Status', 'Marked By']
+      : ['Date', 'Student Name', 'Roll Number', 'Status', 'Remarks'];
+    const rows = list.map((rec) =>
+      isPersonalView
+        ? [formatDateCell(rec.date), rec.courseCode || 'General', rec.status, rec.markedBy || '-']
+        : [formatDateCell(rec.date), rec.studentName || '-', rec.rollNumber || '-', rec.status, rec.remarks || '-']
+    );
+    const metaRows = [
+      ['STATUTORY ATTENDANCE REGISTER EXPORT', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', ''],
+      ['Exported On', new Date().toISOString(), '', '', ''],
+      ['', '', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Attendance_Ledger_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${list.length} attendance records (CSV).`);
+  };
+
+  const personalTotal = records?.length || 0;
+  const personalPresent = records?.filter((r) => r.status === 'PRESENT').length || 0;
+  const personalPct = personalTotal > 0 ? Math.round((personalPresent / personalTotal) * 100) : null;
+
   if (isPersonalView) {
     return (
-      <div className="p-4 md:p-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div className="p-4 md:p-8 space-y-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900 mb-1">{user?.role === 'PARENT' ? 'Ward Attendance' : 'My Attendance'}</h1>
-            <p className="text-slate-500 text-sm">View your recent attendance records.</p>
+            <p className="text-slate-500 text-sm">{institution.name || 'Institutional'} verified classroom attendance records.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5 text-slate-500" /> Print
+            </button>
+            <button
+              type="button"
+              onClick={exportAttendanceLedgerCsv}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
+            </button>
           </div>
         </div>
+
+        {personalPct !== null && (
+          <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+            personalPct < 75 ? 'bg-rose-50 border-rose-200 text-rose-800' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}>
+            <span className="flex items-center gap-2">
+              {personalPct < 75 ? <AlertCircle className="w-4 h-4 text-rose-600" /> : <CheckCircle2 className="w-4 h-4 text-emerald-600" />}
+              <span>
+                Cumulative Attendance: {personalPct}% ({personalPresent} / {personalTotal} classes) —{' '}
+                {personalPct < 75 ? 'Below UGC 75% Exam Eligibility Minimum' : 'UGC 75% Threshold Cleared'}
+              </span>
+            </span>
+          </div>
+        )}
         <div className="bg-white border border-slate-100 rounded-3xl shadow-sm overflow-x-auto mt-6">
           <Table>
             <TableHeader className="bg-slate-50">
@@ -198,8 +271,25 @@ function StandardAttendance() {
                 </button>
               )}
             </div>
-            <div className="text-sm text-slate-500 font-medium">
-              {filteredRecords.length} records {exceptionsOnly && '(exceptions)'}
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-slate-500 font-medium">
+                {filteredRecords.length} records {exceptionsOnly && '(exceptions)'}
+              </div>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-500" /> Print
+              </button>
+              <button
+                type="button"
+                onClick={exportAttendanceLedgerCsv}
+                disabled={filteredRecords.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
+              </button>
             </div>
           </div>
 

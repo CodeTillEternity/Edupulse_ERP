@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../../config/api';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 import {
   Search,
   Users,
@@ -12,8 +13,11 @@ import {
   Loader2,
   Calendar,
   Layers,
-  GraduationCap
+  GraduationCap,
+  Download,
+  Printer
 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -88,6 +92,7 @@ function formatTime(timeData: string | number[] | undefined | null): string {
 }
 
 export function AdminAttendanceWorkspace() {
+  const { institution } = useInstitutionStore();
   const [selectedSectionId, setSelectedSectionId] = useState<number | ''>('');
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | ''>('');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString);
@@ -227,6 +232,47 @@ export function AdminAttendanceWorkspace() {
       return status === statusFilter;
     });
   }, [enrolledStudents, rosterSearch, statusFilter, attendanceMap]);
+
+  const exportOversightRosterCsv = () => {
+    if (!selectedSection || filteredRoster.length === 0) {
+      toast.error('Select a section with enrolled students to export.');
+      return;
+    }
+    const crs = getCourseInfoForSection(selectedSection);
+    const headers = ['Student ID', 'Student Name', 'Roll Number', 'Attendance Status', 'Faculty Marker', 'Remarks'];
+    const rows = filteredRoster.map((st) => {
+      const rec = attendanceMap.get(st.studentId);
+      const status = rec ? rec.status : 'UNRECORDED';
+      const marker = rec?.markedByFacultyId ? getFacultyName(rec.markedByFacultyId) : 'System';
+      return [
+        `ID #${st.studentId}`,
+        st.studentName,
+        st.rollNumber || 'N/A',
+        status,
+        rec ? marker : '—',
+        rec?.remarks || '',
+      ];
+    });
+    const metaRows = [
+      ['STATUTORY ATTENDANCE OVERSIGHT ROSTER', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', ''],
+      ['Section & Course', `${selectedSection.name} (${crs.code} - ${crs.name})`, '', '', '', ''],
+      ['Target Date', selectedDate, '', '', '', ''],
+      ['Session Attendance Rate', stats.attendancePercentage !== null ? `${stats.attendancePercentage}%` : 'Pending', '', '', '', ''],
+      ['Exported On', new Date().toISOString(), '', '', '', ''],
+      ['', '', '', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Attendance_Oversight_${selectedSection.name}_${selectedDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported oversight roster for ${selectedSection.name} (CSV).`);
+  };
 
   return (
     <div className="space-y-6">
@@ -417,8 +463,8 @@ export function AdminAttendanceWorkspace() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5 w-full sm:w-auto">
-              <div className="relative w-full sm:w-56">
+            <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+              <div className="relative w-full sm:w-52">
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input
                   type="text"
@@ -441,6 +487,22 @@ export function AdminAttendanceWorkspace() {
                 <option value="EXCUSED">Excused</option>
                 <option value="UNRECORDED">Unrecorded</option>
               </select>
+
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-500" /> Print
+              </button>
+              <button
+                type="button"
+                onClick={exportOversightRosterCsv}
+                disabled={filteredRoster.length === 0}
+                className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold cursor-pointer disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
+              </button>
             </div>
           </div>
 
