@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { apiClient } from '../config/api';
 import { PageFrame } from '../components/ui/PageFrame';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
@@ -23,7 +24,9 @@ import {
   Copy,
   ArrowUpRight,
   User,
-  Loader2
+  Loader2,
+  Printer,
+  Download
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatAcademicYearLabel } from '../lib/academicUtils';
@@ -101,6 +104,7 @@ export default function ApplicantDashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const logout = useAuthStore((state) => state.logout);
+  const { institution } = useInstitutionStore();
 
   const [activeTab, setActiveTab] = useState<'applications' | 'inquiries'>('applications');
   const [isNewAppOpen, setIsNewAppOpen] = useState(false);
@@ -303,40 +307,82 @@ export default function ApplicantDashboard() {
 
   const { applicant, isEnrolled, enrollmentNumber, studentId, accountAccess } = dashboard;
 
+  const exportApplicationDossierCsv = () => {
+    const headers = ['Application Number', 'Program', 'Academic Year', 'Status', 'Submitted On', 'Remarks'];
+    const rows = sortedApplications.map((app) => [
+      app.applicationNumber,
+      app.programName || `Program #${app.programId}`,
+      app.academicYearName || `#${app.academicYearId}`,
+      app.status,
+      app.submissionDate || app.submittedAt || '—',
+      app.remarks || '—',
+    ]);
+    const metaRows = [
+      ['APPLICANT ADMISSIONS LIFECYCLE SUMMARY', '', '', '', '', ''],
+      ['Institution', institution.name || 'Institutional Admissions Office', '', '', '', ''],
+      ['Applicant Name', `${applicant.firstName} ${applicant.lastName}`, '', '', '', ''],
+      ['Email / Phone', `${applicant.email} | ${applicant.phone}`, '', '', '', ''],
+      ['Enrollment Status', isEnrolled ? `ENROLLED (${enrollmentNumber || ''})` : 'APPLICANT', '', '', '', ''],
+      ['Generated On', new Date().toISOString(), '', '', '', ''],
+      ['', '', '', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Applicant_Summary_${applicant.id}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported applicant admissions dossier (CSV).');
+  };
+
   return (
     <PageFrame
       title={`Applicant Portal — Welcome, ${[applicant.firstName, applicant.lastName].filter(Boolean).join(' ') || 'Applicant'}`}
-      description="Track the status of your applications, inquiries, and admissions lifecycle"
+      description={`${institution.name || 'Institutional'} Admissions Office • Track your applications, inquiries, and document status`}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" /> Print Offer / Status
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportApplicationDossierCsv} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Export CSV
+          </Button>
+        </div>
+      }
     >
       <div className="space-y-6">
         
-        {/* ENROLLED CELEBRATION BANNER */}
+        {/* ENROLLED CONFIRMATION NOTICE */}
         {isEnrolled && (
-          <div className="p-6 bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl shadow-md space-y-3">
+          <div className="p-6 bg-white border-2 border-emerald-200 rounded-2xl shadow-xs space-y-3">
             <div className="flex items-center space-x-3">
-              <div className="p-2.5 bg-white/20 rounded-xl">
-                <CheckCircle2 className="w-8 h-8 text-white" />
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
               </div>
               <div>
-                <span className="text-xs uppercase font-extrabold tracking-wider bg-white/25 px-2.5 py-0.5 rounded-full">
-                  Admission Finalized & Enrolled
+                <span className="text-[11px] uppercase font-extrabold tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                  Admission Finalized &amp; Enrolled
                 </span>
-                <h3 className="text-xl font-bold mt-1">Official Student Status Conferred!</h3>
+                <h3 className="text-xl font-bold text-slate-900 mt-1">Official Student Status Conferred!</h3>
               </div>
             </div>
-            <p className="text-xs sm:text-sm text-emerald-50 leading-relaxed max-w-2xl">
-              Congratulations! Your admission has been accepted and finalized. You are now an active student at EduPulse.
-              Independent ERP user credentials have been provisioned below for the student and linked guardian.
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
+              Your admission has been verified and finalized by the Registrar. You are now an active student at{' '}
+              <strong className="text-slate-900">{institution.name || 'the Institution'}</strong>.
+              Independent portal user credentials have been provisioned below for the student and linked guardian.
             </p>
             <div className="pt-2 flex flex-wrap items-center gap-3">
-              <div className="bg-black/20 px-3.5 py-1.5 rounded-lg text-xs font-mono">
-                <span className="text-emerald-200 mr-2">Enrollment No:</span>
-                <span className="font-bold text-white tracking-wider">{enrollmentNumber || 'Pending'}</span>
+              <div className="bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-mono">
+                <span className="text-slate-500 mr-2">Enrollment No:</span>
+                <span className="font-bold text-slate-900 tracking-wider">{enrollmentNumber || 'Pending'}</span>
               </div>
               {studentId && (
-                <div className="bg-black/20 px-3.5 py-1.5 rounded-lg text-xs font-mono">
-                  <span className="text-emerald-200 mr-2">Student ID:</span>
-                  <span className="font-bold text-white tracking-wider">#{studentId}</span>
+                <div className="bg-slate-50 border border-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-mono">
+                  <span className="text-slate-500 mr-2">Student ID:</span>
+                  <span className="font-bold text-slate-900 tracking-wider">#{studentId}</span>
                 </div>
               )}
             </div>
