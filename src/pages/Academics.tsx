@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BookOpen,
   GraduationCap,
@@ -14,7 +14,11 @@ import {
   CalendarDays,
   Pencil,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Download,
+  Printer,
+  Award,
+  Layers
 } from 'lucide-react';
 import {
   Table,
@@ -66,6 +70,7 @@ import { toast } from 'sonner';
 import { TimetableTab } from '../components/TimetableTab';
 import { RoomsTab } from '../components/academics/RoomsTab';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { CreateDepartmentDialog } from '../components/academics/CreateDepartmentDialog';
 import { CreateAcademicYearDialog } from '../components/academics/CreateAcademicYearDialog';
 import { CoursePrerequisitesDialog } from '../components/academics/CoursePrerequisitesDialog';
@@ -75,6 +80,7 @@ import { EditOfferingDialog } from '../components/academics/EditOfferingDialog';
 export default function Academics() {
   const [activeTab, setActiveTab] = useState('programs');
   const [isCreating, setIsCreating] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Dialog States
   const [deptDialogOpen, setDeptDialogOpen] = useState(false);
@@ -84,6 +90,7 @@ export default function Academics() {
   const [editingOffering, setEditingOffering] = useState<CourseOffering | null>(null);
 
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
 
   const { data: departments = [] } = useDepartments();
@@ -298,11 +305,125 @@ export default function Academics() {
     }
   };
 
+  const q = searchQuery.trim().toLowerCase();
+
+  const filteredPrograms = useMemo(() => {
+    if (!programs) return [];
+    if (!q) return programs;
+    return programs.filter((p) =>
+      p.code.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q) ||
+      (p.degree || p.type || '').toLowerCase().includes(q)
+    );
+  }, [programs, q]);
+
+  const filteredCourses = useMemo(() => {
+    if (!courses) return [];
+    if (!q) return courses;
+    return courses.filter((c) =>
+      c.code.toLowerCase().includes(q) ||
+      c.name.toLowerCase().includes(q)
+    );
+  }, [courses, q]);
+
+  const filteredBatches = useMemo(() => {
+    if (!batches) return [];
+    if (!q) return batches;
+    return batches.filter((b) =>
+      (b.code || '').toLowerCase().includes(q) ||
+      (b.name || '').toLowerCase().includes(q)
+    );
+  }, [batches, q]);
+
+  const filteredSemesters = useMemo(() => {
+    if (!semesters) return [];
+    if (!q) return semesters;
+    return semesters.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      String(s.semesterNumber).includes(q)
+    );
+  }, [semesters, q]);
+
+  const filteredOfferings = useMemo(() => {
+    if (!offerings) return [];
+    if (!q) return offerings;
+    return offerings.filter((o) =>
+      (o.course?.code || '').toLowerCase().includes(q) ||
+      (o.course?.name || '').toLowerCase().includes(q) ||
+      (o.semester?.name || '').toLowerCase().includes(q)
+    );
+  }, [offerings, q]);
+
+  const filteredSections = useMemo(() => {
+    if (!sections) return [];
+    if (!q) return sections;
+    return sections.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      String(s.courseOfferingId).includes(q)
+    );
+  }, [sections, q]);
+
+  const totalCatalogCredits = useMemo(
+    () => (courses || []).reduce((sum, c) => sum + (Number(c.credits) || 0), 0),
+    [courses]
+  );
+
+  const publishedOfferingsCount = useMemo(
+    () => (offerings || []).filter((o) => o.isPublished).length,
+    [offerings]
+  );
+
+  const exportActiveRegistryCsv = () => {
+    let headers: string[] = [];
+    let rows: string[][] = [];
+    const tabName = activeTab.toUpperCase();
+
+    if (activeTab === 'programs') {
+      headers = ['Code', 'Program Name', 'Degree Type', 'Duration (Years)', 'Status'];
+      rows = filteredPrograms.map((p) => [p.code, formatProgramLabel(p), p.type || p.degree || 'Degree', String(p.durationYears || p.duration || 4), p.isActive ? 'ACTIVE' : 'INACTIVE']);
+    } else if (activeTab === 'courses') {
+      headers = ['Course Code', 'Course Name', 'CBCS Credits', 'Status'];
+      rows = filteredCourses.map((c) => [c.code, c.name, String(c.credits), c.isActive ? 'ACTIVE' : 'INACTIVE']);
+    } else if (activeTab === 'batches') {
+      headers = ['Batch Code', 'Batch Name', 'Admission Year', 'Graduation Year', 'Status'];
+      rows = filteredBatches.map((b) => [b.code || `BATCH-${b.id}`, b.name || '', String(b.admissionYear || ''), String(b.graduationYear || ''), b.isActive ? 'ACTIVE' : 'INACTIVE']);
+    } else if (activeTab === 'semesters') {
+      headers = ['Semester Name', 'Number', 'Start Date', 'End Date', 'Status'];
+      rows = filteredSemesters.map((s) => [s.name || '', `Sem ${s.semesterNumber}`, s.startDate || '', s.endDate || '', s.isActive ? 'ACTIVE' : 'INACTIVE']);
+    } else if (activeTab === 'offerings') {
+      headers = ['Course Code', 'Course Title', 'Semester', 'Max Capacity', 'Status'];
+      rows = filteredOfferings.map((o) => [o.course?.code || '', o.course?.name || '', o.semester?.name || '', String(o.maxCapacity || ''), o.isPublished ? 'PUBLISHED' : 'DRAFT']);
+    } else {
+      headers = ['Section Name', 'Offering ID', 'Enrolled', 'Capacity', 'Status'];
+      rows = filteredSections.map((s) => [s.name || '', String(s.courseOfferingId || ''), String(s.currentEnrollment || 0), String(s.capacity || 0), s.isActive ? 'ACTIVE' : 'INACTIVE']);
+    }
+
+    const metaRows = [
+      [`ACADEMIC CURRICULUM REGISTRY — ${tabName}`, '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', ''],
+      ['CBCS Framework', 'UGC Choice-Based Credit System', '', '', ''],
+      ['Exported On', new Date().toISOString(), '', '', ''],
+      ['', '', '', '', '']
+    ];
+
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Academics_${tabName}_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${tabName.toLowerCase()} curriculum registry (CSV).`);
+  };
+
   const getTableContent = () => {
     if (activeTab === 'programs') {
       if (isLoadingPrograms) return <SkeletonTable columns={5} />;
-      if (!programs || programs.length === 0) return <EmptyState tab="Programs" />;
-      return programs.map(p => (
+      if (!filteredPrograms || filteredPrograms.length === 0) return <EmptyState tab="Programs" />;
+      return filteredPrograms.map(p => (
         <TableRow key={p.id}>
           <TableCell className="font-semibold px-6 py-4">{p.code}</TableCell>
           <TableCell className="px-6 py-4">{formatProgramLabel(p)}</TableCell>
@@ -354,8 +475,8 @@ export default function Academics() {
 
     if (activeTab === 'courses') {
       if (isLoadingCourses) return <SkeletonTable columns={4} />;
-      if (!courses || courses.length === 0) return <EmptyState tab="Courses" />;
-      return courses.map(c => (
+      if (!filteredCourses || filteredCourses.length === 0) return <EmptyState tab="Courses" />;
+      return filteredCourses.map(c => (
         <TableRow key={c.id}>
           <TableCell className="font-semibold px-6 py-4">{c.code}</TableCell>
           <TableCell className="px-6 py-4">{c.name}</TableCell>
@@ -408,8 +529,8 @@ export default function Academics() {
 
     if (activeTab === 'batches') {
       if (isLoadingBatches) return <SkeletonTable columns={6} />;
-      if (!batches || batches.length === 0) return <EmptyState tab="Batches" />;
-      return batches.map(b => {
+      if (!filteredBatches || filteredBatches.length === 0) return <EmptyState tab="Batches" />;
+      return filteredBatches.map(b => {
         const prog = programs?.find(p => p.id === b.programId);
         return (
           <TableRow key={b.id}>
@@ -460,8 +581,8 @@ export default function Academics() {
 
     if (activeTab === 'semesters') {
       if (isLoadingSemesters) return <SkeletonTable columns={4} />;
-      if (!semesters || semesters.length === 0) return <EmptyState tab="Semesters" />;
-      return semesters.map(s => (
+      if (!filteredSemesters || filteredSemesters.length === 0) return <EmptyState tab="Semesters" />;
+      return filteredSemesters.map(s => (
         <TableRow key={s.id}>
           <TableCell className="font-semibold px-6 py-4">{s.name}</TableCell>
           <TableCell className="px-6 py-4">Sem {s.semesterNumber}</TableCell>
@@ -504,8 +625,8 @@ export default function Academics() {
 
     if (activeTab === 'offerings') {
       if (isLoadingOfferings) return <SkeletonTable columns={5} />;
-      if (!offerings || offerings.length === 0) return <EmptyState tab="Course Offerings" />;
-      return offerings.map(o => (
+      if (!filteredOfferings || filteredOfferings.length === 0) return <EmptyState tab="Course Offerings" />;
+      return filteredOfferings.map(o => (
         <TableRow key={o.id}>
           <TableCell className="font-semibold px-6 py-4">{o.course?.code}</TableCell>
           <TableCell className="px-6 py-4">{o.course?.name}</TableCell>
@@ -573,8 +694,8 @@ export default function Academics() {
 
     if (activeTab === 'sections') {
       if (isLoadingSections) return <SkeletonTable columns={5} />;
-      if (!sections || sections.length === 0) return <EmptyState tab="Sections" />;
-      return sections.map(s => {
+      if (!filteredSections || filteredSections.length === 0) return <EmptyState tab="Sections" />;
+      return filteredSections.map(s => {
         const offering = offerings?.find(o => o.id === s.courseOfferingId);
         return (
           <TableRow key={s.id}>
@@ -658,13 +779,41 @@ export default function Academics() {
 
   return (
     <div className="p-4 md:p-8 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
+          <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">
+            <Award className="w-3.5 h-3.5" /> UGC Choice-Based Credit System (CBCS)
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600 font-medium normal-case">{institution.name || 'Central University'}</span>
+          </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-1">Academics Core</h1>
-          <p className="text-slate-500 text-sm">Configure programs, degrees, course catalog, batches, and prerequisites.</p>
+          <p className="text-slate-500 text-sm">Configure degree programs, CBCS course credits, student cohorts, and prerequisites.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {activeTab !== 'timetable' && activeTab !== 'rooms' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.print()}
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 h-10 px-4 rounded-full text-xs font-semibold"
+              >
+                <Printer className="w-3.5 h-3.5 mr-1.5" />
+                Print Registry
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportActiveRegistryCsv}
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 h-10 px-4 rounded-full text-xs font-semibold"
+              >
+                <Download className="w-3.5 h-3.5 mr-1.5" />
+                Export CSV
+              </Button>
+            </>
+          )}
+
           {isAdmin && (
             <>
               <Button
@@ -706,6 +855,51 @@ export default function Academics() {
         </div>
       </div>
 
+      {/* Curriculum Summary KPI Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Degree Programs</span>
+            <GraduationCap className="w-4 h-4 text-indigo-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 mt-1">{programs?.length || 0}</div>
+          <p className="text-[11px] text-slate-500 mt-0.5">Across {departments.length} departments</p>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Catalog Courses &amp; Credits</span>
+            <BookOpen className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 mt-1">
+            {courses?.length || 0} <span className="text-xs font-semibold text-emerald-700">({totalCatalogCredits} Credits)</span>
+          </div>
+          <p className="text-[11px] text-slate-500 mt-0.5">CBCS approved syllabus bank</p>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Published Course Offerings</span>
+            <Layers className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 mt-1">
+            {publishedOfferingsCount} / {offerings?.length || 0}
+          </div>
+          <p className="text-[11px] text-slate-500 mt-0.5">Open for term registration</p>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Batches &amp; Sections</span>
+            <Users className="w-4 h-4 text-amber-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 mt-1">
+            {batches?.length || 0} Batches • {sections?.length || 0} Sec
+          </div>
+          <p className="text-[11px] text-slate-500 mt-0.5">Active teaching cohorts</p>
+        </div>
+      </div>
+
       <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
         <div className="flex border-b border-slate-100 px-6 pt-4 space-x-8 overflow-x-auto whitespace-nowrap custom-scrollbar">
           {[
@@ -720,7 +914,7 @@ export default function Academics() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setIsCreating(false); }}
+              onClick={() => { setActiveTab(tab.id); setIsCreating(false); setSearchQuery(''); }}
               className={`pb-4 px-2 text-sm font-semibold flex items-center transition-all border-b-2 ${activeTab === tab.id ? 'border-black text-black' : 'border-transparent text-slate-400 hover:text-slate-700'}`}
             >
               <tab.icon className="w-4 h-4 mr-2" />
@@ -1069,10 +1263,15 @@ export default function Academics() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={`Search ${activeTab}...`}
                 className="pl-9 pr-4 py-2 bg-white border-slate-200 rounded-lg text-sm w-full sm:w-72 h-10"
               />
             </div>
+            <span className="text-xs font-medium text-slate-500">
+              Showing filtered <strong className="text-slate-800 capitalize">{activeTab}</strong> records
+            </span>
           </div>
         )}
 
