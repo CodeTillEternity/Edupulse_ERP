@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  DollarSign,
+  IndianRupee,
   Calendar,
   CheckCircle2,
   Clock,
@@ -13,12 +13,19 @@ import {
   Search,
   Filter,
   Check,
+  Download,
+  Printer,
+  FileText,
+  X,
+  Award,
+  ShieldCheck,
 } from 'lucide-react';
 import {
   getMonthlyPayroll,
   generateMonthlyPayroll,
   markPayrollAsPaid,
 } from '../../api/hrService';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -27,12 +34,14 @@ const MONTH_NAMES = [
 
 export default function PayrollDashboard() {
   const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
 
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(11); // Default November
   const [selectedYear, setSelectedYear] = useState(2026); // Academic year 2026
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'GENERATED' | 'PAID'
+  const [activePayslip, setActivePayslip] = useState(null);
 
   // Fetch Monthly Payroll
   const {
@@ -56,6 +65,7 @@ export default function PayrollDashboard() {
       queryClient.invalidateQueries({
         queryKey: ['monthlyPayroll', selectedMonth, selectedYear],
       });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(
         `Successfully generated payroll batch for ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} (${data.length} records)`
       );
@@ -73,6 +83,7 @@ export default function PayrollDashboard() {
       queryClient.invalidateQueries({
         queryKey: ['monthlyPayroll', selectedMonth, selectedYear],
       });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(
         `Marked payslip as PAID for ${updatedRecord.facultyName || 'Faculty member'}`
       );
@@ -89,6 +100,69 @@ export default function PayrollDashboard() {
 
   const handleMarkAsPaid = (payrollId) => {
     payMutation.mutate(payrollId);
+  };
+
+  const exportPayrollCsv = () => {
+    if (filteredRecords.length === 0) {
+      toast.error('No payroll records to export for this period.');
+      return;
+    }
+
+    const headers = [
+      'Sl No',
+      'Faculty Member',
+      'Employee ID',
+      'Department',
+      'Period Month',
+      'Period Year',
+      'Base Gross Salary (INR)',
+      'Unpaid Leave Deductions (INR)',
+      'Net Payable (INR)',
+      'Disbursement Status',
+      'Disbursement Date',
+      'Institution Name',
+      'Campus Node',
+      'Export Timestamp',
+    ];
+
+    const rows = filteredRecords.map((r, idx) => [
+      idx + 1,
+      r.facultyName || 'Faculty',
+      r.employeeId || `EMP-${r.facultyId}`,
+      r.departmentName || 'General Academic',
+      MONTH_NAMES[selectedMonth - 1],
+      selectedYear,
+      Number(r.baseSalary || 0).toFixed(2),
+      Number(r.deductions || 0).toFixed(2),
+      Number(r.netSalary || 0).toFixed(2),
+      r.status,
+      r.paymentDate || 'N/A',
+      institution.name || 'Central University System',
+      institution.campus || 'Main Campus',
+      new Date().toISOString(),
+    ]);
+
+    const csvContent =
+      'data:text/csv;charset=utf-8,' +
+      [headers, ...rows]
+        .map((e) => e.map((cell) => `"${(cell ?? '').toString().replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute(
+      'download',
+      `Payroll_Disbursement_Register_${MONTH_NAMES[selectedMonth - 1]}_${selectedYear}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Payroll disbursement register exported to CSV.');
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   // Filter records
@@ -120,7 +194,7 @@ export default function PayrollDashboard() {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <DollarSign className="w-7 h-7 text-emerald-600" />
+            <IndianRupee className="w-7 h-7 text-emerald-600" />
             Monthly Payroll Dashboard
           </h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -129,7 +203,27 @@ export default function PayrollDashboard() {
         </div>
 
         {/* Period Selector & Action */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            onClick={exportPayrollCsv}
+            disabled={filteredRecords.length === 0}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition-all disabled:opacity-50"
+            title="Export payroll disbursement register to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-indigo-600" /> Export CSV
+          </button>
+
+          <button
+            type="button"
+            onClick={handlePrint}
+            disabled={filteredRecords.length === 0}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition-all disabled:opacity-50"
+            title="Print payroll batch summary"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-600" /> Print Batch
+          </button>
+
           <div className="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-300 rounded-xl shadow-sm">
             <Calendar className="w-4 h-4 text-slate-400" />
             <select
@@ -176,7 +270,7 @@ export default function PayrollDashboard() {
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Net Payable</p>
             <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
-              <DollarSign className="w-5 h-5" />
+              <IndianRupee className="w-5 h-5" />
             </div>
           </div>
           <h3 className="text-2xl font-bold text-slate-900 mt-2">{formatCurrency(totalNet)}</h3>
@@ -327,20 +421,31 @@ export default function PayrollDashboard() {
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      {record.status === 'PAID' ? (
-                        <span className="text-xs font-medium text-emerald-600 inline-flex items-center gap-1">
-                          <Check className="w-4 h-4" /> Disbursed
-                        </span>
-                      ) : (
+                      <div className="inline-flex items-center gap-2">
                         <button
-                          onClick={() => handleMarkAsPaid(record.id)}
-                          disabled={payMutation.isPending}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
+                          type="button"
+                          onClick={() => setActivePayslip(record)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                          title="View & Print Official Payslip Voucher"
                         >
-                          <CreditCard className="w-3.5 h-3.5" />
-                          Mark as Paid
+                          <FileText className="w-3.5 h-3.5 text-slate-600" />
+                          Payslip
                         </button>
-                      )}
+                        {record.status === 'PAID' ? (
+                          <span className="text-xs font-medium text-emerald-600 inline-flex items-center gap-1">
+                            <Check className="w-4 h-4" /> Disbursed
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleMarkAsPaid(record.id)}
+                            disabled={payMutation.isPending}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
+                          >
+                            <CreditCard className="w-3.5 h-3.5" />
+                            Mark as Paid
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -349,6 +454,134 @@ export default function PayrollDashboard() {
           </table>
         </div>
       </div>
+
+      {/* Official Institutional Payslip Voucher Modal */}
+      {activePayslip && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-2xl w-full p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-200 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl border border-amber-300 bg-amber-50 p-2 flex items-center justify-center text-amber-800">
+                  <Award className="w-6 h-6 text-amber-700" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight">
+                    {institution.name || 'Central University System'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {institution.campus || 'Main Campus'} • Institutional Code: {institution.code || 'INST-2026'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePayslip(null)}
+                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Payslip Subheader */}
+            <div className="text-center bg-slate-50 border border-slate-200/80 rounded-xl py-3 px-4">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-700">
+                Statutory Monthly Salary Voucher
+              </span>
+              <p className="text-sm font-extrabold text-indigo-900 mt-0.5">
+                Pay Period: {MONTH_NAMES[selectedMonth - 1]} {selectedYear}
+              </p>
+            </div>
+
+            {/* Faculty Information Grid */}
+            <div className="grid grid-cols-2 gap-4 text-xs border border-slate-200 rounded-xl p-4 bg-slate-50/50">
+              <div>
+                <span className="text-slate-400 font-medium">Employee Name:</span>
+                <p className="font-bold text-slate-900 text-sm">{activePayslip.facultyName}</p>
+              </div>
+              <div>
+                <span className="text-slate-400 font-medium">Employee Code / PRN:</span>
+                <p className="font-mono font-bold text-slate-800">{activePayslip.employeeId || `EMP-${activePayslip.facultyId}`}</p>
+              </div>
+              <div>
+                <span className="text-slate-400 font-medium">Department / Faculty:</span>
+                <p className="font-semibold text-slate-800">{activePayslip.departmentName || 'General Academic'}</p>
+              </div>
+              <div>
+                <span className="text-slate-400 font-medium">Disbursement Status:</span>
+                <p className="font-bold text-emerald-700 uppercase">{activePayslip.status} ({activePayslip.paymentDate || 'Pending Final Settlement'})</p>
+              </div>
+            </div>
+
+            {/* Compensation Breakdown Table */}
+            <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+              <table className="w-full">
+                <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="py-2.5 px-4 text-left">Earnings Head</th>
+                    <th className="py-2.5 px-4 text-right">Amount (INR)</th>
+                    <th className="py-2.5 px-4 text-left border-l border-slate-200">Deductions Head</th>
+                    <th className="py-2.5 px-4 text-right">Amount (INR)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tr>
+                    <td className="py-2.5 px-4">Basic Pay (UGC Scale)</td>
+                    <td className="py-2.5 px-4 text-right font-medium">{formatCurrency(activePayslip.baseSalary)}</td>
+                    <td className="py-2.5 px-4 border-l border-slate-200">Unpaid Leave Absences</td>
+                    <td className="py-2.5 px-4 text-right font-medium text-rose-600">
+                      {Number(activePayslip.deductions) > 0 ? `-${formatCurrency(activePayslip.deductions)}` : '₹0.00'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="py-2.5 px-4">Academic Grade Allowance (AGP)</td>
+                    <td className="py-2.5 px-4 text-right font-medium">Included in Basic</td>
+                    <td className="py-2.5 px-4 border-l border-slate-200">Provident Fund (PF)</td>
+                    <td className="py-2.5 px-4 text-right font-medium text-slate-500">Exempt / Included</td>
+                  </tr>
+                  <tr className="bg-slate-50 font-bold border-t border-slate-200">
+                    <td className="py-2.5 px-4">Gross Compensation</td>
+                    <td className="py-2.5 px-4 text-right text-slate-900">{formatCurrency(activePayslip.baseSalary)}</td>
+                    <td className="py-2.5 px-4 border-l border-slate-200">Total Deductions</td>
+                    <td className="py-2.5 px-4 text-right text-rose-700">-{formatCurrency(activePayslip.deductions || 0)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Net Salary Highlight */}
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider">Net Salary Disbursed</span>
+                <p className="text-2xl font-black text-emerald-900">{formatCurrency(activePayslip.netSalary)}</p>
+              </div>
+              <div className="text-right">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full">
+                  <ShieldCheck className="w-3.5 h-3.5" /> Authenticated by Bursar
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200">
+              <button
+                type="button"
+                onClick={() => setActivePayslip(null)}
+                className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm"
+              >
+                <Printer className="w-4 h-4" /> Print Official Payslip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
