@@ -1,98 +1,156 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { apiClient } from '../config/api';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { axiosClient, invoke, isTauriDesktop, resolveBaseUrl } from '../api/axiosClient';
 import { useAuthStore } from '../store/useAuthStore';
-import { 
-  Loader2, 
-  Eye, 
-  EyeOff, 
-  Shield, 
-  Users, 
-  GraduationCap, 
-  User, 
-  FileText, 
-  UserPlus, 
-  LogIn,
-  DollarSign
-} from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card';
+import { useInstitutionStore } from '../store/useInstitutionStore';
+import { useTenantTheme } from '../hooks/useTenantTheme';
+import {
+  extractDominantColors,
+  deriveThemeFromColor,
+  DEFAULT_THEME,
+  type ExtractedColors,
+} from '../lib/colorExtractor';
+import { Loader2, Eye, EyeOff, Building2 } from 'lucide-react';
+import { ServerSettingsModal } from '../components/ServerSettingsModal';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
-import { useTenantTheme } from '../hooks/useTenantTheme';
 
 export default function Login() {
+  const [searchParams] = useSearchParams();
   const { branding, subdomain } = useTenantTheme();
-  const isBranded = Boolean(subdomain && branding);
-
-  const [searchParams, setSearchParams] = useSearchParams();
-  const initialMode = searchParams.get('tab') === 'applicant' || searchParams.get('role')?.toLowerCase() === 'applicant'
-    ? 'APPLICANT'
-    : 'ERP';
-
-  const [mode, setMode] = useState<'ERP' | 'APPLICANT'>(initialMode);
-  const [applicantSubMode, setApplicantSubMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
 
   const roleParam = searchParams.get('role')?.toUpperCase();
   const initialRole: 'ADMIN' | 'FACULTY' | 'STUDENT' | 'PARENT' | 'FINANCE' =
-    (roleParam === 'FACULTY' || roleParam === 'STUDENT' || roleParam === 'PARENT' || roleParam === 'FINANCE')
+    roleParam === 'FACULTY' || roleParam === 'STUDENT' || roleParam === 'PARENT' || roleParam === 'FINANCE'
       ? roleParam
       : 'ADMIN';
 
-  // Institutional ERP Form State
   const [activeTab, setActiveTab] = useState<'ADMIN' | 'FACULTY' | 'STUDENT' | 'PARENT' | 'FINANCE'>(initialRole);
   const [username, setUsername] = useState(searchParams.get('username') || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Applicant Registration Form State
-  const [regFirstName, setRegFirstName] = useState('');
-  const [regLastName, setRegLastName] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regDob, setRegDob] = useState('');
-  const [regGender, setRegGender] = useState('MALE');
-  const [regAddress, setRegAddress] = useState('');
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [activeServerUrl, setActiveServerUrl] = useState<string>(() => resolveBaseUrl());
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
+  const { institution, updateInstitution } = useInstitutionStore();
+
+  const effectiveName = (subdomain && branding?.institutionName) || institution.name || 'Central University System';
+  const effectiveLogoUrl = (subdomain && branding?.logoUrl) || institution.logoUrl;
+  const effectiveCampus = subdomain
+    ? `${subdomain}.edupulseerp.in`
+    : institution.campus || 'Main Campus • Institutional Node 01';
+  const effectivePrimary = (subdomain && branding?.primaryColorHex) || institution.brandPrimary;
+  const effectiveSecondary = (subdomain && branding?.secondaryColorHex) || institution.brandSecondary;
+
+  const [theme, setTheme] = useState<ExtractedColors>(() => {
+    if (effectivePrimary && effectivePrimary !== '#2563eb') {
+      return deriveThemeFromColor(effectivePrimary, effectiveSecondary || undefined);
+    }
+    if (effectiveName.toLowerCase().includes('arya')) {
+      return deriveThemeFromColor('#991b1b', '#f59e0b');
+    }
+    return DEFAULT_THEME;
+  });
 
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    const roleParam = searchParams.get('role');
-    const userParam = searchParams.get('username');
-    if (tabParam === 'applicant' || roleParam?.toLowerCase() === 'applicant') {
-      setMode('APPLICANT');
+    let active = true;
+
+    if (effectivePrimary && effectivePrimary !== '#2563eb') {
+      setTheme(deriveThemeFromColor(effectivePrimary, effectiveSecondary || undefined));
+    } else if (effectiveLogoUrl) {
+      extractDominantColors(effectiveLogoUrl)
+        .then((extracted) => {
+          if (!active) return;
+          setTheme(extracted);
+          if (!institution.brandPrimary || institution.brandPrimary === '#2563eb' || !institution.bgDark) {
+            updateInstitution({
+              brandPrimary: extracted.primary,
+              brandSecondary: extracted.secondary,
+              brandPrimaryRgb: extracted.primaryRgb,
+              brandSecondaryRgb: extracted.secondaryRgb,
+              bgDark: extracted.bgDark,
+              bgDarkest: extracted.bgDarkest,
+            });
+          }
+        })
+        .catch((err) => {
+          console.warn('[Login] Theme extraction failed:', err);
+        });
+    } else if (effectiveName.toLowerCase().includes('arya')) {
+      setTheme(deriveThemeFromColor('#991b1b', '#f59e0b'));
     } else {
-      if (tabParam === 'erp' || roleParam) {
-        setMode('ERP');
+      setTheme(DEFAULT_THEME);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [effectiveLogoUrl, effectivePrimary, effectiveSecondary, effectiveName]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && (e.key === 'S' || e.key === 's')) {
+        e.preventDefault();
+        setIsServerModalOpen(true);
       }
-      if (roleParam) {
-        const upper = roleParam.toUpperCase();
-        if (['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'].includes(upper)) {
-          setActiveTab(upper as any);
-        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const role = searchParams.get('role');
+    const user = searchParams.get('username');
+    if (role) {
+      const upper = role.toUpperCase();
+      if (upper === 'ADMIN' || upper === 'FACULTY' || upper === 'STUDENT' || upper === 'PARENT' || upper === 'FINANCE') {
+        setActiveTab(upper);
       }
-      if (userParam) {
-        setUsername(userParam);
-      }
+    }
+    if (user) {
+      setUsername(user);
     }
   }, [searchParams]);
 
-  // Handle ERP Institutional Sign In
   const handleErpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const response = await apiClient.post('/auth/login', { username, password, role: activeTab });
-      const { accessToken, refreshToken, username: user, role, permissions } = response.data;
-      
-      login(accessToken, refreshToken, { username: user, role, permissions });
+      const response = await axiosClient.post('/auth/login', { username, password, role: activeTab });
+      const { accessToken, token: rawToken, refreshToken, username: user, role, permissions, tenantId, tenantStatus } = response.data;
+      const token = accessToken || rawToken;
+
+      if (isTauriDesktop()) {
+        try {
+          await invoke('store_account_tokens', {
+            account: user || 'default_user',
+            tokens: {
+              access_token: token,
+              refresh_token: refreshToken || null,
+            },
+          });
+        } catch (vaultErr) {
+          console.error('[Login] Failed to store secure token in native vault:', vaultErr);
+        }
+      }
+
+      const finalRole = (role || activeTab || 'ADMIN').toUpperCase().replace(/^ROLE_/, '');
+      const finalUsername = user || username || (activeTab === 'ADMIN' ? 'admin' : activeTab.toLowerCase());
+      login(
+        token,
+        refreshToken,
+        { username: finalUsername, role: finalRole, permissions: permissions || [], tenantId, tenantStatus },
+        tenantId,
+        tenantStatus
+      );
       toast.success('Login successful!');
-      if (role === 'STUDENT' || activeTab === 'STUDENT') {
+      if (finalRole === 'STUDENT') {
         navigate('/portal');
       } else {
         navigate('/dashboard');
@@ -105,90 +163,10 @@ export default function Login() {
     }
   };
 
-  // Handle Applicant Sign In
-  const handleApplicantLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !password) {
-      toast.error('Please enter both email/username and password.');
-      return;
-    }
-    setLoading(true);
-
-    try {
-      const response = await apiClient.post('/auth/login', { 
-        username: username.trim(), 
-        password,
-        role: 'APPLICANT'
-      });
-      const { accessToken, refreshToken, username: user, role, permissions } = response.data;
-
-      login(accessToken, refreshToken, { username: user, role, permissions });
-      toast.success(`Welcome back, ${user}!`);
-      navigate('/dashboard');
-    } catch (err: any) {
-      const errMsg = err.response?.data?.message || err.message || 'Invalid applicant credentials.';
-      toast.error(errMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Applicant Account Registration
-  const handleApplicantRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!regFirstName.trim() || !regLastName.trim() || !regEmail.trim() || !regPhone.trim() || !regPassword.trim()) {
-      toast.error('Please complete all required registration fields.');
-      return;
-    }
-    if (regPassword.length < 6) {
-      toast.error('Password must be at least 6 characters.');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await apiClient.post('/api/v1/admissions/public/register', {
-        firstName: regFirstName.trim(),
-        lastName: regLastName.trim(),
-        email: regEmail.trim(),
-        phone: regPhone.trim(),
-        password: regPassword,
-        dateOfBirth: regDob || undefined,
-        gender: regGender,
-        address: regAddress.trim() || undefined,
-      });
-
-      toast.success('Applicant account registered! Signing in...');
-
-      // Auto sign-in
-      const loginRes = await apiClient.post('/auth/login', {
-        username: regEmail.trim(),
-        password: regPassword,
-        role: 'APPLICANT',
-      });
-      const data = loginRes.data;
-      login(data.accessToken, data.refreshToken, {
-        username: data.username,
-        role: data.role,
-        permissions: data.permissions || [],
-      });
-
-      navigate('/dashboard');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Registration failed. An account with this email may already exist.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDemoFill = () => {
-    switch(activeTab) {
+    switch (activeTab) {
       case 'ADMIN':
-        if (username === 'superadmin') {
-          setUsername('admin');
-        } else {
-          setUsername('superadmin');
-        }
+        setUsername(username === 'superadmin' ? 'admin' : 'superadmin');
         setPassword('Admin@123');
         break;
       case 'FACULTY':
@@ -212,464 +190,236 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 font-sans relative overflow-hidden">
-      
-      {/* Decorative Structural Background */}
-      <div 
-        className="absolute top-0 left-0 w-full h-96 transform -skew-y-6 -translate-y-24 z-0 transition-colors duration-500"
-        style={{ backgroundColor: isBranded && branding?.primaryColorHex ? branding.primaryColorHex : '#0f172a' }}
-      ></div>
+    <div className="min-h-screen lg:h-full w-full overflow-hidden flex flex-col lg:flex-row font-sans select-none bg-slate-950">
+      {/* LEFT PANEL: Enterprise Branding & Dynamic Institutional Atmosphere */}
+      <div
+        className="hidden lg:flex lg:w-1/2 xl:w-7/12 text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden transition-all duration-700"
+        style={{
+          background: theme.gradientStyle,
+          borderRight: `1px solid rgba(${theme.primaryRgb}, 0.25)`,
+        }}
+      >
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[580px] h-[580px] rounded-full blur-[100px] pointer-events-none transition-all duration-700"
+          style={{ background: theme.haloGlowStyle }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] rounded-full blur-[65px] pointer-events-none transition-all duration-700"
+          style={{ backgroundColor: `rgba(${theme.secondaryRgb}, 0.30)` }}
+        />
 
-      <Card className="w-full max-w-lg shadow-2xl border-0 rounded-2xl p-2 sm:p-4 z-10 bg-white">
-        <CardHeader className="flex flex-col items-center mb-0 pb-3 text-center">
-          <Link to="/" className="group flex flex-col items-center">
-            <img 
-              src={isBranded && branding?.logoUrl ? branding.logoUrl : "/logo.jpg"} 
-              alt={isBranded && branding?.institutionName ? `${branding.institutionName} Logo` : "EduPulse Logo"} 
-              className="w-16 h-16 rounded-xl object-contain mb-3 shadow-md border border-slate-100 bg-white p-1 group-hover:scale-105 transition-transform" 
+        {/* Top Header */}
+        <div className="relative z-10 flex items-center justify-between">
+          <Link to="/" className="flex items-center space-x-4 group">
+            <img
+              src="/logo.jpg"
+              alt="EduPulse Logo"
+              className="w-12 h-12 rounded-xl object-cover shadow-lg border border-white/20"
             />
-            <CardTitle className="text-2xl font-black text-slate-900 tracking-tight">
-              {isBranded && branding?.institutionName ? branding.institutionName : "EduPulse ERP"}
-            </CardTitle>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-white drop-shadow-sm">EduPulse ERP</h1>
+              <p className="text-xs text-white/70 font-medium">Unified Institutional Management Platform</p>
+            </div>
           </Link>
-          <CardDescription className="text-xs text-slate-500 font-medium mt-0.5">
-            {isBranded && branding?.institutionName 
-              ? `${branding.institutionName} Institutional Portal` 
-              : "Unified Institutional Management Platform"}
-          </CardDescription>
+        </div>
 
-          {/* White-Label Institutional Subdomain Badge */}
-          {isBranded && (
-            <div 
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold mt-2.5 border"
-              style={{ 
-                borderColor: branding?.primaryColorHex ? `${branding.primaryColorHex}40` : '#e2e8f0',
-                color: branding?.primaryColorHex || '#0f172a',
-                backgroundColor: branding?.primaryColorHex ? `${branding.primaryColorHex}12` : '#f8fafc'
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: branding?.primaryColorHex || '#0f172a' }}></span>
-              <span>{branding?.customSubdomain}.edupulse.com</span>
-            </div>
-          )}
-
-          {/* Top-Level Mode Selector: Institutional ERP vs Applicant Portal */}
-          <div className="w-full grid grid-cols-2 p-1 bg-slate-100 rounded-xl mt-4 border border-slate-200/80">
-            <button
-              type="button"
-              onClick={() => {
-                setMode('ERP');
-                setSearchParams({});
-                setUsername('');
-                setPassword('');
-              }}
-              className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                mode === 'ERP'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <Shield className="w-3.5 h-3.5" />
-              Institutional Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMode('APPLICANT');
-                setSearchParams({ tab: 'applicant' });
-                setUsername('');
-                setPassword('');
-              }}
-              className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                mode === 'APPLICANT'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5 text-amber-600" />
-              Applicant Account
-            </button>
+        {/* Center Showcase */}
+        <div className="relative z-10 flex flex-col items-center justify-center my-auto py-12 text-center">
+          <div
+            className="w-32 h-32 rounded-3xl bg-white flex items-center justify-center mb-6 overflow-hidden p-3 transition-transform duration-300 hover:scale-105 relative z-10"
+            style={{
+              boxShadow: theme.boxShadowStyle,
+              border: `2px solid rgba(${theme.secondaryRgb}, 0.5)`,
+            }}
+          >
+            {effectiveLogoUrl ? (
+              <img src={effectiveLogoUrl} alt={effectiveName} className="w-full h-full object-contain" />
+            ) : (
+              <Building2 className="w-16 h-16 text-blue-600 stroke-[1.5]" />
+            )}
           </div>
-        </CardHeader>
 
-        <CardContent className="pt-2">
-          {mode === 'ERP' ? (
-            /* ================= MODE: INSTITUTIONAL ERP USERS ================= */
+          <h2 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-white mb-2 max-w-md drop-shadow-md">
+            {effectiveName}
+          </h2>
+          <p className="text-sm font-semibold text-white/80 max-w-sm drop-shadow-sm">
+            {effectiveCampus}
+          </p>
+        </div>
+
+        {/* Bottom Footer */}
+        <div
+          className="relative z-10 pt-4 flex items-center justify-between text-xs text-white/50"
+          style={{ borderTop: `1px solid rgba(${theme.primaryRgb}, 0.25)` }}
+        >
+          <span>&copy; {new Date().getFullYear()} EduPulse ERP Technologies.</span>
+          <span>{isTauriDesktop() ? 'Desktop v1.0.0 • Windows x64' : 'Cloud SaaS • Multi-Tenant Platform'}</span>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL: Integrated Login Facility */}
+      <div className="w-full lg:w-1/2 xl:w-5/12 bg-white flex flex-col justify-between p-8 sm:p-12 xl:p-16 min-h-screen lg:min-h-0 lg:h-full overflow-y-auto">
+        {/* Mobile Header */}
+        <div className="lg:hidden flex items-center justify-between mb-6">
+          <Link to="/" className="flex items-center space-x-3">
+            <img src="/logo.jpg" alt="EduPulse Logo" className="w-9 h-9 rounded-lg shadow-sm" />
             <div>
-              {/* Role Selection Tabs */}
-              <div className="flex bg-slate-100 p-1 rounded-xl mb-5 shadow-inner overflow-x-auto no-scrollbar">
-                {[
-                  { id: 'ADMIN', label: 'Admin', icon: Shield },
-                  { id: 'FACULTY', label: 'Faculty', icon: Users },
-                  { id: 'STUDENT', label: 'Student', icon: GraduationCap },
-                  { id: 'PARENT', label: 'Parent', icon: User },
-                  { id: 'FINANCE', label: 'Finance', icon: DollarSign },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(tab.id as any);
-                      setUsername('');
-                      setPassword('');
-                    }}
-                    className={`flex-1 flex flex-col items-center justify-center py-2 px-1 min-w-[55px] rounded-lg text-xs font-semibold transition-all duration-200 ${
-                      activeTab === tab.id 
-                        ? 'bg-white text-slate-900 shadow-sm font-bold ring-1 ring-slate-200' 
-                        : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-                    }`}
-                    style={activeTab === tab.id && isBranded && branding?.primaryColorHex ? { borderBottom: `2.5px solid ${branding.primaryColorHex}` } : undefined}
-                  >
-                    <tab.icon
-                      className={`w-4 h-4 mb-1 ${activeTab === tab.id ? 'text-slate-900' : 'text-slate-400'}`}
-                      style={activeTab === tab.id && isBranded && branding?.primaryColorHex ? { color: branding.primaryColorHex } : undefined}
-                    />
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              <form onSubmit={handleErpSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      {activeTab === 'STUDENT' ? 'Student Username or Email' : activeTab === 'PARENT' ? 'Guardian Username or Email' : 'Username or Email'}
-                    </label>
-                    {!import.meta.env.PROD && (
-                      <button type="button" onClick={handleDemoFill} className="text-xs text-amber-700 hover:underline font-semibold">
-                        Use Demo Login
-                      </button>
-                    )}
-                  </div>
-                  <Input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder={activeTab === 'STUDENT' ? 'e.g. stu_xxxxx or student@institution.edu' : 'Enter your identifier'}
-                    required
-                    className="h-11 bg-slate-50 border-slate-200 focus-visible:ring-slate-900 text-slate-900 transition-all rounded-xl text-sm"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
-                    <Link
-                      to="/forgot-password"
-                      className="text-xs font-semibold hover:underline transition-colors"
-                      style={{
-                        color: isBranded && branding?.primaryColorHex ? branding.primaryColorHex : '#4f46e5',
-                      }}
-                    >
-                      Forgot Password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="h-11 bg-slate-50 border-slate-200 focus-visible:ring-slate-900 text-slate-900 transition-all rounded-xl pr-10 text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
-                      aria-label={showPassword ? "Hide password" : "Show password"}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="pt-2">
-                  <Button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full h-11 text-white font-bold rounded-xl text-sm shadow-md transition-all hover:opacity-95"
-                    style={{
-                      backgroundColor: isBranded && branding?.primaryColorHex ? branding.primaryColorHex : '#0f172a',
-                    }}
-                  >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                    {loading ? 'Authenticating...' : `Sign In as ${activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`}
-                  </Button>
-                </div>
-
-                {/* Clear entry point to Applicant Portal */}
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                  <span>Prospective student or applicant?</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('APPLICANT');
-                      setSearchParams({ tab: 'applicant' });
-                      setUsername('');
-                      setPassword('');
-                    }}
-                    className="font-bold text-amber-700 hover:text-amber-800 hover:underline flex items-center gap-1"
-                  >
-                    Applicant Portal &rarr;
-                  </button>
-                </div>
-              </form>
+              <h1 className="text-base font-bold text-slate-900">EduPulse ERP</h1>
+              <p className="text-[11px] text-slate-500">Institutional Workspace</p>
             </div>
-          ) : (
-            /* ================= MODE: APPLICANT PORTAL ================= */
-            <div>
-              {/* Applicant Sub-Mode Toggle: Sign In vs Register */}
-              <div className="flex border-b border-slate-200 mb-5">
+          </Link>
+        </div>
+
+        {/* Center Container */}
+        <div className="max-w-sm w-full mx-auto my-auto py-4">
+          <div className="mb-7">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">Sign in to your account</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Select your institutional portal role and enter your authorized credentials.
+            </p>
+          </div>
+
+          {/* Role Tab Selector */}
+          <div className="flex bg-slate-200/75 p-1.5 rounded-full mb-6 border border-slate-300/80 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]">
+            {(['ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE'] as const).map((tab) => {
+              const isSelected = activeTab === tab;
+              return (
                 <button
-                  type="button"
-                  onClick={() => setApplicantSubMode('LOGIN')}
-                  className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
-                    applicantSubMode === 'LOGIN'
-                      ? 'border-amber-600 text-amber-700'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  Applicant Sign In
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setApplicantSubMode('REGISTER')}
-                  className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 ${
-                    applicantSubMode === 'REGISTER'
-                      ? 'border-amber-600 text-amber-700'
-                      : 'border-transparent text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  <UserPlus className="w-3.5 h-3.5" />
-                  Create Applicant Account
-                </button>
-              </div>
-
-              {applicantSubMode === 'LOGIN' ? (
-                /* APPLICANT SIGN IN FORM */
-                <form onSubmit={handleApplicantLogin} className="space-y-4">
-                  <div className="p-3 bg-amber-50/70 border border-amber-200/60 rounded-xl text-xs text-amber-900 leading-relaxed">
-                    Sign in to track your admissions applications, upload required verification documents, or communicate with admissions officers.
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                      Applicant Email or Username
-                    </label>
-                    <Input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="e.g. applicant@example.com"
-                      required
-                      className="h-11 bg-slate-50 border-slate-200 focus-visible:ring-slate-900 text-slate-900 rounded-xl text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Password</label>
-                    <div className="relative">
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                        className="h-11 bg-slate-50 border-slate-200 focus-visible:ring-slate-900 text-slate-900 rounded-xl pr-10 text-sm"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="pt-2">
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full h-11 text-white font-bold rounded-xl text-sm shadow-md transition-all hover:opacity-95"
-                      style={{
-                        backgroundColor: isBranded && branding?.primaryColorHex ? branding.primaryColorHex : '#d97706',
-                      }}
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      {loading ? 'Signing In...' : 'Sign In to Applicant Portal'}
-                    </Button>
-                  </div>
-
-                  <div className="pt-2 flex items-center justify-between text-xs text-slate-500">
-                    <span>Don't have an account yet?</span>
-                    <button
-                      type="button"
-                      onClick={() => setApplicantSubMode('REGISTER')}
-                      className="font-bold text-amber-700 hover:underline"
-                    >
-                      Register New Account &rarr;
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                /* APPLICANT REGISTRATION FORM */
-                <form onSubmit={handleApplicantRegister} className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1">
-                  <div className="p-2.5 bg-blue-50/70 border border-blue-200/60 rounded-xl text-xs text-blue-900">
-                    Create an applicant account to apply for degree programs, submit transcripts, and track onboarding status.
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-700 uppercase">First Name *</label>
-                      <Input
-                        type="text"
-                        value={regFirstName}
-                        onChange={(e) => setRegFirstName(e.target.value)}
-                        placeholder="John"
-                        required
-                        className="h-9 text-xs bg-slate-50 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-700 uppercase">Last Name *</label>
-                      <Input
-                        type="text"
-                        value={regLastName}
-                        onChange={(e) => setRegLastName(e.target.value)}
-                        placeholder="Doe"
-                        required
-                        className="h-9 text-xs bg-slate-50 rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-700 uppercase">Email Address *</label>
-                      <Input
-                        type="email"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        placeholder="john.doe@example.com"
-                        required
-                        className="h-9 text-xs bg-slate-50 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-700 uppercase">Phone Number *</label>
-                      <Input
-                        type="tel"
-                        value={regPhone}
-                        onChange={(e) => setRegPhone(e.target.value)}
-                        placeholder="+1-555-0100"
-                        required
-                        className="h-9 text-xs bg-slate-50 rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-700 uppercase">Password (min 6 chars) *</label>
-                    <Input
-                      type="password"
-                      value={regPassword}
-                      onChange={(e) => setRegPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      minLength={6}
-                      className="h-9 text-xs bg-slate-50 rounded-lg"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-700 uppercase">Date of Birth</label>
-                      <Input
-                        type="date"
-                        value={regDob}
-                        onChange={(e) => setRegDob(e.target.value)}
-                        className="h-9 text-xs bg-slate-50 rounded-lg"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[11px] font-bold text-slate-700 uppercase">Gender</label>
-                      <select
-                        value={regGender}
-                        onChange={(e) => setRegGender(e.target.value)}
-                        className="w-full h-9 text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 text-slate-800"
-                      >
-                        <option value="MALE">Male</option>
-                        <option value="FEMALE">Female</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[11px] font-bold text-slate-700 uppercase">Mailing Address</label>
-                    <Input
-                      type="text"
-                      value={regAddress}
-                      onChange={(e) => setRegAddress(e.target.value)}
-                      placeholder="Street, City, Postal Code"
-                      className="h-9 text-xs bg-slate-50 rounded-lg"
-                    />
-                  </div>
-
-                  <div className="pt-2">
-                    <Button
-                      type="submit"
-                      disabled={loading}
-                      className="w-full h-10 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow-md transition-all"
-                    >
-                      {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                      {loading ? 'Registering Account...' : 'Create Applicant Account & Sign In'}
-                    </Button>
-                  </div>
-
-                  <div className="text-center pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setApplicantSubMode('LOGIN')}
-                      className="text-xs font-semibold text-slate-500 hover:text-slate-800"
-                    >
-                      Already have an applicant account? <span className="text-amber-700 underline">Sign In</span>
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <Link to="/admissions" className="font-semibold text-slate-600 hover:underline">
-                  &larr; Browse Degree Programs
-                </Link>
-                <button
+                  key={tab}
                   type="button"
                   onClick={() => {
-                    setMode('ERP');
-                    setSearchParams({});
+                    setActiveTab(tab);
+                    setUsername('');
+                    setPassword('');
                   }}
-                  className="font-bold text-slate-800 hover:underline"
+                  className={`flex-1 py-1.5 text-xs rounded-full transition-all duration-200 cursor-pointer ${
+                    isSelected
+                      ? 'bg-white text-slate-950 font-black shadow-[0_6px_16px_-2px_rgba(0,0,0,0.14),0_2px_4px_-1px_rgba(0,0,0,0.08)] ring-1 ring-black/5 -translate-y-0.5 z-10'
+                      : 'text-slate-500 font-semibold hover:text-slate-800 hover:bg-white/40'
+                  }`}
                 >
-                  Staff / Student Login &rarr;
+                  {tab === 'ADMIN'
+                    ? 'Admin'
+                    : tab === 'FACULTY'
+                      ? 'Faculty'
+                      : tab === 'STUDENT'
+                        ? 'Student'
+                        : tab === 'PARENT'
+                          ? 'Parent'
+                          : 'Finance'}
+                </button>
+              );
+            })}
+          </div>
+
+          <form onSubmit={handleErpSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="erp-username" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Username or Email
+                </Label>
+                <button
+                  type="button"
+                  onClick={handleDemoFill}
+                  className="text-xs font-bold text-amber-600 hover:text-amber-700 cursor-pointer"
+                >
+                  Use Demo Login
+                </button>
+              </div>
+              <Input
+                id="erp-username"
+                type="text"
+                placeholder={activeTab === 'ADMIN' ? 'admin or superadmin' : `${activeTab.toLowerCase()}`}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="h-9 bg-slate-50/50 border-slate-200 focus:bg-white text-xs sm:text-sm rounded-lg"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <Label htmlFor="erp-password" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Password
+                </Label>
+                <Link to="/forgot-password" className="text-[11px] font-medium text-slate-500 hover:text-slate-800">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="erp-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="h-9 bg-slate-50/50 border-slate-200 focus:bg-white pr-9 text-xs sm:text-sm rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
+
+            <div className="flex justify-center pt-2">
+              <Button
+                type="submit"
+                disabled={loading}
+                size="sm"
+                className="w-full sm:w-auto sm:min-w-[200px] h-9 px-8 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer transition-all"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                    Authenticating...
+                  </>
+                ) : (
+                  `Sign In as ${activeTab === 'ADMIN' ? 'Admin' : activeTab.charAt(0) + activeTab.slice(1).toLowerCase()}`
+                )}
+              </Button>
+            </div>
+          </form>
+
+          {!isTauriDesktop() && (
+            <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+              <span>
+                New institution?{' '}
+                <Link to="/register" className="font-semibold text-slate-900 hover:underline">
+                  Create workspace
+                </Link>
+              </span>
+              <Link to="/admissions" className="font-medium text-slate-600 hover:text-slate-900">
+                Admissions Portal →
+              </Link>
+            </div>
           )}
-        </CardContent>
-      </Card>
-      
-      <div className="mt-6 text-xs text-slate-400 z-10 flex items-center gap-3">
-        <span>&copy; {new Date().getFullYear()} EduPulse ERP Solutions.</span>
-        <span>•</span>
-        <Link to="/" className="hover:text-slate-600 underline">Product Website</Link>
-        <span>•</span>
-        <Link to="/admissions" className="hover:text-slate-600 underline">Admissions Catalogue</Link>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between text-xs text-slate-400 pt-4 border-t border-slate-100">
+          <span>&copy; {new Date().getFullYear()} EduPulse ERP Technologies.</span>
+          <button
+            type="button"
+            onClick={() => setIsServerModalOpen(true)}
+            title={`Backend: ${activeServerUrl} (Ctrl + Shift + S to change)`}
+            className="text-[11px] font-mono text-slate-400 hover:text-slate-600 transition-colors flex items-center space-x-1.5 cursor-pointer"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+            <span>v1.0.0</span>
+          </button>
+        </div>
       </div>
+
+      <ServerSettingsModal
+        isOpen={isServerModalOpen}
+        onClose={() => setIsServerModalOpen(false)}
+        onSaved={(newUrl) => setActiveServerUrl(newUrl)}
+      />
     </div>
   );
 }
