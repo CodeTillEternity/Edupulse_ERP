@@ -109,16 +109,42 @@
   }
 }
 
-/* 80mm ESC/POS Thermal Receipt Print Isolation */
+/* Global Institutional Print Styles + Scoped 80mm Thermal Isolation */
 @media print {
-  body * {
+  html,
+  body,
+  #root {
+    height: auto !important;
+    width: 100% !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table {
+    page-break-inside: auto;
+  }
+
+  tr,
+  thead {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 80mm ESC/POS Thermal Receipt Print Isolation (only when receipt modal is open) */
+  body:has(#thermal-receipt-printable) * {
     visibility: hidden !important;
   }
-  #thermal-receipt-printable,
-  #thermal-receipt-printable * {
+  body:has(#thermal-receipt-printable) #thermal-receipt-printable,
+  body:has(#thermal-receipt-printable) #thermal-receipt-printable * {
     visibility: visible !important;
   }
-  #thermal-receipt-printable {
+  body:has(#thermal-receipt-printable) #thermal-receipt-printable {
     position: fixed !important;
     left: 0 !important;
     top: 0 !important;
@@ -127,9 +153,5 @@
     padding: 2mm !important;
     box-shadow: none !important;
     border: none !important;
-  }
-  @page {
-    size: 80mm auto;
-    margin: 0;
   }
 }

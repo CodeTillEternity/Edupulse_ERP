@@ -368,10 +368,10 @@ export default function Layout() {
   };
 
   return (
-    <div className="h-full w-full bg-slate-50 flex flex-col md:flex-row font-sans overflow-hidden select-none">
+    <div className="h-full w-full bg-slate-50 flex flex-col md:flex-row font-sans overflow-hidden select-none print:h-auto print:overflow-visible print:bg-white">
       
       {/* Mobile Header Overlay */}
-      <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20">
+      <div className="md:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between sticky top-0 z-20 print:hidden">
         <div className="flex items-center space-x-2.5 min-w-0">
           <div className="w-8 h-8 rounded-lg shadow-sm border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center bg-slate-50">
             {institution.logoUrl ? (
@@ -389,7 +389,7 @@ export default function Layout() {
 
       {/* Sidebar */}
       <aside className={cn(
-        "fixed inset-y-0 left-0 z-30 w-72 lg:w-80 xl:w-84 bg-white border-r border-slate-200 shadow-sm flex flex-col transition-transform duration-300 ease-in-out md:static md:translate-x-0 h-full shrink-0",
+        "fixed inset-y-0 left-0 z-30 w-72 lg:w-80 xl:w-84 bg-white border-r border-slate-200 shadow-sm flex flex-col transition-transform duration-300 ease-in-out md:static md:translate-x-0 h-full shrink-0 print:hidden",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-5 lg:p-6 border-b border-slate-200 hidden md:flex items-center space-x-3.5">
@@ -437,10 +437,10 @@ export default function Layout() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden print:h-auto print:overflow-visible">
         
         {/* Desktop Header */}
-        <header className="hidden md:flex h-16 lg:h-18 bg-white border-b border-slate-200 items-center justify-between px-6 lg:px-8 sticky top-0 z-10 shrink-0">
+        <header className="hidden md:flex h-16 lg:h-18 bg-white border-b border-slate-200 items-center justify-between px-6 lg:px-8 sticky top-0 z-10 shrink-0 print:hidden">
           <div className="flex items-center space-x-3">
             {/* Cloud / Server Connection Indicator */}
             {user?.role === 'SUPER_ADMIN' ? (
@@ -702,7 +702,7 @@ export default function Layout() {
         )}
 
         {/* Main Outlet */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 relative flex flex-col min-h-0">
+        <main className="flex-1 overflow-y-auto bg-slate-50 relative flex flex-col min-h-0 print:overflow-visible print:bg-white">
           <Outlet />
           <ClassroomCallOverlay />
         </main>
