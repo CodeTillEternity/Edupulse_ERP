@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../config/api';
 import { StudentAvatar } from './StudentAvatar';
+import { useInstitutionStore } from '../store/useInstitutionStore';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +12,7 @@ import {
   DialogDescription,
 } from './ui/dialog';
 import { Button } from './ui/button';
-import { Loader2, CreditCard, ShieldCheck, Printer } from 'lucide-react';
+import { Loader2, CreditCard, ShieldCheck, Printer, Copy, Check, Phone } from 'lucide-react';
 
 interface StudentIdCardModalProps {
   studentId: number;
@@ -18,6 +21,9 @@ interface StudentIdCardModalProps {
 }
 
 export function StudentIdCardModal({ studentId, open, onOpenChange }: StudentIdCardModalProps) {
+  const { institution } = useInstitutionStore();
+  const [copiedToken, setCopiedToken] = useState(false);
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['student-id-card', studentId],
     queryFn: async () => {
@@ -29,6 +35,18 @@ export function StudentIdCardModal({ studentId, open, onOpenChange }: StudentIdC
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleCopyToken = async () => {
+    if (!data?.verificationCode) return;
+    try {
+      await navigator.clipboard.writeText(data.verificationCode);
+      setCopiedToken(true);
+      toast.success('Verification token copied to clipboard');
+      setTimeout(() => setCopiedToken(false), 2000);
+    } catch {
+      toast.error('Unable to copy verification token');
+    }
   };
 
   return (
@@ -58,14 +76,35 @@ export function StudentIdCardModal({ studentId, open, onOpenChange }: StudentIdC
             {/* Identity Card Front Preview */}
             <div
               id="printable-student-id-card"
-              className="border-2 border-slate-900 rounded-xl overflow-hidden bg-white shadow-lg text-slate-900"
+              className="border-2 rounded-xl overflow-hidden bg-white shadow-lg text-slate-900"
+              style={{ borderColor: institution.brandPrimary || '#0f172a' }}
             >
-              <div className="bg-slate-900 text-white px-4 py-3 flex items-center justify-between">
-                <div>
-                  <h3 className="text-xs font-black tracking-wider uppercase">Institutional ERP</h3>
-                  <p className="text-[9px] text-slate-300 uppercase tracking-widest">Student Identification Card</p>
+              <div
+                className="text-white px-4 py-3 flex items-center justify-between gap-2"
+                style={{ backgroundColor: institution.brandPrimary || '#0f172a' }}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {institution.logoUrl ? (
+                    <img
+                      src={institution.logoUrl}
+                      alt={`${institution.name} Crest`}
+                      className="w-8 h-8 rounded-md object-contain bg-white p-0.5 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-md bg-white/15 border border-white/25 flex items-center justify-center text-[10px] font-black tracking-tight shrink-0">
+                      {(institution.code || 'ERP').slice(0, 3).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-black tracking-wider uppercase truncate">
+                      {institution.name || 'Institutional ERP'}
+                    </h3>
+                    <p className="text-[9px] text-white/80 uppercase tracking-widest truncate">
+                      {institution.campus || 'Student Identification Card'}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1 text-emerald-400 text-[10px] font-bold">
+                <div className="flex items-center space-x-1 text-emerald-300 text-[10px] font-bold shrink-0">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>VERIFIED</span>
                 </div>
@@ -78,10 +117,10 @@ export function StudentIdCardModal({ studentId, open, onOpenChange }: StudentIdC
                     fullName={data.fullName}
                     sizeClassName="w-16 h-20 rounded"
                     textClassName="text-sm"
-                    className="border border-slate-300"
+                    className="border border-slate-300 shrink-0"
                   />
-                  <div className="space-y-1 text-xs">
-                    <p className="font-bold text-sm text-slate-900 leading-tight">{data.fullName}</p>
+                  <div className="space-y-1 text-xs min-w-0">
+                    <p className="font-bold text-sm text-slate-900 leading-tight truncate">{data.fullName}</p>
                     <div className="space-y-0.5 text-[11px] text-slate-600">
                       <p><span className="font-semibold text-slate-800">Enrollment No:</span> <span className="font-mono font-bold text-slate-900">{data.enrollmentNumber}</span></p>
                       <p><span className="font-semibold text-slate-800">Roll No:</span> <span className="font-mono">{data.rollNumber || 'N/A'}</span></p>
@@ -106,20 +145,46 @@ export function StudentIdCardModal({ studentId, open, onOpenChange }: StudentIdC
                   </div>
                 </div>
 
+                {(institution.phone || institution.address) && (
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-500 gap-2">
+                    <span className="truncate">{institution.address}</span>
+                    {institution.phone && (
+                      <span className="flex items-center gap-1 font-mono shrink-0">
+                        <Phone className="w-2.5 h-2.5" /> {institution.phone}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div className="pt-2 border-t border-dashed border-slate-300 flex items-center justify-between text-[9px] font-mono text-slate-500">
-                  <span>TOKEN: {data.verificationCode?.substring(0, 16)}...</span>
-                  <span className="text-slate-400">Institutional Registrar</span>
+                  <span>TOKEN: {data.verificationCode ? `${data.verificationCode.substring(0, 16)}...` : 'N/A'}</span>
+                  <span className="text-slate-500 font-sans font-semibold">
+                    Registrar · {institution.code || 'INST'}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button size="sm" className="bg-slate-900 hover:bg-slate-800 text-white" onClick={handlePrint}>
-                <Printer className="w-3.5 h-3.5 mr-1.5" /> Print / Save PDF
-              </Button>
+            <div className="flex flex-wrap justify-between items-center gap-2 print:hidden">
+              {data.verificationCode ? (
+                <Button variant="ghost" size="sm" onClick={handleCopyToken} className="text-xs text-slate-600">
+                  {copiedToken ? <Check className="w-3.5 h-3.5 mr-1.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 mr-1.5" />}
+                  {copiedToken ? 'Copied Token' : 'Copy Token'}
+                </Button>
+              ) : <div />}
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+                <Button
+                  size="sm"
+                  className="text-white"
+                  style={{ backgroundColor: institution.brandPrimary || '#0f172a' }}
+                  onClick={handlePrint}
+                >
+                  <Printer className="w-3.5 h-3.5 mr-1.5" /> Print / Save PDF
+                </Button>
+              </div>
             </div>
 
             <style>{`
