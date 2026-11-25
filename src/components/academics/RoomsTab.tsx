@@ -9,8 +9,11 @@ import {
   Calendar,
   Users,
   Loader2,
-  Trash2
+  Trash2,
+  Download,
+  Printer
 } from 'lucide-react';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 import {
   Table,
   TableBody,
@@ -45,6 +48,7 @@ interface RoomsTabProps {
 }
 
 export function RoomsTab({ isAdmin }: RoomsTabProps) {
+  const { institution } = useInstitutionStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
@@ -72,6 +76,41 @@ export function RoomsTab({ isAdmin }: RoomsTabProps) {
       return name.includes(term) || cap.includes(term);
     });
   }, [rooms, searchTerm]);
+
+  const facilityStats = useMemo(() => {
+    const active = rooms.filter(r => r.isActive);
+    const totalSeats = active.reduce((sum, r) => sum + (Number(r.capacity) || 0), 0);
+    const totalSlots = rooms.reduce((sum, r) => sum + (r.timetableSlotCount ?? 0), 0);
+    return { activeCount: active.length, totalSeats, totalSlots };
+  }, [rooms]);
+
+  const handleExportRoomsCsv = () => {
+    if (filteredRooms.length === 0) {
+      toast.error('No rooms available to export');
+      return;
+    }
+    const headerLines = [
+      `"${(institution.name || 'Institutional ERP').replace(/"/g, '""')} — Campus Rooms & Seating Inventory"`,
+      `"Exported At","${new Date().toISOString()}"`,
+      '',
+      'Room ID,Room Name,Seating Capacity,Status,Timetable Slots'
+    ];
+    const rows = filteredRooms.map(r => [
+      r.id,
+      `"${(r.name || '').replace(/"/g, '""')}"`,
+      r.capacity ?? 0,
+      r.isActive ? 'ACTIVE' : 'INACTIVE',
+      r.timetableSlotCount ?? 0,
+    ].join(','));
+    const blob = new Blob([[...headerLines, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rooms-inventory-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredRooms.length} room record(s)`);
+  };
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,15 +218,59 @@ export function RoomsTab({ isAdmin }: RoomsTabProps) {
           </p>
         </div>
 
-        {isAdmin && (
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
           <Button
-            onClick={() => setIsCreateOpen(true)}
-            className="bg-black text-white hover:bg-slate-800 rounded-full text-xs font-semibold px-4 h-9 flex items-center gap-1.5"
+            variant="outline"
+            size="sm"
+            onClick={handleExportRoomsCsv}
+            disabled={isLoading || filteredRooms.length === 0}
+            className="gap-1.5 text-xs h-9 border-slate-200 text-slate-700"
           >
-            <Plus className="w-4 h-4" />
-            Add New Room
+            <Download className="w-3.5 h-3.5" /> Export CSV
           </Button>
-        )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="gap-1.5 text-xs h-9 border-slate-200 text-slate-700"
+          >
+            <Printer className="w-3.5 h-3.5" /> Print
+          </Button>
+          {isAdmin && (
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              className="bg-black text-white hover:bg-slate-800 rounded-full text-xs font-semibold px-4 h-9 flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Room
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Facility Capacity KPI Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Active Facilities</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{facilityStats.activeCount} / {rooms.length}</div>
+          </div>
+          <CheckCircle className="w-5 h-5 text-emerald-500" />
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Total Active Seating</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{facilityStats.totalSeats.toLocaleString('en-IN')}</div>
+          </div>
+          <Users className="w-5 h-5 text-blue-500" />
+        </div>
+        <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Scheduled Slots</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{facilityStats.totalSlots}</div>
+          </div>
+          <Calendar className="w-5 h-5 text-slate-400" />
+        </div>
       </div>
 
       {/* Search and Summary Bar */}

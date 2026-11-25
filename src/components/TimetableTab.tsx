@@ -11,10 +11,11 @@ import {
   useCreateRoom
 } from '../hooks/queries/useAcademics';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { toast } from 'sonner';
-import { Loader2, Plus, Calendar as CalendarIcon, FileText, Building2 } from 'lucide-react';
+import { Loader2, Plus, Calendar as CalendarIcon, FileText, Building2, Download, Printer } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +49,7 @@ export function TimetableTab() {
   const [ttEndTime, setTtEndTime] = useState<string>('10:00');
 
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
 
   const { data: sections } = useSections();
@@ -119,6 +121,43 @@ export function TimetableTab() {
     return `${course?.code || 'Course'} - ${sem?.name || 'Semester'} - Section ${sec.name}`;
   };
 
+  const handleExportTimetableCsv = () => {
+    if (!selectedSectionId || !timetable || timetable.length === 0) {
+      toast.error('No timetable slots available to export');
+      return;
+    }
+    const sectionLabel = getSectionLabel(selectedSectionId as number);
+    const headerLines = [
+      `"${(institution.name || 'Institutional ERP').replace(/"/g, '""')} — Section Timetable Schedule"`,
+      `"Section","${sectionLabel.replace(/"/g, '""')}"`,
+      `"Exported At","${new Date().toISOString()}"`,
+      '',
+      'Day,Start Time,End Time,Faculty,Room,Status'
+    ];
+    const rows = timetable.map(slot => {
+      const faculty = facultyList?.find(f => f.id === slot.facultyId);
+      const room = rooms?.find(r => r.id === slot.roomId);
+      const facultyLabel = faculty ? `${faculty.username} (${faculty.email})` : `Faculty ID: ${slot.facultyId}`;
+      const roomLabel = room ? room.name : `Room ${slot.roomId}`;
+      return [
+        slot.dayOfWeek,
+        slot.startTime,
+        slot.endTime,
+        `"${facultyLabel.replace(/"/g, '""')}"`,
+        `"${roomLabel.replace(/"/g, '""')}"`,
+        slot.isActive ? 'ACTIVE' : 'INACTIVE',
+      ].join(',');
+    });
+    const blob = new Blob([[...headerLines, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `section-${selectedSectionId}-timetable-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${timetable.length} timetable slot(s)`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col md:flex-row md:items-end gap-4">
@@ -141,12 +180,35 @@ export function TimetableTab() {
           </select>
         </div>
 
-        {selectedSectionId && !isCreating && isAdmin && (
-          <Button onClick={() => setIsCreating(true)} className="bg-black text-white hover:bg-black/80 px-6 h-10">
-            <Plus className="w-4 h-4 mr-2" />
-            Allocate Slot
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          {selectedSectionId && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportTimetableCsv}
+                disabled={isLoadingTimetable || !timetable || timetable.length === 0}
+                className="gap-1.5 h-10"
+              >
+                <Download className="w-4 h-4" /> Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.print()}
+                className="gap-1.5 h-10"
+              >
+                <Printer className="w-4 h-4" /> Print Schedule
+              </Button>
+            </>
+          )}
+          {selectedSectionId && !isCreating && isAdmin && (
+            <Button onClick={() => setIsCreating(true)} className="bg-black text-white hover:bg-black/80 px-6 h-10">
+              <Plus className="w-4 h-4 mr-2" />
+              Allocate Slot
+            </Button>
+          )}
+        </div>
       </div>
 
       {isCreating && selectedSectionId && (
