@@ -1,10 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../config/api';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { PageFrame } from '../components/ui/PageFrame';
-import { CheckCircle2, Loader2, Calendar as CalendarIcon, AlertCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Calendar as CalendarIcon, AlertCircle, Download, Printer, Users } from 'lucide-react';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Input } from '../components/ui/input';
+import { toast } from 'sonner';
 
 interface Section {
   id: number;
@@ -78,6 +80,7 @@ function formatTime(timeData: string | number[] | undefined | null): string {
 
 export default function FacultyAttendance() {
   const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
   const [selectedSectionId, setSelectedSectionId] = useState<number | ''>('');
   const [selectedScheduleId, setSelectedScheduleId] = useState<number | ''>('');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString);
@@ -183,6 +186,9 @@ export default function FacultyAttendance() {
       setIsDirty(false);
       setSubmitError(null);
       queryClient.invalidateQueries({ queryKey: ['section-attendance', selectedSectionId, selectedDate] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['nirfSummary'] });
+      toast.success('Class attendance register committed and synchronized.');
     },
     onError: (error: any) => {
       if (error.response?.status === 409) {
@@ -217,13 +223,110 @@ export default function FacultyAttendance() {
 
   const activeRoster = roster?.filter(s => s.isActive) || [];
 
+  const sessionStats = useMemo(() => {
+    const total = activeRoster.length;
+    let present = 0;
+    let absent = 0;
+    let lateExcused = 0;
+    activeRoster.forEach((student) => {
+      const st = localAttendance[student.studentId]?.status || 'PRESENT';
+      if (st === 'PRESENT') present += 1;
+      else if (st === 'ABSENT') absent += 1;
+      else lateExcused += 1;
+    });
+    const pct = total > 0 ? Math.round((present / total) * 100) : 0;
+    return { total, present, absent, lateExcused, pct };
+  }, [activeRoster, localAttendance]);
+
+  const handleMarkAllStatus = (status: 'PRESENT' | 'ABSENT') => {
+    if (isAttendanceRecorded || activeRoster.length === 0) return;
+    setLocalAttendance((prev) => {
+      const updated = { ...prev };
+      activeRoster.forEach((student) => {
+        updated[student.studentId] = {
+          ...(updated[student.studentId] || { studentId: student.studentId, remarks: '' }),
+          status,
+        };
+      });
+      return updated;
+    });
+    setIsDirty(true);
+    toast.info(`Marked all ${activeRoster.length} students as ${status}.`);
+  };
+
+  const exportSessionRegisterCsv = () => {
+    if (activeRoster.length === 0) {
+      toast.error('Select a section with enrolled students to export register.');
+      return;
+    }
+    const secName = sections?.find((s) => s.id === selectedSectionId)?.name || `Section-${selectedSectionId}`;
+    const slot = availableSchedules.find((t) => t.id === selectedScheduleId);
+    const slotLabel = slot ? `${slot.dayOfWeek} ${formatTime(slot.startTime)}-${formatTime(slot.endTime)}` : 'Scheduled Slot';
+
+    const headers = ['Roll Number', 'Student Name', 'Status', 'Remarks'];
+    const rows = activeRoster.map((student) => {
+      const state = localAttendance[student.studentId];
+      return [
+        student.rollNumber || `ID-${student.studentId}`,
+        student.studentName,
+        state?.status || 'PRESENT',
+        state?.remarks || '',
+      ];
+    });
+    const metaRows = [
+      ['STATUTORY CLASSROOM ATTENDANCE REGISTER', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', ''],
+      ['Section / Cohort', secName, '', ''],
+      ['Lecture Slot', slotLabel, '', ''],
+      ['Session Date', selectedDate, '', ''],
+      ['UGC 75% Rule', 'Mandatory 75% Attendance Minimum for Exam Eligibility', '', ''],
+      ['Presence Rate', `${sessionStats.pct}% (${sessionStats.present}/${sessionStats.total})`, '', ''],
+      ['', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Attendance_Register_${secName}_${selectedDate}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported classroom attendance register for ${secName} (CSV).`);
+  };
+
   return (
     <PageFrame
-      title="Attendance Workspace"
+      title="Faculty Attendance Workspace"
+      description={
+        <p className="text-xs text-slate-500 mt-0.5">
+          {institution.name || 'Central University'} • UGC 75% Mandatory Attendance Compliance Register
+        </p>
+      }
       breadcrumbs={[
         { label: "Dashboard", href: "/dashboard" },
         { label: "Attendance" }
       ]}
+      actions={
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-500" /> Print Register
+          </button>
+          <button
+            type="button"
+            onClick={exportSessionRegisterCsv}
+            disabled={activeRoster.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-colors disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
+          </button>
+        </div>
+      }
     >
       <div className="flex flex-col gap-8">
         <div>
@@ -291,7 +394,30 @@ export default function FacultyAttendance() {
         {/* WORKSPACE */}
         {selectedSectionId !== '' && selectedScheduleId !== '' && selectedDate !== '' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            {/* Live Session Summary KPI Strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                  <span>Enrolled Roster</span>
+                  <Users className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+                <div className="text-xl font-black text-slate-900 mt-1">{sessionStats.total}</div>
+              </div>
+              <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Present Today</div>
+                <div className="text-xl font-black text-emerald-700 mt-1">{sessionStats.present} ({sessionStats.pct}%)</div>
+              </div>
+              <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-rose-600">Absent</div>
+                <div className="text-xl font-black text-rose-700 mt-1">{sessionStats.absent}</div>
+              </div>
+              <div className="bg-white border border-slate-200 p-3.5 rounded-lg">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Late / Excused</div>
+                <div className="text-xl font-black text-amber-700 mt-1">{sessionStats.lateExcused}</div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">Student Roster</h2>
               
               {isAttendanceRecorded ? (
@@ -300,8 +426,24 @@ export default function FacultyAttendance() {
                   ATTENDANCE RECORDED
                 </div>
               ) : (
-                <div className="flex items-center gap-4">
-                  {isDirty && <span className="text-xs font-bold text-amber-600 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> UNSAVED CHANGES</span>}
+                <div className="flex flex-wrap items-center gap-2">
+                  {isDirty && <span className="text-xs font-bold text-amber-600 flex items-center gap-1 mr-2"><AlertCircle className="w-3 h-3"/> UNSAVED CHANGES</span>}
+                  <button
+                    type="button"
+                    onClick={() => handleMarkAllStatus('PRESENT')}
+                    disabled={activeRoster.length === 0}
+                    className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider border border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:opacity-50 transition-colors"
+                  >
+                    Mark All Present
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkAllStatus('ABSENT')}
+                    disabled={activeRoster.length === 0}
+                    className="px-3 py-2 text-[11px] font-bold uppercase tracking-wider border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 disabled:opacity-50 transition-colors"
+                  >
+                    Mark All Absent
+                  </button>
                   <button
                     onClick={() => bulkSubmitMutation.mutate()}
                     disabled={bulkSubmitMutation.isPending || activeRoster.length === 0}
