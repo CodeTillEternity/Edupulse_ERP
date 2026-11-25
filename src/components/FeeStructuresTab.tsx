@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   PlusCircle, CheckCircle, AlertCircle, Loader2,
-  ReceiptText, Layers, RefreshCw
+  ReceiptText, Layers, RefreshCw, Search, Download, Printer
 } from 'lucide-react';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import {
   useFeeStructures,
   useFeeHeads,
@@ -46,6 +48,8 @@ import {
 import { toast } from 'sonner';
 
 export function FeeStructuresTab() {
+  const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
   const {
     data: structures = [],
     isLoading: isLoadingStructures,
@@ -70,6 +74,7 @@ export function FeeStructuresTab() {
 
   // Active sub-tab state
   const [activeSubTab, setActiveSubTab] = useState<'structures' | 'fee-heads'>('structures');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Create Structure Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -119,7 +124,11 @@ export function FeeStructuresTab() {
 
   const handleApprove = (id: number) => {
     approveStructureMutation.mutate(id, {
-      onSuccess: () => toast.success('Fee structure approved and active for assignment!'),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+        queryClient.invalidateQueries({ queryKey: ['studentFees'] });
+        toast.success('Fee structure approved and active for assignment!');
+      },
       onError: (err: any) => toast.error(err.response?.data?.message || err.message || 'Approval failed'),
     });
   };
@@ -179,10 +188,73 @@ export function FeeStructuresTab() {
     });
   };
 
+  const filteredStructures = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return structures;
+    return structures.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        s.code.toLowerCase().includes(q)
+    );
+  }, [structures, searchQuery]);
+
+  const filteredFeeHeads = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return feeHeads;
+    return feeHeads.filter(
+      (h: FeeHead) =>
+        h.name.toLowerCase().includes(q) ||
+        h.code.toLowerCase().includes(q) ||
+        (h.description || '').toLowerCase().includes(q)
+    );
+  }, [feeHeads, searchQuery]);
+
+  const exportBlueprintsCsv = () => {
+    const isStructures = activeSubTab === 'structures';
+    const headers = isStructures
+      ? ['Code', 'Structure Name', 'Status', 'Components Breakdown', 'Total Gross (INR)']
+      : ['Head ID', 'Code', 'Fee Head Name', 'Description', 'Status'];
+
+    const rows = isStructures
+      ? filteredStructures.map((s) => {
+          const totalGross = s.components?.reduce((sum, c) => sum + parseAmount(c.amount), 0) ?? 0;
+          const compText = (s.components || [])
+            .map((c) => `${c.feeHeadName || c.feeHeadCode || `Head #${c.feeHeadId}`}: INR ${parseAmount(c.amount)}`)
+            .join(' | ');
+          return [s.code, s.name, s.active ? 'APPROVED' : 'DRAFT', compText || 'None', totalGross.toFixed(2)];
+        })
+      : filteredFeeHeads.map((h: FeeHead) => [
+          String(h.id),
+          h.code,
+          h.name,
+          h.description || '—',
+          h.isActive !== false ? 'ACTIVE' : 'INACTIVE',
+        ]);
+
+    const metaRows = [
+      [isStructures ? 'INSTITUTIONAL FEE STRUCTURES SCHEDULE' : 'INSTITUTIONAL FEE HEADS MASTER', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', ''],
+      ['Exported On', new Date().toISOString(), '', '', ''],
+      ['', '', '', '', '']
+    ];
+
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `${isStructures ? 'Fee_Structures' : 'Fee_Heads'}_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${isStructures ? 'fee structures' : 'fee heads'} register (CSV).`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">
             {activeSubTab === 'structures' ? 'Fee Structures & Components' : 'Institutional Fee Heads'}
@@ -193,12 +265,28 @@ export function FeeStructuresTab() {
               : 'Configure reusable accounting heads (e.g. Tuition, Lab, Hostel) applied across fee structures.'}
           </p>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search ${activeSubTab === 'structures' ? 'structures' : 'fee heads'}...`}
+              className="pl-8 pr-3 h-8 text-xs w-48 bg-slate-50 border-slate-200"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="text-xs h-8 border-slate-300">
+            <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" /> Print
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportBlueprintsCsv} className="text-xs h-8 border-slate-300">
+            <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Export CSV
+          </Button>
           <Button
             variant={activeSubTab === 'fee-heads' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setIsHeadModalOpen(true)}
-            className={`text-xs ${activeSubTab === 'fee-heads' ? 'bg-black text-white hover:bg-slate-800' : ''}`}
+            className={`text-xs h-8 ${activeSubTab === 'fee-heads' ? 'bg-black text-white hover:bg-slate-800' : ''}`}
           >
             <Layers className="w-3.5 h-3.5 mr-1" />
             + New Fee Head
@@ -207,7 +295,7 @@ export function FeeStructuresTab() {
             variant={activeSubTab === 'structures' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setIsCreateOpen(true)}
-            className={`text-xs ${activeSubTab === 'structures' ? 'bg-black text-white hover:bg-slate-800' : ''}`}
+            className={`text-xs h-8 ${activeSubTab === 'structures' ? 'bg-black text-white hover:bg-slate-800' : ''}`}
           >
             <PlusCircle className="w-3.5 h-3.5 mr-1" />
             + New Fee Structure
@@ -282,11 +370,11 @@ export function FeeStructuresTab() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : structures.length === 0 ? (
+              ) : filteredStructures.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-40 text-center text-slate-500">
                     <ReceiptText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="font-semibold text-slate-800 text-xs">No fee structures defined yet</p>
+                    <p className="font-semibold text-slate-800 text-xs">No fee structures found</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">Click "+ New Fee Structure" to configure an institutional fee template.</p>
                     <Button
                       size="sm"
@@ -299,7 +387,7 @@ export function FeeStructuresTab() {
                   </TableCell>
                 </TableRow>
               ) : (
-                structures.map((s) => {
+                filteredStructures.map((s) => {
                   const totalGross = s.components?.reduce((sum, c) => sum + parseAmount(c.amount), 0) ?? 0;
                   const prog = programs.find(p => p.id === s.programId);
                   const ay = academicYears.find(a => a.id === s.academicYearId);
@@ -408,11 +496,11 @@ export function FeeStructuresTab() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : feeHeads.length === 0 ? (
+              ) : filteredFeeHeads.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="h-40 text-center text-slate-500">
                     <Layers className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                    <p className="font-semibold text-slate-800 text-xs">No fee heads defined yet</p>
+                    <p className="font-semibold text-slate-800 text-xs">No fee heads found</p>
                     <p className="text-[11px] text-slate-400 mt-0.5">Define accounting categories like Tuition, Lab, Hostel, and Examination.</p>
                     <Button
                       size="sm"
@@ -425,7 +513,7 @@ export function FeeStructuresTab() {
                   </TableCell>
                 </TableRow>
               ) : (
-                feeHeads.map((head: FeeHead) => (
+                filteredFeeHeads.map((head: FeeHead) => (
                   <TableRow key={head.id} className="hover:bg-slate-50/60 transition-colors">
                     <TableCell className="text-xs font-bold text-slate-900">
                       {head.name}
