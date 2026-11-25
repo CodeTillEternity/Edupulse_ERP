@@ -5,9 +5,13 @@ import {
   RefreshCw,
   Copy,
   Check,
-  Search
+  Search,
+  Download,
+  Printer,
+  BookOpen
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 export interface NotionBlock {
   id: string;
@@ -29,7 +33,62 @@ export interface NotionPageData {
   blocks: NotionBlock[];
 }
 
+const DEPARTMENT_CURRICULUM_HANDOUTS: NotionPageData[] = [
+  {
+    pageId: 'SYLL-CS302-RAFT',
+    title: 'CS-302: Distributed Consensus & Raft Replicated State Machines',
+    courseCode: 'CS-302',
+    courseName: 'Advanced Distributed Systems',
+    facultyName: 'Dr. Aris Thorne',
+    lastSyncedAt: 'Semester Fall 2026',
+    icon: '📘',
+    blocks: [
+      { id: 'b1', type: 'heading_1', plainText: '1. Safety & Liveness in Asynchronous Clusters' },
+      { id: 'b2', type: 'paragraph', plainText: 'Raft decomposes consensus into Leader Election, Log Replication, and Safety guarantees. At most one leader can be elected in a given term using randomized election timeouts (150ms - 300ms).' },
+      { id: 'b3', type: 'callout', icon: '📌', plainText: 'UGC Examination Note: Candidates must derive the Log Matching Property and explain why committing entries from previous terms requires an entry from the current term.' },
+      { id: 'b4', type: 'heading_2', plainText: '2. RequestVote RPC Pseudocode' },
+      { id: 'b5', type: 'code', language: 'typescript', plainText: 'interface RequestVoteArgs {\n  term: number;\n  candidateId: string;\n  lastLogIndex: number;\n  lastLogTerm: number;\n}' },
+      { id: 'b6', type: 'heading_2', plainText: '3. Pre-Class Reading Checklist' },
+      { id: 'b7', type: 'to_do', plainText: 'Review Ongaro & Ousterhout (2014) Section 5.4 Safety Proof', checked: true },
+      { id: 'b8', type: 'to_do', plainText: 'Implement AppendEntries heartbeat RPC in Lab 3 Repository', checked: false },
+    ]
+  },
+  {
+    pageId: 'SYLL-SE404-K8S',
+    title: 'SE-404: High-Availability Kubernetes Control Plane Topologies',
+    courseCode: 'SE-404',
+    courseName: 'Cloud Systems Architecture',
+    facultyName: 'Prof. Elena Rostova',
+    lastSyncedAt: 'Semester Fall 2026',
+    icon: '⚙️',
+    blocks: [
+      { id: 'k1', type: 'heading_1', plainText: 'Stacked etcd vs External etcd Quorum Topologies' },
+      { id: 'k2', type: 'paragraph', plainText: 'Production institutional clusters require an odd number of etcd consensus members (N=3 or N=5) to tolerate (N-1)/2 node failures without split-brain quorum loss.' },
+      { id: 'k3', type: 'numbered_list_item', plainText: 'Configure API Server load balancer health checks on TCP/6443' },
+      { id: 'k4', type: 'numbered_list_item', plainText: 'Enforce NetworkPolicy default-deny ingress between tenant namespaces' },
+      { id: 'k5', type: 'numbered_list_item', plainText: 'Schedule PodDisruptionBudget minAvailable policies for stateful workloads' },
+      { id: 'k6', type: 'to_do', plainText: 'Complete Helm Chart deployment verification worksheet', checked: false },
+    ]
+  },
+  {
+    pageId: 'SYLL-MA201-SVD',
+    title: 'MA-201: Singular Value Decomposition & Spectral Decomposition',
+    courseCode: 'MA-201',
+    courseName: 'Applied Linear Algebra',
+    facultyName: 'Dr. Marcus Vance',
+    lastSyncedAt: 'Semester Fall 2026',
+    icon: '📐',
+    blocks: [
+      { id: 'm1', type: 'heading_1', plainText: 'Eckart-Young-Mirsky Low-Rank Approximation Theorem' },
+      { id: 'm2', type: 'paragraph', plainText: 'For any real or complex matrix A (m x n), the truncated SVD retains top-k singular values to provide the optimal rank-k approximation under both the Frobenius and spectral norms.' },
+      { id: 'm3', type: 'callout', icon: '💡', plainText: 'Prerequisite: Orthogonal projections onto four fundamental subspaces (Column space, Nullspace, Row space, Left nullspace).' },
+      { id: 'm4', type: 'to_do', plainText: 'Solve Assignment Set 4 (Problems 4.1 through 4.8)', checked: false },
+    ]
+  }
+];
+
 export const AcademicMaterialView: React.FC = () => {
+  const { institution } = useInstitutionStore();
   const [pageIdInput, setPageIdInput] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<NotionPageData | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -41,6 +100,13 @@ export const AcademicMaterialView: React.FC = () => {
     const targetId = (pageIdToSync || pageIdInput).trim();
     if (!targetId) {
       toast.error('Please enter a valid Notion Page ID');
+      return;
+    }
+
+    const preset = DEPARTMENT_CURRICULUM_HANDOUTS.find((h) => h.pageId === targetId);
+    if (preset && !pageIdToSync) {
+      setCurrentPage(preset);
+      toast.success(`Loaded institutional handout: ${preset.courseCode}`);
       return;
     }
 
@@ -68,7 +134,28 @@ export const AcademicMaterialView: React.FC = () => {
         });
         toast.success(`Synchronized Notion page: ${data.title || targetId}`);
       } else {
-        // Fallback for offline/test mode: create empty or structured page
+        if (preset) {
+          setCurrentPage(preset);
+          toast.success(`Loaded institutional handout: ${preset.courseCode}`);
+        } else {
+          setCurrentPage({
+            pageId: targetId,
+            title: `Document ${targetId}`,
+            courseCode: 'ACAD',
+            courseName: 'Course Notes',
+            facultyName: 'Faculty Instructor',
+            lastSyncedAt: 'Just now',
+            icon: '📄',
+            blocks: []
+          });
+          toast.info('Document initialized (empty blocks)');
+        }
+      }
+    } catch {
+      if (preset) {
+        setCurrentPage(preset);
+        toast.success(`Loaded institutional handout: ${preset.courseCode}`);
+      } else {
         setCurrentPage({
           pageId: targetId,
           title: `Document ${targetId}`,
@@ -81,19 +168,6 @@ export const AcademicMaterialView: React.FC = () => {
         });
         toast.info('Document initialized (empty blocks)');
       }
-    } catch {
-      // In standalone client mode without network:
-      setCurrentPage({
-        pageId: targetId,
-        title: `Document ${targetId}`,
-        courseCode: 'ACAD',
-        courseName: 'Course Notes',
-        facultyName: 'Faculty Instructor',
-        lastSyncedAt: 'Just now',
-        icon: '📄',
-        blocks: []
-      });
-      toast.info('Document initialized (empty blocks)');
     } finally {
       setIsSyncing(false);
     }
@@ -123,32 +197,81 @@ export const AcademicMaterialView: React.FC = () => {
     });
   };
 
+  const exportMarkdownHandout = () => {
+    if (!currentPage) return;
+    const lines = [
+      `# ${currentPage.title}`,
+      `> Institution: ${institution.name || 'Central University'} (${institution.code || 'INST'}) | Course: ${currentPage.courseCode} — ${currentPage.courseName} | Faculty: ${currentPage.facultyName}`,
+      '',
+      ...currentPage.blocks.map((b) => {
+        if (b.type === 'heading_1') return `## ${b.plainText}\n`;
+        if (b.type === 'heading_2') return `### ${b.plainText}\n`;
+        if (b.type === 'heading_3') return `#### ${b.plainText}\n`;
+        if (b.type === 'bulleted_list_item') return `- ${b.plainText}`;
+        if (b.type === 'numbered_list_item') return `1. ${b.plainText}`;
+        if (b.type === 'to_do') return `- [${b.checked ? 'x' : ' '}] ${b.plainText}`;
+        if (b.type === 'code') return `\`\`\`${b.language || ''}\n${b.plainText}\n\`\`\`\n`;
+        if (b.type === 'callout') return `> ${b.icon || ''} ${b.plainText}\n`;
+        if (b.type === 'divider') return `---\n`;
+        return `${b.plainText}\n`;
+      }),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${currentPage.courseCode}_${currentPage.pageId}.md`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(`Exported study handout as Markdown (${currentPage.courseCode}).`);
+  };
+
   // Filter blocks based on search query
   const filteredBlocks = currentPage?.blocks.filter(b => {
     if (!searchQuery.trim()) return true;
     return b.plainText.toLowerCase().includes(searchQuery.toLowerCase());
   }) || [];
 
+  let numberedCounter = 0;
+
   return (
     <PageFrame
-      title="Faculty Notes"
-      description="Synchronized course notes and academic materials from connected Notion pages."
+      title="Faculty Notes & LMS Handout Repository"
+      description={`${institution.name || 'Institutional'} synchronized lecture notes, CBCS reading lists, and Notion academic handouts.`}
       breadcrumbs={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Academics', href: '/dashboard/academics' },
-        { label: 'Faculty Notes' }
+        { label: 'Course Materials' }
       ]}
       actions={
         <div className="flex items-center gap-2 flex-wrap">
           {currentPage && (
-            <button
-              onClick={copyPageId}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium border border-slate-300"
-              title="Copy Notion Page ID"
-            >
-              <Copy className="w-3.5 h-3.5 text-slate-500" />
-              <span>Copy ID</span>
-            </button>
+            <>
+              <button
+                onClick={() => window.print()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium border border-slate-300"
+              >
+                <Printer className="w-3.5 h-3.5 text-slate-500" />
+                <span>Print Handout</span>
+              </button>
+              <button
+                onClick={exportMarkdownHandout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium border border-slate-300"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-500" />
+                <span>Export Markdown</span>
+              </button>
+              <button
+                onClick={copyPageId}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium border border-slate-300"
+                title="Copy Notion Page ID"
+              >
+                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                <span>Copy ID</span>
+              </button>
+            </>
           )}
           <button
             onClick={() => handleSyncNotionPage()}
@@ -163,66 +286,90 @@ export const AcademicMaterialView: React.FC = () => {
       }
     >
       <div className="space-y-4">
-        {/* Utilitarian Page Input & Search Bar */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSyncNotionPage();
-            }}
-            className="flex items-center gap-2 flex-1 max-w-lg"
-          >
-            <input
-              type="text"
-              placeholder="Enter Notion Page ID (e.g. 1a2b3c4d5e6f...)"
-              value={pageIdInput}
-              onChange={(e) => setPageIdInput(e.target.value)}
-              className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
-            />
-            <button
-              type="submit"
-              disabled={isSyncing}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+        {/* Institutional Repository Quick-Load Bar */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSyncNotionPage();
+              }}
+              className="flex items-center gap-2 flex-1 max-w-lg"
             >
-              Fetch Page
-            </button>
-          </form>
+              <input
+                type="text"
+                placeholder="Enter Notion Page ID (e.g. 1a2b3c4d5e6f...)"
+                value={pageIdInput}
+                onChange={(e) => setPageIdInput(e.target.value)}
+                className="flex-1 px-3 py-1.5 text-xs border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-mono"
+              />
+              <button
+                type="submit"
+                disabled={isSyncing}
+                className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                Fetch Page
+              </button>
+            </form>
 
-          {currentPage && (
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Filter blocks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44"
-                />
+            {currentPage && (
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Filter blocks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 w-44"
+                  />
+                </div>
+                <span className="text-xs text-slate-500">
+                  {currentPage.blocks.length} blocks
+                </span>
               </div>
-              <span className="text-xs text-slate-500">
-                {currentPage.blocks.length} blocks
-              </span>
-            </div>
-          )}
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1 mr-1">
+              <BookOpen className="w-3.5 h-3.5 text-indigo-500" /> Course Syllabi Handouts:
+            </span>
+            {DEPARTMENT_CURRICULUM_HANDOUTS.map((handout) => (
+              <button
+                key={handout.pageId}
+                type="button"
+                onClick={() => {
+                  setPageIdInput(handout.pageId);
+                  setCurrentPage(handout);
+                  toast.success(`Opened syllabus handout: ${handout.courseCode}`);
+                }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                  currentPage?.pageId === handout.pageId
+                    ? 'bg-indigo-50 border-indigo-300 text-indigo-700 font-semibold'
+                    : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                }`}
+              >
+                {handout.courseCode} — {handout.courseName}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Blank-Slate Document Reader Container */}
+        {/* Document Reader Container */}
         <div
           data-testid="notion-document-container"
           className="bg-white border border-slate-200 rounded-xl p-8 max-w-4xl mx-auto min-h-[500px] shadow-xs"
         >
           {!currentPage ? (
-            // Clean Initial Blank Slate
             <div className="flex flex-col items-center justify-center h-80 text-center text-slate-400 space-y-2">
               <FileText className="w-10 h-10 text-slate-300" />
-              <h3 className="text-sm font-semibold text-slate-700">No Notion Document Loaded</h3>
+              <h3 className="text-sm font-semibold text-slate-700">Select a Course Handout or Sync Notion Page</h3>
               <p className="text-xs text-slate-500 max-w-sm">
-                Enter an official Notion Page ID above to sync and read live JSON block data.
+                Choose a departmental course syllabus above or enter a Notion Page ID to render structured lecture notes.
               </p>
             </div>
           ) : currentPage.blocks.length === 0 ? (
-            // Clean Empty Document Slate (if Notion page has no blocks)
             <div className="space-y-4">
               <div className="border-b border-slate-200 pb-4">
                 <div className="text-3xl mb-1">{currentPage.icon || '📄'}</div>
@@ -234,11 +381,16 @@ export const AcademicMaterialView: React.FC = () => {
               </div>
             </div>
           ) : (
-            // Live Block Children Rendering
             <div className="space-y-4">
               {/* Document Header */}
               <div className="border-b border-slate-200 pb-4">
-                <div className="text-3xl mb-1">{currentPage.icon || '📄'}</div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">{currentPage.icon || '📄'}</span>
+                  <span className="text-[11px] font-mono font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded">
+                    {currentPage.courseCode}
+                  </span>
+                  <span className="text-xs text-slate-500 font-medium">{currentPage.facultyName}</span>
+                </div>
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{currentPage.title}</h1>
                 <div className="text-xs text-slate-400 mt-1 flex items-center gap-2">
                   <span>Page ID: {currentPage.pageId}</span>
@@ -250,6 +402,9 @@ export const AcademicMaterialView: React.FC = () => {
               {/* Rendered Block Items */}
               <div className="space-y-3 pt-2">
                 {filteredBlocks.map((block) => {
+                  if (block.type !== 'numbered_list_item') {
+                    numberedCounter = 0;
+                  }
                   switch (block.type) {
                     case 'heading_1':
                       return (
@@ -288,9 +443,10 @@ export const AcademicMaterialView: React.FC = () => {
                       );
 
                     case 'numbered_list_item':
+                      numberedCounter += 1;
                       return (
                         <div key={block.id} className="flex items-start space-x-2 text-xs text-slate-700 ml-2">
-                          <span className="font-mono text-slate-400 text-xs">1.</span>
+                          <span className="font-mono text-slate-400 text-xs">{numberedCounter}.</span>
                           <span>{block.plainText}</span>
                         </div>
                       );
