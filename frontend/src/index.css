@@ -75,7 +75,8 @@
     width: 100%;
     margin: 0;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     user-select: none;
     -webkit-user-select: none;
     @apply bg-background text-foreground text-sm leading-normal antialiased;
