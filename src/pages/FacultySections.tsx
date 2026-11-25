@@ -1,11 +1,24 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../config/api';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { PageFrame } from '../components/ui/PageFrame';
 import { Link } from 'react-router-dom';
-import { Users, Calendar, MapPin, Loader2, BookOpen, Clock } from 'lucide-react';
+import {
+  Users,
+  Calendar,
+  MapPin,
+  Loader2,
+  BookOpen,
+  Clock,
+  Download,
+  Printer,
+  Search,
+  ExternalLink
+} from 'lucide-react';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { cn } from '../lib/utils';
+import { toast } from 'sonner';
 
 interface Section {
   id: number;
@@ -37,7 +50,9 @@ interface TimetableSlot {
 }
 
 export default function FacultySections() {
+  const { institution } = useInstitutionStore();
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
+  const [rosterQuery, setRosterQuery] = useState('');
 
   // 1. Fetch assigned sections
   const { data: sections, isLoading: loadingSections, isError: isSectionsError, error: sectionsError } = useQuery<Section[]>({
@@ -98,25 +113,94 @@ export default function FacultySections() {
 
   const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
 
+  const filteredRoster = useMemo(() => {
+    if (!roster) return [];
+    const q = rosterQuery.trim().toLowerCase();
+    if (!q) return roster;
+    return roster.filter(
+      (s) =>
+        (s.rollNumber || '').toLowerCase().includes(q) ||
+        (s.studentName || '').toLowerCase().includes(q)
+    );
+  }, [roster, rosterQuery]);
+
+  const exportRosterCsv = () => {
+    if (!selectedSectionId || !roster || roster.length === 0) {
+      toast.error('Select a section with enrolled students to export.');
+      return;
+    }
+    const secName = sectionDetails?.name || `Section-${selectedSectionId}`;
+    const headers = ['Student ID', 'Roll Number', 'Student Name', 'Enrollment Status'];
+    const rows = filteredRoster.map((s) => [
+      String(s.studentId),
+      s.rollNumber || '-',
+      s.studentName,
+      s.isActive ? 'ACTIVE' : 'INACTIVE',
+    ]);
+    const metaRows = [
+      ['STATUTORY SECTION COHORT ROSTER', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', ''],
+      ['Section Cohort', `Section ${secName}`, '', ''],
+      ['Offering Reference', `#${sectionDetails?.courseOfferingId || ''}`, '', ''],
+      ['Seat Utilization', `${sectionDetails?.currentEnrollment || roster.length} / ${sectionDetails?.capacity || roster.length}`, '', ''],
+      ['Exported On', new Date().toISOString(), '', ''],
+      ['', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Section_${secName}_Roster_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported Section ${secName} student roster (CSV).`);
+  };
+
+  const utilizationPct = sectionDetails && sectionDetails.capacity > 0
+    ? Math.min(100, Math.round((sectionDetails.currentEnrollment / sectionDetails.capacity) * 100))
+    : 0;
+
   return (
     <PageFrame
-      title="My Sections"
+      title="Faculty Sections & Cohort Rosters"
+      description={
+        <p className="text-xs text-slate-500 mt-0.5">
+          {institution.name || 'Central University'} • Assigned Section Cohorts, Seat Utilization &amp; Timetables
+        </p>
+      }
       breadcrumbs={[
         { label: "Dashboard", href: "/dashboard" },
         { label: "My Sections" }
       ]}
-    >
-      <div className="flex flex-col gap-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">My Sections</h1>
-          <p className="text-sm font-medium text-slate-500 mt-1">View your assigned sections, enrolled students, and class schedule.</p>
+      actions={
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-500" /> Print View
+          </button>
+          <button
+            type="button"
+            onClick={exportRosterCsv}
+            disabled={!roster || roster.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-2xs transition-colors disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" /> Export Roster (CSV)
+          </button>
         </div>
-
+      }
+    >
+      <div className="flex flex-col gap-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* LEFT: ASSIGNED SECTIONS */}
           <div className="space-y-4">
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2">
-              Assigned Sections
+              Assigned Sections ({sections?.length || 0})
             </h2>
             
             {loadingSections ? (
@@ -127,27 +211,34 @@ export default function FacultySections() {
               </div>
             ) : sections && sections.length > 0 ? (
               <div className="bg-white border border-slate-200 divide-y divide-slate-100">
-                {sections.map((section) => (
-                  <button
-                    key={section.id}
-                    onClick={() => setSelectedSectionId(section.id)}
-                    className={cn(
-                      "w-full text-left p-4 hover:bg-slate-50 transition-colors focus:outline-none",
-                      selectedSectionId === section.id && "bg-slate-50 border-l-4 border-l-primary ring-1 ring-inset ring-slate-200"
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-semibold text-slate-900">Section {section.name}</span>
-                      <StatusBadge status={section.isActive ? 'ACTIVE' : 'INACTIVE'} />
-                    </div>
-                    <div className="flex items-center space-x-4 text-xs font-medium text-slate-500">
-                      <span className="flex items-center">
-                        <Users className="w-3 h-3 mr-1" />
-                        {section.currentEnrollment} / {section.capacity} Enrolled
-                      </span>
-                    </div>
-                  </button>
-                ))}
+                {sections.map((section) => {
+                  const pct = section.capacity > 0 ? Math.min(100, Math.round((section.currentEnrollment / section.capacity) * 100)) : 0;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => { setSelectedSectionId(section.id); setRosterQuery(''); }}
+                      className={cn(
+                        "w-full text-left p-4 hover:bg-slate-50 transition-colors focus:outline-none",
+                        selectedSectionId === section.id && "bg-slate-50 border-l-4 border-l-primary ring-1 ring-inset ring-slate-200"
+                      )}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-slate-900">Section {section.name}</span>
+                        <StatusBadge status={section.isActive ? 'ACTIVE' : 'INACTIVE'} />
+                      </div>
+                      <div className="flex items-center justify-between text-xs font-medium text-slate-500 mb-1.5">
+                        <span className="flex items-center">
+                          <Users className="w-3 h-3 mr-1" />
+                          {section.currentEnrollment} / {section.capacity} Enrolled
+                        </span>
+                        <span className="font-mono text-[11px] font-bold text-slate-700">{pct}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-indigo-600 h-1.5 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <div className="bg-white border border-slate-200 p-8 text-center text-sm text-slate-500">
@@ -193,6 +284,10 @@ export default function FacultySections() {
                       <div>
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Enrollment</p>
                         <p className="font-semibold text-slate-900">{sectionDetails.currentEnrollment} / {sectionDetails.capacity}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Seat Occupancy</p>
+                        <p className="font-bold text-indigo-700 font-mono">{utilizationPct}% Utilized</p>
                       </div>
                     </div>
                   ) : (
@@ -267,14 +362,30 @@ export default function FacultySections() {
 
                 {/* STUDENTS ROSTER */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900 border-b border-slate-200 pb-2">Student Roster</h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                      Student Roster ({filteredRoster.length})
+                    </h3>
+                    {roster && roster.length > 0 && (
+                      <div className="relative w-full sm:w-64">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={rosterQuery}
+                          onChange={(e) => setRosterQuery(e.target.value)}
+                          placeholder="Filter by roll # or name..."
+                          className="w-full pl-8 pr-3 py-1 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                      </div>
+                    )}
+                  </div>
                   {loadingRoster ? (
                     <div className="flex justify-center p-8 bg-white border border-slate-200"><Loader2 className="h-6 w-6 animate-spin text-slate-400" /></div>
                   ) : isRosterError ? (
                     <div className="bg-white border border-red-200 bg-red-50 p-8 text-center text-sm text-red-600">
                       Failed to load student roster.
                     </div>
-                  ) : roster && roster.length > 0 ? (
+                  ) : filteredRoster.length > 0 ? (
                     <div className="bg-white border border-slate-200">
                       <table className="w-full text-left text-sm">
                         <thead className="bg-slate-50 border-b border-slate-200">
@@ -282,15 +393,25 @@ export default function FacultySections() {
                             <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-slate-500">Roll Number</th>
                             <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-slate-500">Name</th>
                             <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-slate-500 text-right">Status</th>
+                            <th className="px-4 py-3 font-bold text-[10px] uppercase tracking-wider text-slate-500 text-right">Profile</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {roster.map(student => (
+                          {filteredRoster.map(student => (
                             <tr key={student.studentId} className="hover:bg-slate-50">
-                              <td className="px-4 py-3 font-medium text-slate-600">{student.rollNumber || '-'}</td>
+                              <td className="px-4 py-3 font-mono text-xs font-medium text-slate-600">{student.rollNumber || '-'}</td>
                               <td className="px-4 py-3 font-semibold text-slate-900">{student.studentName}</td>
                               <td className="px-4 py-3 text-right">
                                 <StatusBadge status={student.isActive ? 'ACTIVE' : 'INACTIVE'} />
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <Link
+                                  to={`/dashboard/students/${student.studentId}`}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                                >
+                                  <span>View</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </Link>
                               </td>
                             </tr>
                           ))}
@@ -299,7 +420,7 @@ export default function FacultySections() {
                     </div>
                   ) : (
                     <div className="bg-white border border-slate-200 p-8 text-center text-sm text-slate-500">
-                      No students enrolled in this section.
+                      {roster && roster.length > 0 ? 'No students match your search filter.' : 'No students enrolled in this section.'}
                     </div>
                   )}
                 </div>
