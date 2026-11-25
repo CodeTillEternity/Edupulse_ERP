@@ -1,6 +1,7 @@
 import React from 'react';
 import { Printer, Download, X, CheckCircle2 } from 'lucide-react';
 import { Button } from './ui/button';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 
 export interface ThermalReceiptData {
   invoiceNumber: string;
@@ -30,11 +31,13 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
   onClose,
   receipt,
 }) => {
+  const { institution } = useInstitutionStore();
   if (!isOpen || !receipt) return null;
 
-  const institutionName = receipt.institutionName || 'ARYA COLLEGE OF ENGINEERING & IT';
-  const campusName = receipt.campusName || 'Kukas Campus, Jaipur — 302028';
+  const institutionName = receipt.institutionName || institution.name || 'Institutional ERP';
+  const campusName = receipt.campusName || [institution.campus, institution.address].filter(Boolean).join(' · ') || 'Main Campus';
   const cashier = receipt.cashierName || 'Desktop POS Terminal #01';
+  const institutionPhone = institution.phone || '';
 
   const defaultBreakdown = receipt.breakdown || [
     { label: 'Academic Tuition Fee', amount: receipt.amount * 0.75 },
@@ -80,8 +83,11 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
     content += `Status      : PAYMENT RECONCILED / CLEAR\n`;
     content += `${divider}\n\n`;
     content += `         Authorized Signatory\n`;
-    content += `     Accounts & Bursar Division\n\n`;
-    content += `  *** Powered by EduPulse Cloud ERP ***\n`;
+    content += `     Accounts & Bursar Division\n`;
+    if (institutionPhone) {
+      content += `\n  Contact: ${institutionPhone}\n`;
+    }
+    content += `\n  *** ${institutionName} ***\n`;
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -224,6 +230,12 @@ export const ThermalReceiptModal: React.FC<ThermalReceiptModalProps> = ({
               </div>
               <div className="text-[9px] text-gray-500 pt-2 border-t border-dotted border-gray-400">
                 This is a computer generated POS receipt issued on cloud-linked desktop terminal.
+                {institutionPhone && (
+                  <div className="mt-1 font-semibold text-gray-600">
+                    Contact: {institutionPhone}
+                    {institution.email ? ` · ${institution.email}` : ''}
+                  </div>
+                )}
               </div>
             </div>
           </div>
