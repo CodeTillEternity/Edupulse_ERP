@@ -15,6 +15,9 @@ import {
   Sparkles,
   MessageSquare,
   Loader2,
+  Download,
+  Printer,
+  Layers
 } from 'lucide-react';
 import {
   createExam,
@@ -26,6 +29,7 @@ import {
 import { getCourseOfferings } from '../../api/academicService';
 import { communicationService } from '../../api/communicationService';
 import { CommunicationOutboxDrawer } from '../../components/communication/CommunicationOutboxDrawer';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 /**
  * Calculates standard UGC Choice Based Credit System (CBCS) 10-point scale grades
@@ -50,6 +54,7 @@ export const calculateUgcGrade = (marks, totalMarks = 100) => {
 
 export default function ExamManager() {
   const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
   const [activeTab, setActiveTab] = useState('exams'); // 'exams' | 'grades'
 
   // Exam Creation Form State
@@ -245,25 +250,121 @@ export default function ExamManager() {
 
   const activeExam = exams.find((e) => String(e.id) === String(selectedExamId));
 
+  const exportExamScheduleCsv = () => {
+    const headers = ['Exam ID', 'Exam Name', 'Course Code', 'Course Title', 'Semester', 'Exam Date', 'Total Marks'];
+    const rows = exams.map(e => [
+      `EX-${e.id}`,
+      e.name,
+      e.courseCode || '',
+      e.courseName || '',
+      e.semester || '',
+      e.examDate,
+      `${e.totalMarks} pts`
+    ]);
+    const metaRows = [
+      ['STATUTORY UNIVERSITY EXAMINATION TIMETABLE DOSSIER', '', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', '', '', ''],
+      ['Office', 'Office of the Controller of Examinations', '', '', '', '', ''],
+      ['Generated On', new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }), '', '', '', '', ''],
+      ['', '', '', '', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map(r => r.map(c => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encoded = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encoded);
+    link.setAttribute('download', `Exam_Schedule_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Downloaded examination schedule register (CSV).');
+  };
+
+  const exportGradeLedgerCsv = () => {
+    if (!activeExam) {
+      toast.error('Select an examination first to export grades');
+      return;
+    }
+    const maxMarks = Number(activeExam.totalMarks) || 100;
+    const headers = ['Roll / PRN', 'Student Name', 'Marks Obtained', 'Max Marks', 'Percentage', 'UGC Grade', 'Grade Point', 'Evaluation Remarks'];
+    const rows = enrolledStudents.map(student => {
+      const entry = marksState[student.id];
+      const marks = entry ? entry.marksObtained : '';
+      const ugc = calculateUgcGrade(marks, maxMarks);
+      const pct = marks !== '' && !isNaN(marks) ? `${((Number(marks) / maxMarks) * 100).toFixed(1)}%` : '—';
+      return [
+        student.rollNumber || student.enrollmentNumber || `ID-${student.id}`,
+        `${student.firstName} ${student.lastName}`,
+        marks !== '' ? String(marks) : 'ABSENT',
+        String(maxMarks),
+        pct,
+        ugc ? ugc.letter : '—',
+        ugc ? String(ugc.point) : '—',
+        entry?.remarks || ''
+      ];
+    });
+    const metaRows = [
+      ['OFFICIAL EXAMINATION GRADE AWARD SHEET', '', '', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', '', '', ''],
+      ['Examination', `${activeExam.name} (${activeExam.courseCode})`, '', '', '', '', '', ''],
+      ['Exam Date', activeExam.examDate, '', '', '', '', '', ''],
+      ['Grading Standard', '10-Point Choice Based Credit System (CBCS)', '', '', '', '', '', ''],
+      ['Timestamp', new Date().toISOString(), '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map(r => r.map(c => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encoded = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encoded);
+    link.setAttribute('download', `Grade_Ledger_${activeExam.courseCode || 'EXAM'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Downloaded official grade award ledger (CSV).');
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
+          <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">
+            <Award className="w-3.5 h-3.5" /> Office of the Controller of Examinations
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600 font-medium normal-case">{institution.name || 'Central University'}</span>
+          </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <GraduationCap className="w-7 h-7 text-indigo-600" />
-            Examinations & Grade Management
+            Examinations &amp; Evaluation Center
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Schedule course assessments, record student marks, and process automated grade classifications.
+            Schedule university assessments, record student marks, and process automated UGC 10-point CBCS classifications.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            <span>Print Register</span>
+          </button>
+
+          <button
+            onClick={activeTab === 'exams' ? exportExamScheduleCsv : exportGradeLedgerCsv}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>{activeTab === 'exams' ? 'Export Schedule (CSV)' : 'Export Grades (CSV)'}</span>
+          </button>
+
           <button
             onClick={() => setIsOutboxOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-            title="Open WhatsApp & SMS Outbox Logs"
+            title="Open WhatsApp &amp; SMS Outbox Logs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
             <span>Admit Card Outbox</span>
@@ -294,6 +395,47 @@ export default function ExamManager() {
               Grade Entry
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Institutional Examination Metrics Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Scheduled Examinations</span>
+            <Calendar className="w-4 h-4 text-indigo-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 mt-1">{exams.length} Papers</div>
+          <p className="text-[11px] text-slate-500 mt-0.5">End-semester &amp; mid-term tests</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Course Offerings Assessed</span>
+            <BookOpen className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 mt-1">{courseOfferings.length} Courses</div>
+          <p className="text-[11px] text-emerald-700 font-medium mt-0.5 flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Syllabus mapped
+          </p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Grading Standard</span>
+            <Award className="w-4 h-4 text-cyan-600" />
+          </div>
+          <div className="text-xl font-black text-slate-900 mt-1">UGC 10-Point</div>
+          <p className="text-[11px] text-cyan-700 font-medium mt-0.5">Choice-Based Credit System (CBCS)</p>
+        </div>
+
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+            <span>Admit Card Dispatch</span>
+            <MessageSquare className="w-4 h-4 text-emerald-600" />
+          </div>
+          <div className="text-xl font-black text-slate-900 mt-1">Automated</div>
+          <p className="text-[11px] text-emerald-700 font-medium mt-0.5">WhatsApp &amp; SMS Gateway Synced</p>
         </div>
       </div>
 
