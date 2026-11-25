@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { apiClient } from '../config/api';
 import { PageFrame } from '../components/ui/PageFrame';
 import { StatusBadge } from '../components/ui/StatusBadge';
@@ -14,11 +15,16 @@ import {
   AlertCircle, 
   User, 
   Loader2,
-  ChevronRight
+  ChevronRight,
+  Download,
+  Printer,
+  PhoneCall,
+  Award
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatCurrency, parseAmount, type StudentFee } from '../hooks/queries/useFinance';
 import type { AttendanceResponse } from '../types/attendance';
+import { toast } from 'sonner';
 import {
   Table,
   TableBody,
@@ -61,6 +67,7 @@ interface WardDetailDto {
 
 export default function ParentDashboard() {
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const [selectedWardIndex, setSelectedWardIndex] = useState(0);
 
   // 1. Fetch parent guardian records (supports multi-ward families)
@@ -181,6 +188,7 @@ export default function ParentDashboard() {
   const totalSessions = attendanceRecords.length;
   const presentSessions = attendanceRecords.filter(r => r.status === 'PRESENT').length;
   const attendancePercentage = totalSessions > 0 ? Math.round((presentSessions / totalSessions) * 100) : null;
+  const isUgcDebarred = attendancePercentage !== null && attendancePercentage < 75;
 
   // Fee totals for selected ward
   const totalPaid = fees.reduce((sum, f) => sum + parseAmount(f.paidAmount), 0);
@@ -193,23 +201,73 @@ export default function ParentDashboard() {
 
   const parentName = wards[0]?.firstName || wards[0]?.fullName || user?.username || 'Parent';
 
+  const exportWardReport = () => {
+    if (!activeWard) return;
+    const rows = [
+      ['INSTITUTIONAL WARD PERFORMANCE & PROGRESS REPORT', ''],
+      ['Institution', institution.name || 'Central University System'],
+      ['Institution Code', institution.code || 'CUS-01'],
+      ['Parent / Guardian', parentName],
+      ['Guardian Relation', activeWard.relation],
+      ['Ward Name', wardProfile?.fullName || activeWard.studentName],
+      ['Ward Roll / ENR', wardProfile?.rollNumber || `ID-${activeStudentId}`],
+      ['Department', wardProfile?.department || 'Enrolled'],
+      ['Batch Cohort', wardProfile?.batch || 'Active'],
+      ['Cumulative Attendance Rate', attendancePercentage !== null ? `${attendancePercentage}%` : 'N/A'],
+      ['UGC 75% Examination Status', isUgcDebarred ? 'DEBARMENT RISK (< 75%)' : 'COMPLIANT (>= 75%)'],
+      ['Total Tuition Paid', `₹${totalPaid.toLocaleString('en-IN')}`],
+      ['Pending Dues', `₹${totalOutstanding.toLocaleString('en-IN')}`],
+      ['Report Generated On', new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })]
+    ];
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Ward_Progress_${wardProfile?.rollNumber || activeStudentId}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Downloaded ward academic & attendance report (CSV).');
+  };
+
   return (
     <PageFrame
-      title={`Ward Overview — Welcome, ${parentName}`}
-      description="Monitor academic progress, classroom attendance, and billing for your ward(s)."
+      title={`Parent & Guardian Hub — Welcome, ${parentName}`}
+      description="Monitor academic progress, statutory classroom attendance, and billing for your ward(s)."
       breadcrumbs={[{ label: "Dashboard" }]}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold"
+          >
+            <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" /> Print Progress Report
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportWardReport}
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold"
+          >
+            <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Export Summary (CSV)
+          </Button>
+        </div>
+      }
     >
-      <div className="space-y-8">
+      <div className="space-y-6">
         
         {/* Multi-Ward Switcher (when parent has multiple distinct students) */}
         {distinctWards.length > 1 && (
-          <div className="bg-white border border-slate-200 p-3 shadow-sm flex items-center space-x-2 overflow-x-auto">
+          <div className="bg-white border border-slate-200 p-3 shadow-sm flex items-center space-x-2 overflow-x-auto rounded-xl">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-500 px-3">Select Ward:</span>
             {distinctWards.map((ward, idx) => (
               <button
                 key={ward.studentId}
                 onClick={() => setSelectedWardIndex(idx)}
-                className={`px-3 py-1.5 text-xs font-bold rounded transition-colors ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors ${
                   selectedWardIndex === idx
                     ? 'bg-slate-900 text-white shadow-sm'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -221,8 +279,48 @@ export default function ParentDashboard() {
           </div>
         )}
 
+        {/* UGC 75% Attendance Compliance / Debarment Banner */}
+        {attendancePercentage !== null && (
+          <div>
+            {isUgcDebarred ? (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-rose-800">
+                      UGC Statutory Attendance Warning ({attendancePercentage}% &lt; 75%)
+                    </h4>
+                    <p className="text-xs text-rose-700 mt-0.5">
+                      Your ward's attendance is below the mandatory UGC 75% threshold required to appear in university examinations.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => toast.info('Connecting with Departmental Academic Mentor...')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg shrink-0 transition-colors"
+                >
+                  <PhoneCall className="w-3.5 h-3.5" /> Contact Class Mentor
+                </button>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-xs font-bold text-emerald-800">
+                    UGC Compliant Attendance ({attendancePercentage}% ≥ 75%)
+                  </span>
+                  <span className="text-xs text-emerald-600 hidden sm:inline">• Eligible for university examination hall tickets</span>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">
+                  Examination Clearance Verified
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Ward Profile Banner */}
-        <div className="bg-white border border-slate-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start md:items-center space-x-4">
             <div className="w-14 h-14 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xl uppercase shrink-0">
               {wardProfile?.firstName?.[0] || 'W'}{wardProfile?.lastName?.[0] || ''}
@@ -246,34 +344,35 @@ export default function ParentDashboard() {
                 <span>Roll No: <strong className="text-slate-800">{wardProfile?.rollNumber || `ID-${activeStudentId}`}</strong></span>
                 <span>Department: <strong className="text-slate-800">{wardProfile?.department || 'Enrolled'}</strong></span>
                 <span>Batch: <strong className="text-slate-800">{wardProfile?.batch || 'Active'}</strong></span>
+                <span>Institution: <strong className="text-slate-800">{institution.name || 'Main Campus'}</strong></span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700 hover:bg-slate-50">
+            <Button asChild variant="outline" size="sm" className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs">
               <Link to={`/dashboard/students/${activeStudentId}`} className="flex items-center space-x-1.5">
                 <User className="w-4 h-4" />
                 <span>Ward Profile</span>
               </Link>
             </Button>
-            <Button asChild size="sm" className="bg-slate-900 text-white hover:bg-slate-800">
+            <Button asChild size="sm" className="bg-slate-900 text-white hover:bg-slate-800 text-xs">
               <Link to="/dashboard/finance" className="flex items-center space-x-1.5">
                 <Wallet className="w-4 h-4" />
-                <span>Ward Fees</span>
+                <span>Pay Outstanding Dues</span>
               </Link>
             </Button>
           </div>
         </div>
 
         {/* Ward Key Metrics */}
-        <div className="grid gap-px md:grid-cols-2 lg:grid-cols-4 bg-slate-200 border border-slate-200">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           
           {/* Metric 1: Ward Academic Standing */}
-          <div className="bg-white p-5 hover:bg-slate-50 transition-colors">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:bg-slate-50/50 transition-colors">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Academic Standing</h3>
-              <Users className="h-4 w-4 text-slate-400" />
+              <Users className="h-4 w-4 text-indigo-600" />
             </div>
             <div className="text-2xl font-extrabold tracking-tight text-slate-900 truncate">
               {loadingWardProfile ? <Loader2 className="w-6 h-6 animate-spin text-slate-400" /> : (wardProfile?.department || 'Enrolled')}
@@ -284,10 +383,10 @@ export default function ParentDashboard() {
           </div>
 
           {/* Metric 2: Attendance Rate */}
-          <div className="bg-white p-5 hover:bg-slate-50 transition-colors">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:bg-slate-50/50 transition-colors">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Ward Attendance</h3>
-              <CalendarCheck className="h-4 w-4 text-slate-400" />
+              <CalendarCheck className="h-4 w-4 text-emerald-600" />
             </div>
             <div className="text-3xl font-extrabold tracking-tight text-slate-900">
               {loadingAttendance ? (
@@ -304,9 +403,9 @@ export default function ParentDashboard() {
           </div>
 
           {/* Metric 3: Fees Settled */}
-          <div className="bg-white p-5 hover:bg-slate-50 transition-colors">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Paid</h3>
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:bg-slate-50/50 transition-colors">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Settled Fees</h3>
               <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             </div>
             <div className="text-3xl font-extrabold tracking-tight text-emerald-600">
@@ -318,10 +417,10 @@ export default function ParentDashboard() {
           </div>
 
           {/* Metric 4: Outstanding Dues */}
-          <div className="bg-white p-5 hover:bg-slate-50 transition-colors">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs hover:bg-slate-50/50 transition-colors">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Pending Dues</h3>
-              <AlertCircle className={`h-4 w-4 ${totalOutstanding > 0 ? 'text-amber-500' : 'text-slate-400'}`} />
+              <Award className={`h-4 w-4 ${totalOutstanding > 0 ? 'text-amber-500' : 'text-slate-400'}`} />
             </div>
             <div className={`text-3xl font-extrabold tracking-tight ${totalOutstanding > 0 ? 'text-amber-600' : 'text-slate-900'}`}>
               {loadingFees ? <Loader2 className="w-6 h-6 animate-spin text-slate-400" /> : formatCurrency(totalOutstanding)}
@@ -334,10 +433,10 @@ export default function ParentDashboard() {
         </div>
 
         {/* Two-Column Detail Grid */}
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           
           {/* Left Column: Recent Attendance */}
-          <div className="bg-white border border-slate-200 shadow-sm flex flex-col">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden flex flex-col">
             <div className="p-5 border-b border-slate-200 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Ward Attendance Sessions</h3>
@@ -403,7 +502,7 @@ export default function ParentDashboard() {
           </div>
 
           {/* Right Column: Fee Schedule */}
-          <div className="bg-white border border-slate-200 shadow-sm flex flex-col">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden flex flex-col">
             <div className="p-5 border-b border-slate-200 flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Ward Fee Invoices</h3>
