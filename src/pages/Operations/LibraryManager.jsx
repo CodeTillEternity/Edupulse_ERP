@@ -9,13 +9,15 @@ import {
   RotateCcw,
   Layers,
   CheckCircle2,
-  AlertTriangle,
   Calendar,
   User,
   Hash,
   X,
   BookmarkCheck,
   Library,
+  Download,
+  Printer,
+  Award
 } from 'lucide-react';
 import {
   getBooks,
@@ -24,11 +26,13 @@ import {
   issueBook,
   returnBook,
 } from '../../api/enterpriseOpsService';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 const EMPTY_ARRAY = [];
 
 export default function LibraryManager() {
   const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
 
   // Active Tab: 'inventory' | 'circulation'
   const [activeTab, setActiveTab] = useState('inventory');
@@ -58,7 +62,6 @@ export default function LibraryManager() {
   const {
     data: books = EMPTY_ARRAY,
     isLoading: isLoadingBooks,
-    isError: isErrorBooks,
   } = useQuery({
     queryKey: ['libraryBooks'],
     queryFn: getBooks,
@@ -81,6 +84,7 @@ export default function LibraryManager() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['libraryBooks'] });
       queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['complianceMetrics'] });
       toast.success(`Book "${data.title}" added to inventory successfully!`);
       setIsAddBookModalOpen(false);
       setNewBookForm({ title: '', author: '', isbn: '', totalCopies: 5 });
@@ -97,6 +101,7 @@ export default function LibraryManager() {
       queryClient.invalidateQueries({ queryKey: ['libraryIssues'] });
       queryClient.invalidateQueries({ queryKey: ['libraryBooks'] });
       queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['complianceMetrics'] });
       toast.success(`Book issued successfully! Due date: ${data.dueDate}`);
       setIssueForm({ bookId: '', studentId: '' });
     },
@@ -112,6 +117,7 @@ export default function LibraryManager() {
       queryClient.invalidateQueries({ queryKey: ['libraryIssues'] });
       queryClient.invalidateQueries({ queryKey: ['libraryBooks'] });
       queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['complianceMetrics'] });
       toast.success('Book returned successfully and inventory updated!');
     },
     onError: (err) => {
@@ -146,7 +152,72 @@ export default function LibraryManager() {
   );
   const activeCirculationCount = activeIssues.length;
 
-  // Handler to quickly jump from inventory to issue form
+  const exportInventoryCsv = () => {
+    const headers = ['Book ID', 'Book Title', 'Author', 'ISBN', 'Total Volumes', 'Available Copies', 'Checked Out'];
+    const rows = filteredBooks.map((b) => [
+      `BK-${b.id}`,
+      b.title,
+      b.author,
+      b.isbn,
+      String(b.totalCopies),
+      String(b.availableCopies),
+      String((Number(b.totalCopies) || 0) - (Number(b.availableCopies) || 0))
+    ]);
+
+    const metaRows = [
+      ['STATUTORY NAAC CRITERION 4.2 LIBRARY HOLDINGS DOSSIER', '', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', '', '', ''],
+      ['Campus Node', institution.campus || 'Main Campus', '', '', '', '', ''],
+      ['Total Cataloged Titles', `${totalTitlesCount}`, '', '', '', '', ''],
+      ['Total Volume Holdings', `${totalVolumeCopies}`, '', '', '', '', ''],
+      ['Audit Timestamp', new Date().toISOString(), '', '', '', '', ''],
+      ['', '', '', '', '', '', '']
+    ];
+
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encoded = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encoded);
+    link.setAttribute('download', `Library_Catalog_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Downloaded library catalog inventory (CSV).');
+  };
+
+  const exportCirculationCsv = () => {
+    const headers = ['Issue ID', 'Book ID', 'Student ID', 'Issue Date', 'Due Date', 'Status'];
+    const rows = activeIssues.map((i) => [
+      `ISS-${i.id}`,
+      `BK-${i.bookId}`,
+      `STU-${i.studentId}`,
+      i.issueDate,
+      i.dueDate,
+      'ACTIVE_LOAN'
+    ]);
+
+    const metaRows = [
+      ['STATUTORY NAAC CRITERION 4.2.4 CIRCULATION REGISTER', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', ''],
+      ['Active Circulation Transactions', `${activeCirculationCount}`, '', '', '', ''],
+      ['Generated On', new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }), '', '', '', ''],
+      ['', '', '', '', '', '']
+    ];
+
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encoded = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encoded);
+    link.setAttribute('download', `Library_Circulation_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Downloaded active circulation register (CSV).');
+  };
+
   const handleQuickIssue = (bookId) => {
     setIssueForm((prev) => ({ ...prev, bookId: String(bookId) }));
     setActiveTab('circulation');
@@ -187,37 +258,59 @@ export default function LibraryManager() {
             <Library className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Library & Resource Center</h1>
+            <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">
+              <Award className="w-3.5 h-3.5" /> NAAC Criterion 4.2 Resource Center
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-600 font-medium normal-case">{institution.name || 'Central University'}</span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Institutional Library &amp; Resource Center</h1>
             <p className="text-sm text-slate-500 mt-1">
               Catalog asset tracking, automated circulation, and multi-tenant student lending management.
             </p>
           </div>
         </div>
 
-        {/* Tab Switcher Buttons */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setActiveTab('inventory')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'inventory'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-sm transition-all"
           >
-            <BookOpen className="w-4 h-4" />
-            Inventory ({totalTitlesCount})
+            <Printer className="w-3.5 h-3.5 text-slate-500" /> Print Register
           </button>
+
           <button
-            onClick={() => setActiveTab('circulation')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'circulation'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={activeTab === 'inventory' ? exportInventoryCsv : exportCirculationCsv}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-sm transition-all"
           >
-            <RotateCcw className="w-4 h-4" />
-            Circulation ({activeCirculationCount})
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span>{activeTab === 'inventory' ? 'Export Catalog (CSV)' : 'Export Loans (CSV)'}</span>
           </button>
+
+          {/* Tab Switcher Buttons */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setActiveTab('inventory')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'inventory'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Inventory ({totalTitlesCount})
+            </button>
+            <button
+              onClick={() => setActiveTab('circulation')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'circulation'
+                  ? 'bg-white text-indigo-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <RotateCcw className="w-4 h-4" />
+              Circulation ({activeCirculationCount})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -230,6 +323,7 @@ export default function LibraryManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Catalog Titles</p>
             <p className="text-2xl font-bold text-slate-900">{totalTitlesCount}</p>
+            <p className="text-[10px] text-blue-600 font-semibold mt-0.5">NAAC 4.2.2 Compliant</p>
           </div>
         </div>
 
@@ -240,6 +334,7 @@ export default function LibraryManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Volume</p>
             <p className="text-2xl font-bold text-slate-900">{totalVolumeCopies} Copies</p>
+            <p className="text-[10px] text-purple-600 font-semibold mt-0.5">Physical &amp; Reference Assets</p>
           </div>
         </div>
 
@@ -250,6 +345,7 @@ export default function LibraryManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Available on Shelf</p>
             <p className="text-2xl font-bold text-emerald-600">{totalAvailableCopies} Copies</p>
+            <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Ready for Issue</p>
           </div>
         </div>
 
@@ -260,6 +356,7 @@ export default function LibraryManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Active Loans</p>
             <p className="text-2xl font-bold text-amber-600">{activeCirculationCount} Borrowed</p>
+            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">Circulation Events Logged</p>
           </div>
         </div>
       </div>
@@ -284,7 +381,7 @@ export default function LibraryManager() {
 
             <button
               onClick={() => setIsAddBookModalOpen(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Add Book Asset
@@ -297,7 +394,7 @@ export default function LibraryManager() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    <th className="py-3.5 px-4">Book Title & Details</th>
+                    <th className="py-3.5 px-4">Book Title &amp; Details</th>
                     <th className="py-3.5 px-4">Author</th>
                     <th className="py-3.5 px-4">ISBN</th>
                     <th className="py-3.5 px-4 text-center">Total Copies</th>
@@ -363,7 +460,7 @@ export default function LibraryManager() {
                               onClick={() => handleQuickIssue(book.id)}
                               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                                 isAvailable
-                                  ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200'
+                                  ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 cursor-pointer'
                                   : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                               }`}
                             >
@@ -387,153 +484,132 @@ export default function LibraryManager() {
       {/* ========================================================================= */}
       {activeTab === 'circulation' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Issue Book Form Card */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm h-fit space-y-4">
-            <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
-              <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
-                <BookmarkCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Issue Book to Student</h2>
-                <p className="text-xs text-slate-500">Record a loan with a 14-day return window</p>
-              </div>
-            </div>
-
+          {/* Issue Book Form */}
+          <div className="lg:col-span-1 bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+            <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+              <BookmarkCheck className="w-5 h-5 text-indigo-600" />
+              Issue Book to Student
+            </h2>
             <form onSubmit={handleIssueSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Select Book Volume
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
+                  Select Book Asset *
                 </label>
                 <select
                   value={issueForm.bookId}
                   onChange={(e) => setIssueForm({ ...issueForm, bookId: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  required
                 >
-                  <option value="">-- Choose a Catalog Book --</option>
+                  <option value="">-- Choose Book --</option>
                   {books.map((b) => (
-                    <option
-                      key={b.id}
-                      value={b.id}
-                      disabled={b.availableCopies <= 0}
-                    >
-                      {b.title} ({b.availableCopies} avail / ISBN: {b.isbn})
+                    <option key={b.id} value={b.id} disabled={(b.availableCopies || 0) <= 0}>
+                      {b.title} ({(b.availableCopies || 0)} avail.)
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Student Database ID
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1">
+                  Student Database ID *
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="number"
-                    min="1"
-                    placeholder="Enter Student ID (e.g. 1)"
                     value={issueForm.studentId}
                     onChange={(e) => setIssueForm({ ...issueForm, studentId: e.target.value })}
-                    className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    placeholder="e.g. 1"
+                    className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    required
                   />
                 </div>
-              </div>
-
-              <div className="p-3 bg-amber-50/60 border border-amber-200/80 rounded-lg flex items-start gap-2.5 text-xs text-amber-800">
-                <Calendar className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                <span>Default circulation loan term is <strong>14 days</strong> from issuance date.</span>
+                <p className="text-xs text-slate-400 mt-1">Provide student internal primary ID.</p>
               </div>
 
               <button
                 type="submit"
                 disabled={issueBookMutation.isPending}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-50"
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
               >
-                {issueBookMutation.isPending ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                    Recording Issue...
-                  </>
-                ) : (
-                  <>
-                    <BookmarkCheck className="w-4 h-4" />
-                    Confirm Book Issue
-                  </>
-                )}
+                {issueBookMutation.isPending ? 'Issuing Book...' : 'Confirm Book Loan'}
               </button>
             </form>
           </div>
 
           {/* Active Loans Table */}
-          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+          <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Active Lending Circulation</h2>
-                <p className="text-xs text-slate-500">Currently borrowed books awaiting return</p>
-              </div>
-              <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 font-semibold text-xs rounded-full border border-indigo-200">
-                {activeIssues.length} Active Loans
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-indigo-600" />
+                Active Student Circulation Loans
+              </h2>
+              <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                {activeIssues.length} on loan
               </span>
             </div>
 
-            <div className="overflow-x-auto flex-1">
+            <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                    <th className="py-3.5 px-4">Book Title</th>
-                    <th className="py-3.5 px-4">Student</th>
+                    <th className="py-3.5 px-4">Loan Record</th>
+                    <th className="py-3.5 px-4">Student ID</th>
                     <th className="py-3.5 px-4">Issue Date</th>
                     <th className="py-3.5 px-4">Due Date</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4 text-right">Actions</th>
+                    <th className="py-3.5 px-4 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
                   {isLoadingIssues ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400">
+                      <td colSpan={5} className="py-12 text-center text-slate-400">
                         <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mr-2" />
-                        Loading active circulation loans...
+                        Loading active circulation register...
                       </td>
                     </tr>
                   ) : activeIssues.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400">
-                        <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-400 mb-2" />
-                        No active loans. All library volumes are accounted for on shelves.
+                      <td colSpan={5} className="py-12 text-center text-slate-400">
+                        <BookMarked className="w-8 h-8 mx-auto text-slate-300 mb-2" />
+                        No active loans currently in circulation.
                       </td>
                     </tr>
                   ) : (
                     activeIssues.map((issue) => (
                       <tr key={issue.id} className="hover:bg-slate-50/60 transition-colors">
-                        <td className="py-3.5 px-4 font-medium text-slate-900">
-                          <div>
-                            <p className="font-semibold text-slate-900">{issue.bookTitle || `Book #${issue.bookId}`}</p>
-                            <p className="text-xs font-mono text-slate-500">{issue.isbn}</p>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-2">
+                            <Hash className="w-4 h-4 text-slate-400" />
+                            <div>
+                              <p className="font-semibold text-slate-900">Issue #{issue.id}</p>
+                              <p className="text-xs text-slate-500">Book ID: #{issue.bookId}</p>
+                            </div>
                           </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-700">
-                          <div>
-                            <p className="font-medium text-slate-900">{issue.studentName || `Student #${issue.studentId}`}</p>
-                            {issue.enrollmentNumber && (
-                              <p className="text-xs font-mono text-slate-500">{issue.enrollmentNumber}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-slate-600 text-xs">{issue.issueDate}</td>
-                        <td className="py-3.5 px-4 text-slate-900 font-medium text-xs">
-                          {issue.dueDate}
                         </td>
                         <td className="py-3.5 px-4">
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                            {issue.status}
+                          <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
+                            Student #{issue.studentId}
                           </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                            {issue.issueDate}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700">
+                            <Calendar className="w-3.5 h-3.5 text-amber-500" />
+                            {issue.dueDate}
+                          </div>
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <button
-                            disabled={returnBookMutation.isPending}
                             onClick={() => returnBookMutation.mutate(issue.id)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
+                            disabled={returnBookMutation.isPending}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-semibold border border-emerald-200 transition-colors disabled:opacity-50 cursor-pointer"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                             Return Book
@@ -549,20 +625,22 @@ export default function LibraryManager() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: ADD BOOK ASSET                                                     */}
-      {/* ========================================================================= */}
+      {/* Add Book Asset Modal */}
       {isAddBookModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
                   <BookOpen className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-slate-900 text-lg">Catalog New Book</h3>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Add Book Asset</h3>
+                  <p className="text-xs text-slate-500">Catalog a new title into institutional inventory</p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsAddBookModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
@@ -572,77 +650,76 @@ export default function LibraryManager() {
 
             <form onSubmit={handleAddBookSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Book Title *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Introduction to Algorithms"
+                  placeholder="e.g. Distributed Operating Systems"
                   value={newBookForm.title}
                   onChange={(e) => setNewBookForm({ ...newBookForm, title: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Author / Authors *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Author / Editor *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Thomas H. Cormen"
+                  placeholder="e.g. Andrew S. Tanenbaum"
                   value={newBookForm.author}
                   onChange={(e) => setNewBookForm({ ...newBookForm, author: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                    ISBN *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    ISBN Number *
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="978-0262033848"
+                    placeholder="e.g. 978-0133806083"
                     value={newBookForm.isbn}
                     onChange={(e) => setNewBookForm({ ...newBookForm, isbn: e.target.value })}
-                    className="w-full px-3 py-2 text-sm font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                    Total Copies *
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Total Volume Copies *
                   </label>
                   <input
                     type="number"
                     min="1"
                     required
                     value={newBookForm.totalCopies}
-                    onChange={(e) => setNewBookForm({ ...newBookForm, totalCopies: e.target.value })}
-                    className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    onChange={(e) => setNewBookForm({ ...newBookForm, totalCopies: Number(e.target.value) })}
+                    className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsAddBookModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium"
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={addBookMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  {addBookMutation.isPending ? 'Cataloging...' : 'Save Book'}
+                  {addBookMutation.isPending ? 'Cataloging Asset...' : 'Register Asset'}
                 </button>
               </div>
             </form>
