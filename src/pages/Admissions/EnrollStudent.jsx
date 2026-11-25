@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../config/api';
 import { enrollStudent } from '../../services/studentService';
-import { UserPlus, CheckCircle, ArrowRight, Building2, Calendar, Phone, Mail, User, ShieldCheck } from 'lucide-react';
+import {
+  UserPlus,
+  CheckCircle,
+  ArrowRight,
+  Building2,
+  Calendar,
+  Phone,
+  Mail,
+  User,
+  ShieldCheck,
+  Printer,
+  FileCheck,
+  Award,
+} from 'lucide-react';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 const DEFAULT_DEPARTMENTS = [
   { id: 1, name: 'Computer Science & Engineering', code: 'CSE' },
@@ -20,6 +35,8 @@ const DEFAULT_BATCHES = [
 
 export default function EnrollStudent() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
   const [departments, setDepartments] = useState(DEFAULT_DEPARTMENTS);
   const [batches, setBatches] = useState(DEFAULT_BATCHES);
 
@@ -31,9 +48,17 @@ export default function EnrollStudent() {
     phone: '+919876543210',
     gender: 'MALE',
     dateOfBirth: '2005-06-15',
+    category: 'GENERAL',
     departmentId: '1',
     batchId: '1',
     enrollmentDate: new Date().toISOString().split('T')[0],
+  });
+
+  const [docsVerified, setDocsVerified] = useState({
+    tenthMarksheet: true,
+    twelfthMarksheet: true,
+    transferCertificate: true,
+    categoryCertificate: false,
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -111,6 +136,7 @@ export default function EnrollStudent() {
         phone: formData.phone.trim() || '+919876543210',
         gender: formData.gender || 'MALE',
         dateOfBirth: formData.dateOfBirth || '2005-06-15',
+        category: formData.category || 'GENERAL',
         enrollmentDate: formData.enrollmentDate || new Date().toISOString().split('T')[0],
         departmentId: Number(formData.departmentId),
         department: selectedDept ? selectedDept.name : 'Computer Science and Engineering',
@@ -121,6 +147,9 @@ export default function EnrollStudent() {
 
       const result = await enrollStudent(payload);
       const studentData = result?.data || result;
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['nirfSummary'] });
       toast.success(`Student ${payload.firstName} ${payload.lastName} enrolled successfully!`);
       setLastEnrolled({
         ...studentData,
@@ -128,8 +157,10 @@ export default function EnrollStudent() {
         lastName: payload.lastName,
         enrollmentNumber: payload.enrollmentNumber,
         email: payload.email,
+        category: payload.category,
         department: payload.department,
         batch: payload.batch,
+        institutionName: institution.name || 'Central University System',
       });
 
       // Reset form
@@ -141,6 +172,7 @@ export default function EnrollStudent() {
         phone: '+919876543210',
         gender: 'MALE',
         dateOfBirth: '2005-06-15',
+        category: 'GENERAL',
         departmentId: departments[0] ? String(departments[0].id) : '1',
         batchId: batches[0] ? String(batches[0].id) : '1',
         enrollmentDate: new Date().toISOString().split('T')[0],
@@ -212,13 +244,22 @@ export default function EnrollStudent() {
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard/students')}
-                className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 text-white text-xs font-semibold rounded-lg hover:bg-emerald-800 transition shrink-0"
-              >
-                View Profile <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-emerald-800 border border-emerald-300 text-xs font-semibold rounded-lg hover:bg-emerald-50 transition shadow-2xs shrink-0"
+                >
+                  <Printer className="w-3.5 h-3.5 text-emerald-700" /> Print Admission Voucher
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard/students')}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 text-white text-xs font-semibold rounded-lg hover:bg-emerald-800 transition shrink-0"
+                >
+                  View Profile <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -406,6 +447,89 @@ export default function EnrollStudent() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Statutory Reservation Category (Quota) */}
+              <div>
+                <label htmlFor="category" className="block text-xs font-bold text-slate-700 mb-1">
+                  Statutory Reservation Quota (UGC / GoI) <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  name="category"
+                  id="category"
+                  required
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                >
+                  <option value="GENERAL">General / Open Merit (GEN)</option>
+                  <option value="OBC">Other Backward Classes (OBC-NCL)</option>
+                  <option value="SC">Scheduled Caste (SC Statutory Quota)</option>
+                  <option value="ST">Scheduled Tribe (ST Statutory Quota)</option>
+                  <option value="EWS">Economically Weaker Section (EWS 10% Quota)</option>
+                </select>
+              </div>
+
+              {/* Admission Date */}
+              <div>
+                <label htmlFor="enrollmentDate" className="block text-xs font-bold text-slate-700 mb-1">
+                  Date of Admission <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="enrollmentDate"
+                  id="enrollmentDate"
+                  required
+                  value={formData.enrollmentDate}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-900 text-xs shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                />
+              </div>
+            </div>
+
+            {/* Mandatory Document Verification Checklist */}
+            <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/60 space-y-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                <FileCheck className="w-4 h-4 text-emerald-600" />
+                <span>Mandatory Statutory Document Verification Checklist (NAAC Criterion 2)</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
+                <label className="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <input
+                    type="checkbox"
+                    checked={docsVerified.tenthMarksheet}
+                    onChange={(e) => setDocsVerified(prev => ({ ...prev, tenthMarksheet: e.target.checked }))}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                  />
+                  <span>Class X Secondary Board Certificate / DOB Proof</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <input
+                    type="checkbox"
+                    checked={docsVerified.twelfthMarksheet}
+                    onChange={(e) => setDocsVerified(prev => ({ ...prev, twelfthMarksheet: e.target.checked }))}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                  />
+                  <span>Class XII Senior Secondary Mark Sheet</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <input
+                    type="checkbox"
+                    checked={docsVerified.transferCertificate}
+                    onChange={(e) => setDocsVerified(prev => ({ ...prev, transferCertificate: e.target.checked }))}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                  />
+                  <span>Transfer Certificate (TC) &amp; Migration Certificate</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <input
+                    type="checkbox"
+                    checked={docsVerified.categoryCertificate}
+                    onChange={(e) => setDocsVerified(prev => ({ ...prev, categoryCertificate: e.target.checked }))}
+                    className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                  />
+                  <span>Statutory Caste / Income Certificate (SC/ST/OBC/EWS)</span>
+                </label>
               </div>
             </div>
 
