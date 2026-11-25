@@ -19,7 +19,10 @@ import {
   MapPin, 
   Eye, 
   Sparkles,
-  Palette
+  Palette,
+  Printer,
+  Download,
+  FileCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiClient } from '../config/api';
@@ -259,10 +262,59 @@ export default function InstitutionProfile() {
     toast.info('Reset institution profile to defaults.');
   };
 
+  const handleExportConfig = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      institution: {
+        name: formData.name,
+        code: formData.code,
+        campus: formData.campus,
+        tagline: formData.tagline,
+        website: formData.website,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        brandPrimary: previewTheme.primary,
+        brandSecondary: previewTheme.secondary,
+        hasCustomCrest: Boolean(formData.logoUrl),
+      },
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `institution-branding-${(formData.code || 'tenant').toLowerCase().replace(/[^a-z0-9-]+/g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Exported institutional branding configuration JSON');
+  };
+
   return (
     <PageFrame
       title="Institution Profile & Personalized Branding"
       description="Customize your institution's name, campus node, logo crest, and dynamic brand gradient across the desktop application."
+      actions={
+        <div className="flex flex-wrap items-center gap-2 print:hidden">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleExportConfig}
+            className="gap-1.5 border-slate-200 text-slate-700"
+          >
+            <Download className="w-4 h-4" /> Export Config JSON
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="gap-1.5 border-slate-200 text-slate-700"
+          >
+            <Printer className="w-4 h-4" /> Print Identity Card
+          </Button>
+        </div>
+      }
     >
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         
@@ -741,6 +793,60 @@ export default function InstitutionProfile() {
               <div className="flex justify-between items-center py-1 border-b border-slate-50">
                 <span className="text-slate-500">Website:</span>
                 <span className="font-semibold text-blue-600 truncate max-w-[200px]">{formData.website}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card: Official Institutional Letterhead Preview */}
+          <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h4 className="text-sm font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                <FileCheck className="w-4 h-4 text-emerald-600" />
+                Official Letterhead Preview
+              </h4>
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                Receipts · Transcripts
+              </span>
+            </div>
+
+            <div
+              className="rounded-lg border border-slate-200 bg-slate-50/70 p-4 space-y-3"
+              style={{ borderTop: `4px solid ${previewTheme.primary}` }}
+            >
+              <div className="flex items-center gap-3">
+                {formData.logoUrl ? (
+                  <img
+                    src={formData.logoUrl}
+                    alt={`${formData.name} Crest`}
+                    className="w-11 h-11 rounded-lg object-contain bg-white border border-slate-200 p-1 shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-11 h-11 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0"
+                    style={{ backgroundColor: previewTheme.primary }}
+                  >
+                    {(formData.code || 'IN').slice(0, 3).toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-slate-900 uppercase tracking-tight truncate">
+                    {formData.name || 'Institution Name'}
+                  </div>
+                  <div className="text-[11px] font-medium text-slate-600 truncate">
+                    {formData.campus || 'Campus Node'} · Code: {formData.code || '—'}
+                  </div>
+                  {formData.tagline && (
+                    <div className="text-[10px] text-slate-500 italic truncate">{formData.tagline}</div>
+                  )}
+                </div>
+              </div>
+              <div className="border-t border-slate-200/80 pt-2.5 text-[11px] text-slate-600 space-y-1">
+                <div className="truncate">{formData.address || 'Institutional Address'}</div>
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-500">
+                  <span>{formData.phone}</span>
+                  <span>{formData.email}</span>
+                  <span className="text-blue-600">{formData.website}</span>
+                </div>
               </div>
             </div>
           </div>
