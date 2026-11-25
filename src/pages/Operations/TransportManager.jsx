@@ -10,12 +10,14 @@ import {
   CheckCircle2,
   AlertTriangle,
   Compass,
-  DollarSign,
   UserCheck,
   X,
   Shield,
   Gauge,
   Navigation,
+  Printer,
+  Download,
+  Award
 } from 'lucide-react';
 import {
   getVehicles,
@@ -25,11 +27,13 @@ import {
   assignStudent,
   getAllAssignments,
 } from '../../api/enterpriseOpsService';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 const EMPTY_ARRAY = [];
 
 export default function TransportManager() {
   const queryClient = useQueryClient();
+  const { institution } = useInstitutionStore();
 
   // Active Tab: 'routes' | 'vehicles' | 'assignments'
   const [activeTab, setActiveTab] = useState('routes');
@@ -50,7 +54,7 @@ export default function TransportManager() {
     routeName: '',
     stops: '',
     vehicleId: '',
-    monthlyFee: '120.00',
+    monthlyFee: '1500.00',
   });
 
   const [assignForm, setAssignForm] = useState({
@@ -98,6 +102,7 @@ export default function TransportManager() {
     mutationFn: createVehicle,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['transportVehicles'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(`Vehicle ${data.registrationNumber} registered in fleet!`);
       setIsVehicleModalOpen(false);
       setVehicleForm({ registrationNumber: '', capacity: 40, driverName: '' });
@@ -112,9 +117,10 @@ export default function TransportManager() {
     mutationFn: createRoute,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['transportRoutes'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(`Route "${data.routeName}" created successfully!`);
       setIsRouteModalOpen(false);
-      setRouteForm({ routeName: '', stops: '', vehicleId: '', monthlyFee: '120.00' });
+      setRouteForm({ routeName: '', stops: '', vehicleId: '', monthlyFee: '1500.00' });
     },
     onError: (err) => {
       const msg = err.response?.data?.message || err.message || 'Failed to create route';
@@ -127,6 +133,7 @@ export default function TransportManager() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['transportAssignments'] });
       queryClient.invalidateQueries({ queryKey: ['transportRoutes'] });
+      queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       toast.success(`Student assigned to ${data.routeName} at stop "${data.pickupStop}"!`);
       setIsAssignModalOpen(false);
       setAssignForm({ routeId: '', studentId: '', pickupStop: '' });
@@ -162,6 +169,69 @@ export default function TransportManager() {
         r.driverName?.toLowerCase().includes(q)
     );
   }, [routes, searchFilter]);
+
+  const exportTransportCsv = () => {
+    let headers = [];
+    let rows = [];
+    let fileSuffix = 'Manifest';
+
+    if (activeTab === 'routes') {
+      fileSuffix = 'Routes';
+      headers = ['Route ID', 'Route Name', 'Assigned Vehicle', 'Driver Name', 'Stops / Key Waypoints', 'Monthly Fare (INR)', 'Occupancy / Capacity', 'Status'];
+      rows = filteredRoutes.map((r) => [
+        `RT-${r.id}`,
+        r.routeName,
+        r.vehicleRegistrationNumber || 'Unassigned',
+        r.driverName || 'Unassigned',
+        r.stops || '',
+        `INR ${Number(r.monthlyFee || 0).toLocaleString('en-IN')}`,
+        `${r.assignedCount || 0} / ${r.vehicleCapacity || 0} Seats`,
+        (r.assignedCount || 0) >= (r.vehicleCapacity || 0) ? 'CAPACITY_REACHED' : 'SEATS_AVAILABLE'
+      ]);
+    } else if (activeTab === 'vehicles') {
+      fileSuffix = 'Fleet';
+      headers = ['Vehicle ID', 'Registration Number', 'Seating Capacity', 'Designated Driver', 'Active Status'];
+      rows = vehicles.map((v) => [
+        `VEH-${v.id}`,
+        v.registrationNumber,
+        `${v.capacity} Passengers`,
+        v.driverName,
+        'ROAD_COMPLIANT'
+      ]);
+    } else {
+      fileSuffix = 'Passengers';
+      headers = ['Assignment ID', 'Student ID', 'Assigned Route', 'Pickup / Drop Stop', 'Bus Fare Surcharge'];
+      rows = assignments.map((a) => [
+        `ASN-${a.id}`,
+        `STU-${a.studentId}`,
+        a.routeName,
+        a.pickupStop,
+        'Active Pass'
+      ]);
+    }
+
+    const metaRows = [
+      ['STATUTORY CAMPUS FLEET & TRANSPORT LOGISTICS DOSSIER', '', '', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', '', '', '', ''],
+      ['Campus Node', institution.campus || 'Main Campus', '', '', '', '', '', ''],
+      ['Fleet Capacity', `${totalCapacity} Total Seats`, '', '', '', '', '', ''],
+      ['Commuter Ridership', `${totalAssignedPassengers} Enrolled Riders`, '', '', '', '', '', ''],
+      ['Generated On', new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }), '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '']
+    ];
+
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encoded = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encoded);
+    link.setAttribute('download', `Transport_${fileSuffix}_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Downloaded transport ${fileSuffix.toLowerCase()} report (CSV).`);
+  };
 
   const handleOpenAssignModalForRoute = (routeId) => {
     setAssignForm((prev) => ({ ...prev, routeId: String(routeId) }));
@@ -222,48 +292,69 @@ export default function TransportManager() {
             <Bus className="w-7 h-7" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Transport & Fleet Logistics</h1>
+            <div className="flex items-center gap-2 text-blue-600 font-semibold text-xs tracking-wider uppercase mb-1">
+              <Award className="w-3.5 h-3.5" /> Institutional Fleet &amp; Commuter Services
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-600 font-medium normal-case">{institution.name || 'Central Campus'}</span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Transport &amp; Fleet Logistics</h1>
             <p className="text-sm text-slate-500 mt-1">
               Vehicle fleet registry, commuter route mapping, and real-time student seating capacity management.
             </p>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={() => setActiveTab('routes')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'routes'
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-sm transition-all"
           >
-            <Compass className="w-4 h-4" />
-            Routes ({routes.length})
+            <Printer className="w-3.5 h-3.5 text-slate-500" /> Print Manifest
           </button>
+
           <button
-            onClick={() => setActiveTab('vehicles')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'vehicles'
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
+            onClick={exportTransportCsv}
+            className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-sm transition-all"
           >
-            <Bus className="w-4 h-4" />
-            Vehicles ({vehicles.length})
+            <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
           </button>
-          <button
-            onClick={() => setActiveTab('assignments')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'assignments'
-                ? 'bg-white text-blue-700 shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <UserCheck className="w-4 h-4" />
-            Passengers ({assignments.length})
-          </button>
+
+          {/* Tab Navigation */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <button
+              onClick={() => setActiveTab('routes')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'routes'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Compass className="w-4 h-4" />
+              Routes ({routes.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('vehicles')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'vehicles'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Bus className="w-4 h-4" />
+              Vehicles ({vehicles.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('assignments')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'assignments'
+                  ? 'bg-white text-blue-700 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              Passengers ({assignments.length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -276,6 +367,7 @@ export default function TransportManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Fleet Vehicles</p>
             <p className="text-2xl font-bold text-slate-900">{vehicles.length} Units</p>
+            <p className="text-[10px] text-blue-600 font-semibold mt-0.5">Campus Bus Network</p>
           </div>
         </div>
 
@@ -286,6 +378,7 @@ export default function TransportManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Active Routes</p>
             <p className="text-2xl font-bold text-slate-900">{routes.length} Routes</p>
+            <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">Commuter Corridors</p>
           </div>
         </div>
 
@@ -296,6 +389,7 @@ export default function TransportManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Fleet Seats</p>
             <p className="text-2xl font-bold text-slate-900">{totalCapacity} Capacity</p>
+            <p className="text-[10px] text-purple-600 font-semibold mt-0.5">Certified Seating Units</p>
           </div>
         </div>
 
@@ -306,6 +400,7 @@ export default function TransportManager() {
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Assigned Riders</p>
             <p className="text-2xl font-bold text-amber-600">{totalAssignedPassengers} Allocated</p>
+            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">Registered Student Commuters</p>
           </div>
         </div>
       </div>
@@ -326,21 +421,21 @@ export default function TransportManager() {
         <div className="flex items-center gap-2.5 w-full sm:w-auto">
           <button
             onClick={() => setIsVehicleModalOpen(true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             New Vehicle
           </button>
           <button
             onClick={() => setIsRouteModalOpen(true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Map Route
           </button>
           <button
             onClick={() => setIsAssignModalOpen(true)}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors cursor-pointer"
           >
             <UserCheck className="w-4 h-4" />
             Assign Student
@@ -372,7 +467,6 @@ export default function TransportManager() {
                 const percent = Math.min(100, Math.round((assigned / capacity) * 100));
                 const isFull = assigned >= capacity;
 
-                // Color coding for progress bar & occupancy badge
                 let barColor = 'bg-emerald-500';
                 let badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                 if (percent >= 90) {
@@ -386,74 +480,63 @@ export default function TransportManager() {
                 return (
                   <div
                     key={route.id}
-                    className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4 hover:shadow-md transition-shadow"
+                    className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col justify-between hover:shadow-md transition-shadow space-y-4"
                   >
-                    {/* Card Title & Vehicle Info */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-slate-900 text-base">{route.routeName}</h3>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          Driver: <span className="font-medium text-slate-700">{route.driverName || 'Unassigned'}</span>
-                        </p>
-                      </div>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-mono font-semibold">
-                        <Bus className="w-3.5 h-3.5" />
-                        {route.vehicleRegistrationNumber || 'N/A'}
-                      </span>
-                    </div>
-
-                    {/* Stops List */}
-                    <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Route Stops:</span>
-                      </div>
-                      <p className="text-xs text-slate-700 leading-relaxed font-mono">
-                        {route.stops}
-                      </p>
-                    </div>
-
-                    {/* Capacity KPI Indicator with Visual Progress Bar */}
-                    <div className="space-y-2 pt-1 border-t border-slate-100">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-600">Capacity Utilization</span>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold border ${badgeClass}`}>
-                          {route.capacityDisplay || `${assigned}/${capacity} Seats Filled`}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-mono font-semibold px-2 py-0.5 bg-slate-100 text-slate-700 rounded">
+                          Route #{route.id}
+                        </span>
+                        <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${badgeClass}`}>
+                          {assigned} / {capacity} Seats ({percent}%)
                         </span>
                       </div>
 
-                      {/* Visual Progress Bar */}
-                      <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-                        <div
-                          className={`h-2.5 rounded-full transition-all duration-500 ${barColor}`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                        <Navigation className="w-4 h-4 text-blue-600 shrink-0" />
+                        {route.routeName}
+                      </h3>
 
-                      <div className="flex items-center justify-between text-[11px] text-slate-400">
-                        <span>{percent}% Occupancy</span>
-                        <span>{capacity - assigned} Seats Remaining</span>
+                      <div className="mt-3 space-y-2 text-xs text-slate-600">
+                        <div className="flex items-start gap-2">
+                          <MapPin className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{route.stops || 'No key waypoints mapped'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Bus className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span>
+                            {route.vehicleRegistrationNumber || 'Unassigned'} • Driver: {route.driverName || 'Pending'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900">₹{Number(route.monthlyFee || 0).toLocaleString('en-IN')}</span>
+                          <span className="text-slate-400">/ month bus pass fee</span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Fee & Action Buttons */}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                    <div className="space-y-3 pt-3 border-t border-slate-100">
                       <div>
-                        <span className="text-xs text-slate-400 block">Monthly Fare</span>
-                        <span className="text-sm font-bold text-slate-900 font-mono">₹{route.monthlyFee}</span>
+                        <div className="flex justify-between text-xs text-slate-500 mb-1">
+                          <span>Seating Capacity</span>
+                          <span className="font-semibold">{percent}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                          <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${percent}%` }} />
+                        </div>
                       </div>
 
                       <button
-                        disabled={isFull}
                         onClick={() => handleOpenAssignModalForRoute(route.id)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                        disabled={isFull}
+                        className={`w-full py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
                           isFull
                             ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                            : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 cursor-pointer'
                         }`}
                       >
                         <UserCheck className="w-3.5 h-3.5" />
-                        {isFull ? 'Route Full' : 'Assign Student'}
+                        {isFull ? 'Vehicle Full (40/40)' : 'Assign Student Passenger'}
                       </button>
                     </div>
                   </div>
@@ -465,18 +548,20 @@ export default function TransportManager() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: FLEET VEHICLES REGISTRY                                            */}
+      {/* TAB 2: FLEET VEHICLES REGISTER                                            */}
       {/* ========================================================================= */}
       {activeTab === 'vehicles' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">Registered Fleet Vehicles</h2>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <Bus className="w-5 h-5 text-blue-600" />
+              Institutional Fleet Vehicle Registry
+            </h2>
             <button
               onClick={() => setIsVehicleModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Add Vehicle
+              <Plus className="w-3.5 h-3.5" /> Register Vehicle
             </button>
           </div>
 
@@ -484,38 +569,42 @@ export default function TransportManager() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  <th className="py-3.5 px-4">Vehicle ID</th>
                   <th className="py-3.5 px-4">Registration #</th>
-                  <th className="py-3.5 px-4">Driver Name</th>
-                  <th className="py-3.5 px-4 text-center">Passenger Capacity</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
+                  <th className="py-3.5 px-4 text-center">Seating Capacity</th>
+                  <th className="py-3.5 px-4">Designated Driver</th>
+                  <th className="py-3.5 px-4 text-center">Road Compliance</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {isLoadingVehicles ? (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center text-slate-400">
-                      Loading fleet registry...
+                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2" />
+                      Loading fleet vehicles...
                     </td>
                   </tr>
                 ) : vehicles.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="py-12 text-center text-slate-400">
-                      No fleet vehicles recorded yet.
+                    <td colSpan={5} className="py-12 text-center text-slate-400">
+                      No vehicles found in fleet. Click "New Vehicle" to register your first transport bus.
                     </td>
                   </tr>
                 ) : (
                   vehicles.map((v) => (
                     <tr key={v.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900">
+                      <td className="py-3.5 px-4 font-mono text-xs text-slate-500">#{v.id}</td>
+                      <td className="py-3.5 px-4 font-bold text-slate-900 flex items-center gap-2">
+                        <Bus className="w-4 h-4 text-blue-600" />
                         {v.registrationNumber}
                       </td>
-                      <td className="py-3.5 px-4 text-slate-700">{v.driverName}</td>
-                      <td className="py-3.5 px-4 text-center font-semibold text-slate-800">
-                        {v.capacity} Seats
+                      <td className="py-3.5 px-4 text-center font-semibold text-slate-700">
+                        {v.capacity} Passengers
                       </td>
+                      <td className="py-3.5 px-4 text-slate-700">{v.driverName}</td>
                       <td className="py-3.5 px-4 text-center">
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Active Fleet
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Certified
                         </span>
                       </td>
                     </tr>
@@ -528,18 +617,20 @@ export default function TransportManager() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: PASSENGER SEAT ALLOCATIONS                                         */}
+      {/* TAB 3: STUDENT COMMUTER PASSENGER ASSIGNMENTS                              */}
       {/* ========================================================================= */}
       {activeTab === 'assignments' && (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900">Student Commuter Seat Assignments</h2>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-blue-600" />
+              Registered Student Commuters
+            </h2>
             <button
               onClick={() => setIsAssignModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Assign Student
+              <Plus className="w-3.5 h-3.5" /> Assign Pass
             </button>
           </div>
 
@@ -547,46 +638,42 @@ export default function TransportManager() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-600 uppercase tracking-wider">
-                  <th className="py-3.5 px-4">Student</th>
+                  <th className="py-3.5 px-4">Pass ID</th>
+                  <th className="py-3.5 px-4">Student ID</th>
                   <th className="py-3.5 px-4">Assigned Route</th>
-                  <th className="py-3.5 px-4">Pickup Stop</th>
-                  <th className="py-3.5 px-4">Assignment Date</th>
-                  <th className="py-3.5 px-4 text-center">Active Status</th>
+                  <th className="py-3.5 px-4">Pickup / Drop Stop</th>
+                  <th className="py-3.5 px-4 text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-sm">
                 {isLoadingAssignments ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-400">
-                      Loading commuter allocations...
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mr-2" />
+                      Loading commuter roster...
                     </td>
                   </tr>
                 ) : assignments.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-400">
-                      No student route assignments found.
+                      No students currently assigned to transport routes.
                     </td>
                   </tr>
                 ) : (
                   assignments.map((a) => (
                     <tr key={a.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <p className="font-semibold text-slate-900">{a.studentName || `Student #${a.studentId}`}</p>
-                        {a.enrollmentNumber && (
-                          <p className="text-xs font-mono text-slate-500">{a.enrollmentNumber}</p>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 font-medium text-slate-800">{a.routeName}</td>
-                      <td className="py-3.5 px-4 text-slate-600 text-xs font-medium">
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400" />
+                      <td className="py-3.5 px-4 font-mono text-xs text-slate-500">#{a.id}</td>
+                      <td className="py-3.5 px-4 font-mono font-bold text-blue-700">Student #{a.studentId}</td>
+                      <td className="py-3.5 px-4 font-semibold text-slate-800">{a.routeName}</td>
+                      <td className="py-3.5 px-4 text-slate-600">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
                           {a.pickupStop}
-                        </span>
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4 text-slate-500 text-xs">{a.assignedDate}</td>
                       <td className="py-3.5 px-4 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Active
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Active Pass
                         </span>
                       </td>
                     </tr>
@@ -602,16 +689,20 @@ export default function TransportManager() {
       {/* MODAL 1: REGISTER VEHICLE                                                 */}
       {/* ========================================================================= */}
       {isVehicleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                   <Bus className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-slate-900 text-lg">Register Vehicle</h3>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Register Fleet Vehicle</h3>
+                  <p className="text-xs text-slate-500">Add an institutional bus to the logistics fleet</p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsVehicleModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
@@ -621,62 +712,63 @@ export default function TransportManager() {
 
             <form onSubmit={handleVehicleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Registration Number *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. KA-01-EQ-9876"
+                  placeholder="e.g. DL-01-AB-1234"
                   value={vehicleForm.registrationNumber}
                   onChange={(e) => setVehicleForm({ ...vehicleForm, registrationNumber: e.target.value })}
-                  className="w-full px-3 py-2 text-sm uppercase font-mono bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 font-mono uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Seating Capacity *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="120"
-                  required
-                  value={vehicleForm.capacity}
-                  onChange={(e) => setVehicleForm({ ...vehicleForm, capacity: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Driver Name *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Designated Driver Name *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Robert Vance"
+                  placeholder="e.g. Rajesh Kumar"
                   value={vehicleForm.driverName}
                   onChange={(e) => setVehicleForm({ ...vehicleForm, driverName: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Seating Passenger Capacity *
+                </label>
+                <input
+                  type="number"
+                  min="5"
+                  max="120"
+                  required
+                  value={vehicleForm.capacity}
+                  onChange={(e) => setVehicleForm({ ...vehicleForm, capacity: Number(e.target.value) })}
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+                <p className="text-xs text-slate-400 mt-1">Certified seating units without standing allowance.</p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsVehicleModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium"
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createVehicleMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  {createVehicleMutation.isPending ? 'Saving...' : 'Register Vehicle'}
+                  {createVehicleMutation.isPending ? 'Registering...' : 'Register Vehicle'}
                 </button>
               </div>
             </form>
@@ -688,16 +780,20 @@ export default function TransportManager() {
       {/* MODAL 2: MAP ROUTE                                                        */}
       {/* ========================================================================= */}
       {isRouteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                   <Compass className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-slate-900 text-lg">Map Commuter Route</h3>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Map Commuter Route</h3>
+                  <p className="text-xs text-slate-500">Configure transit corridor and bus assignment</p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsRouteModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
@@ -707,81 +803,83 @@ export default function TransportManager() {
 
             <form onSubmit={handleRouteSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Route Name *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Route Name / Corridor *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Route 4 - North Campus Express"
+                  placeholder="e.g. North Campus - Downtown Express"
                   value={routeForm.routeName}
                   onChange={(e) => setRouteForm({ ...routeForm, routeName: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Assign Vehicle *
                 </label>
                 <select
                   required
                   value={routeForm.vehicleId}
                   onChange={(e) => setRouteForm({ ...routeForm, vehicleId: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
-                  <option value="">-- Choose a Vehicle --</option>
+                  <option value="">-- Choose Vehicle --</option>
                   {vehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.registrationNumber} ({v.capacity} Seats - Driver: {v.driverName})
+                      {v.registrationNumber} ({v.capacity} Seats) - Driver: {v.driverName}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Commuter Stops (comma-separated) *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Key Transit Stops / Waypoints *
                 </label>
                 <textarea
                   required
-                  rows={3}
-                  placeholder="e.g. Central Station, North Gate, Science Block, Main Auditorium"
+                  rows={2}
+                  placeholder="e.g. Metro Station, Central Square, Hospital Crossing, Campus Gate"
                   value={routeForm.stops}
                   onChange={(e) => setRouteForm({ ...routeForm, stops: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono text-xs"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Monthly Commuter Fee (₹) *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Monthly Bus Pass Fee (INR) *
                 </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  required
-                  value={routeForm.monthlyFee}
-                  onChange={(e) => setRouteForm({ ...routeForm, monthlyFee: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    value={routeForm.monthlyFee}
+                    onChange={(e) => setRouteForm({ ...routeForm, monthlyFee: e.target.value })}
+                    className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsRouteModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium"
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createRouteMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  {createRouteMutation.isPending ? 'Mapping...' : 'Save Route'}
+                  {createRouteMutation.isPending ? 'Mapping Route...' : 'Create Route'}
                 </button>
               </div>
             </form>
@@ -790,19 +888,23 @@ export default function TransportManager() {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 3: ASSIGN STUDENT TO ROUTE                                          */}
+      {/* MODAL 3: ASSIGN STUDENT PASS                                              */}
       {/* ========================================================================= */}
       {isAssignModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+              <div className="flex items-center gap-2">
                 <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                   <UserCheck className="w-5 h-5" />
                 </div>
-                <h3 className="font-bold text-slate-900 text-lg">Assign Student to Route</h3>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Issue Commuter Bus Pass</h3>
+                  <p className="text-xs text-slate-500">Allocate a student seat to a transit route</p>
+                </div>
               </div>
               <button
+                type="button"
                 onClick={() => setIsAssignModalOpen(false)}
                 className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
@@ -812,21 +914,21 @@ export default function TransportManager() {
 
             <form onSubmit={handleAssignSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Select Commuter Route *
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Commuter Route *
                 </label>
                 <select
                   required
                   value={assignForm.routeId}
                   onChange={(e) => setAssignForm({ ...assignForm, routeId: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 >
                   <option value="">-- Choose Route --</option>
                   {routes.map((r) => {
                     const isFull = (r.assignedCount || 0) >= (r.vehicleCapacity || 0);
                     return (
                       <option key={r.id} value={r.id} disabled={isFull}>
-                        {r.routeName} ({r.capacityDisplay || `${r.assignedCount}/${r.vehicleCapacity} Seats`}) {isFull ? '[FULL]' : ''}
+                        {r.routeName} ({r.assignedCount || 0}/{r.vehicleCapacity || 0} seats){isFull ? ' - FULL' : ''}
                       </option>
                     );
                   })}
@@ -834,47 +936,47 @@ export default function TransportManager() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Student Database ID *
                 </label>
                 <input
                   type="number"
-                  min="1"
                   required
                   placeholder="e.g. 1"
                   value={assignForm.studentId}
                   onChange={(e) => setAssignForm({ ...assignForm, studentId: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Pickup Stop
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Boarding / Drop Stop *
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. North Gate"
+                  required
+                  placeholder="e.g. Sector 14 Metro Crossing"
                   value={assignForm.pickupStop}
                   onChange={(e) => setAssignForm({ ...assignForm, pickupStop: e.target.value })}
-                  className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full text-sm border border-slate-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsAssignModalOpen(false)}
-                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 font-medium"
+                  className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={assignStudentMutation.isPending}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors disabled:opacity-50"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                 >
-                  {assignStudentMutation.isPending ? 'Allocating Seat...' : 'Confirm Assignment'}
+                  {assignStudentMutation.isPending ? 'Assigning...' : 'Allocate Seat'}
                 </button>
               </div>
             </form>
