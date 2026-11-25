@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { apiClient } from '../config/api';
 import { StudentAvatar } from '../components/StudentAvatar';
 import type { Student, StudentStatus } from '../types/student';
@@ -10,8 +11,9 @@ import {
   User, Mail, Phone, MapPin, Building2, Calendar, 
   BookOpen, MoreVertical, Edit, Loader2,
   AlertCircle, Download, FileText, CalendarCheck, Wallet, Clock,
-  CreditCard, Copy, Check, Eye, ArrowUpRight, Pencil,
-  Camera, Upload, Trash2, Plus, Link2, Unlink
+  CreditCard, Copy, Check, ArrowUpRight, Pencil,
+  Upload, Trash2, Link2, Unlink, Printer, CheckCircle2,
+  Plus, Eye, Camera
 } from 'lucide-react';
 import { PageFrame } from '../components/ui/PageFrame';
 import { Button } from '../components/ui/button';
@@ -92,6 +94,7 @@ export default function StudentProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const canManage = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
 
   const [activeTab, setActiveTab] = useState<'overview' | 'academic' | 'attendance' | 'fees' | 'documents' | 'history'>('overview');
@@ -162,6 +165,43 @@ export default function StudentProfile() {
     setCopiedKey(label);
     toast.success(`Copied ${label} to clipboard!`);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const exportStudentDossier = () => {
+    if (!student) return;
+    const rows = [
+      ['STATUTORY STUDENT REGISTRY & ACADEMIC DOSSIER', ''],
+      ['Institution', institution.name || 'Central University System'],
+      ['Institution Code', institution.code || 'CUS-01'],
+      ['Campus Node', institution.campus || 'Main Campus'],
+      ['Student Name', `${student.firstName} ${student.lastName}`],
+      ['Internal ID', `#${student.id}`],
+      ['Enrollment Number', student.enrollmentNumber || 'Pending'],
+      ['Roll Number', student.rollNumber || 'None'],
+      ['Lifecycle Status', student.status],
+      ['Reservation Quota', (student as any).category || 'GENERAL (MERIT)'],
+      ['Nationality & Domicile', (student as any).nationality || 'Indian National'],
+      ['Department', student.department || 'Not Assigned'],
+      ['Program / Degree', student.program || 'Not Assigned'],
+      ['Cohort / Batch', student.batch || 'Not Assigned'],
+      ['Date of Birth', formatDateDisplay(student.dateOfBirth)],
+      ['Gender', student.gender || 'N/A'],
+      ['Email', student.email || 'N/A'],
+      ['Phone', student.phone || 'N/A'],
+      ['Address', student.address ? `${student.address}, ${student.city || ''}, ${student.state || ''} ${student.pincode || ''}` : 'Not Provided'],
+      ['Total Guardians Linked', `${guardians.length}`],
+      ['Total Attendance Sessions', `${attendanceRecords.length}`],
+      ['Export Timestamp', new Date().toISOString()]
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map(r => r.map(c => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Student_Dossier_${student.enrollmentNumber || student.id}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported Student Profile Dossier (CSV)');
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -387,6 +427,24 @@ export default function StudentProfile() {
         <div className="flex items-center space-x-2">
           <StatusBadge status={student.status} />
           
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs font-semibold bg-white hover:bg-slate-50 border-slate-300"
+            onClick={() => window.print()}
+          >
+            <Printer className="w-3.5 h-3.5 mr-1 text-slate-600" /> Print Bio-Data
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs font-semibold bg-white hover:bg-slate-50 border-slate-300"
+            onClick={exportStudentDossier}
+          >
+            <Download className="w-3.5 h-3.5 mr-1 text-slate-600" /> Export Dossier
+          </Button>
+
           {canManage && (
             <>
               <Button
@@ -463,10 +521,21 @@ export default function StudentProfile() {
           {activeTab === 'overview' && (
             <>
               <div className="border border-slate-200 bg-white">
-                <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Personal Information</h3>
+                <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">Personal &amp; Statutory Information</h3>
+                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-200/60 px-2 py-0.5 rounded">
+                    UGC / AICTE Compliant Registry
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2">
+                  <div className="p-4 border-b sm:border-r border-slate-200/50">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Reservation Quota / Category</p>
+                    <p className="font-semibold text-indigo-700 font-mono mt-0.5">{(student as any).category || 'GENERAL (MERIT)'}</p>
+                  </div>
+                  <div className="p-4 border-b border-slate-200/50">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Nationality &amp; Domicile</p>
+                    <p className="font-semibold text-slate-900 mt-0.5">{(student as any).nationality || 'Indian National'}</p>
+                  </div>
                   <div className="p-4 border-b sm:border-b-0 sm:border-r border-slate-200/50">
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Date of Birth</p>
                     <p className="font-semibold text-slate-900 mt-0.5">{formatDateDisplay(student.dateOfBirth)}</p>
@@ -862,6 +931,31 @@ export default function StudentProfile() {
                   <p className="font-bold text-slate-900 text-sm mt-0.5">{formatDateDisplay(student.enrollmentDate)}</p>
                 </div>
               </div>
+              <div className="flex items-start space-x-3 pt-2 border-t border-slate-100">
+                <CalendarCheck className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">UGC 75% Attendance Clearance</p>
+                  <div className="mt-1">
+                    {attendanceRecords.length > 0 ? (
+                      (() => {
+                        const presentCount = attendanceRecords.filter((r: any) => r.status === 'PRESENT').length;
+                        const pct = Math.round((presentCount / attendanceRecords.length) * 100);
+                        return pct >= 75 ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                            <CheckCircle2 className="w-3 h-3" /> Eligible for University Exams ({pct}%)
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded">
+                            <AlertCircle className="w-3 h-3" /> Debarment Risk ({pct}% &lt; 75%)
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <span className="text-xs text-slate-500 italic">No attendance records logged yet</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -882,6 +976,18 @@ export default function StudentProfile() {
                 >
                   <Download className="w-3.5 h-3.5 mr-2 text-slate-500" /> Export Academic Transcript
                 </button>
+                <Link
+                  to={`/dashboard/transcripts?roll=${student.rollNumber || student.enrollmentNumber || ''}`}
+                  className="w-full flex items-center px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5 mr-2 text-slate-500" /> View University Transcript Portal
+                </Link>
+                <Link
+                  to="/dashboard/fees/ledger"
+                  className="w-full flex items-center px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                >
+                  <Wallet className="w-3.5 h-3.5 mr-2 text-slate-500" /> View Student Fee Ledger
+                </Link>
              </div>
           </div>
         </div>
