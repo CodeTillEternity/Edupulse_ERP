@@ -8,13 +8,17 @@ import {
   ChevronDown, 
   ChevronUp,
   PlusCircle,
-  Loader2
+  Loader2,
+  Download,
+  Printer
 } from 'lucide-react';
 import { useStudentFees, formatCurrency, parseAmount, type StudentFee } from '../hooks/queries/useFinance';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { Button } from './ui/button';
 import { CreateInvoiceDialog } from './CreateInvoiceDialog';
 import { RecordPaymentDialog } from './RecordPaymentDialog';
+import { toast } from 'sonner';
 
 interface StudentFeesTabProps {
   studentId: number;
@@ -22,6 +26,7 @@ interface StudentFeesTabProps {
 
 export function StudentFeesTab({ studentId }: StudentFeesTabProps) {
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const canManage = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN' || user?.role === 'FINANCE';
 
   const { data: fees, isLoading, isError, error, refetch } = useStudentFees(studentId);
@@ -154,6 +159,41 @@ export function StudentFeesTab({ studentId }: StudentFeesTabProps) {
   const totalPaid = feeList.reduce((acc, f) => acc + parseAmount(f.paidAmount), 0);
   const totalDue = feeList.reduce((acc, f) => acc + parseAmount(f.outstandingAmount), 0);
 
+  const handleExportFeeCsv = () => {
+    if (feeList.length === 0) {
+      toast.error('No fee records to export');
+      return;
+    }
+    const headerLines = [
+      `"${(institution.name || 'Institutional ERP').replace(/"/g, '""')} — Student Fee Statement"`,
+      `"Student ID","${studentId}"`,
+      `"Exported At","${new Date().toISOString()}"`,
+      `"Total Net","${formatCurrency(totalNet)}","Paid","${formatCurrency(totalPaid)}","Outstanding","${formatCurrency(totalDue)}"`,
+      '',
+      'Fee ID,Fee Structure ID,Academic Year ID,Status,Gross (INR),Scholarship (INR),Concession (INR),Net Payable (INR),Paid (INR),Outstanding (INR)'
+    ];
+    const rows = feeList.map((f: StudentFee) => [
+      f.id,
+      f.feeStructureId,
+      f.academicYearId,
+      f.status,
+      parseAmount(f.grossAmount).toFixed(2),
+      parseAmount(f.scholarshipAmount).toFixed(2),
+      parseAmount(f.concessionAmount).toFixed(2),
+      parseAmount(f.netPayable).toFixed(2),
+      parseAmount(f.paidAmount).toFixed(2),
+      parseAmount(f.outstandingAmount).toFixed(2),
+    ].join(','));
+    const blob = new Blob([[...headerLines, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `student-${studentId}-fee-statement-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${feeList.length} fee record(s)`);
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PAID':
@@ -203,6 +243,22 @@ export function StudentFeesTab({ studentId }: StudentFeesTabProps) {
             {formatCurrency(totalDue)}
           </span>
         </div>
+      </div>
+
+      {/* Fee Ledger Actions */}
+      <div className="flex flex-wrap items-center gap-2 print:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportFeeCsv}
+          disabled={feeList.length === 0}
+          className="gap-1.5 text-xs border-slate-200 text-slate-700"
+        >
+          <Download className="w-3.5 h-3.5" /> Export Fee Statement CSV
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5 text-xs border-slate-200 text-slate-700">
+          <Printer className="w-3.5 h-3.5" /> Print Ledger
+        </Button>
       </div>
 
       {/* Fee Records Cards */}

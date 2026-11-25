@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../config/api';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { AlertCircle, Loader2, Plus, Trash2, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, Trash2, CheckCircle2, ShieldAlert, Download, Printer, BookOpen } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 
 interface CourseOffering {
   id: number;
@@ -32,6 +33,7 @@ interface CourseRegistration {
 export function StudentAcademicTab({ studentId }: { studentId: number }) {
   const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const isStudent = user?.role === 'STUDENT';
   const canManage = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
   const isAuthorized = isStudent || canManage;
@@ -165,6 +167,43 @@ export function StudentAcademicTab({ studentId }: { studentId: number }) {
   const offerings: CourseOffering[] = offeringsResponse || [];
   const sections: Section[] = sectionsResponse || [];
 
+  const activeRegistrations = useMemo(() => registrations.filter(r => r.status === 'REGISTERED'), [registrations]);
+  const totalCredits = useMemo(() => {
+    // placeholder: each registered course = 4 CBCS credits
+    return activeRegistrations.length * 4;
+  }, [activeRegistrations]);
+
+  const handleExportCsv = () => {
+    if (registrations.length === 0) {
+      toast.error('No registrations to export');
+      return;
+    }
+    const headerLines = [
+      `"${(institution.name || 'Institutional ERP').replace(/"/g, '""')} — Student Course Registration Transcript"`,
+      `"Student ID","${studentId}"`,
+      `"Exported At","${new Date().toISOString()}"`,
+      '',
+      'Registration ID,Course Code,Course Name,Semester,Section,Status,Registered At'
+    ];
+    const rows = registrations.map(r => [
+      r.id,
+      `"${(r.courseOffering?.course?.code || 'N/A').replace(/"/g, '""')}"`,
+      `"${(r.courseOffering?.course?.name || 'N/A').replace(/"/g, '""')}"`,
+      `"${(r.courseOffering?.semester?.name || 'N/A').replace(/"/g, '""')}"`,
+      `"${(r.section?.name || 'N/A').replace(/"/g, '""')}"`,
+      r.status,
+      `"${r.registeredAt || ''}"`,
+    ].join(','));
+    const blob = new Blob([[...headerLines, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `student-${studentId}-registrations-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${registrations.length} registration(s)`);
+  };
+
   const registeredOfferingIds = new Set(
     registrations
       .filter(r => r.status === 'REGISTERED')
@@ -193,6 +232,38 @@ export function StudentAcademicTab({ studentId }: { studentId: number }) {
 
   return (
     <div className="space-y-6">
+      {/* Academic Registration KPI Strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Active Courses</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{activeRegistrations.length}</div>
+          </div>
+          <BookOpen className="w-5 h-5 text-slate-400" />
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Est. CBCS Credits</div>
+            <div className="text-xl font-bold text-slate-900 mt-0.5">{totalCredits}</div>
+          </div>
+          <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 flex items-center gap-2 print:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={registrations.length === 0}
+            className="gap-1.5 text-xs flex-1"
+          >
+            <Download className="w-3.5 h-3.5" /> Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-1.5 text-xs flex-1">
+            <Printer className="w-3.5 h-3.5" /> Print
+          </Button>
+        </div>
+      </div>
+
       <div className="border border-slate-200 bg-white">
         <div className="px-4 py-3 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
