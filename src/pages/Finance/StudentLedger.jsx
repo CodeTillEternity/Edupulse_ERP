@@ -3,21 +3,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Search,
-  DollarSign,
   CreditCard,
   Receipt,
   AlertCircle,
   CheckCircle2,
-  Clock,
   User,
-  ArrowUpRight,
-  PlusCircle,
-  FileText,
-  Calendar,
   X,
   MessageSquare,
-  Send,
   Printer,
+  Download,
+  Filter,
+  Award,
+  ShieldCheck,
+  Building2
 } from 'lucide-react';
 import { getStudentLedger, recordPayment } from '../../api/financeService';
 import { communicationService } from '../../api/communicationService';
@@ -41,6 +39,7 @@ export default function StudentLedger() {
 
   // Active view tab: 'invoices' | 'payments'
   const [activeTab, setActiveTab] = useState('invoices');
+  const [defaulterFilterOnly, setDefaulterFilterOnly] = useState(false);
 
   // Collect Payment Modal state
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -115,6 +114,7 @@ export default function StudentLedger() {
       queryClient.invalidateQueries({ queryKey: ['studentLedger', activeEnrollment] });
       queryClient.invalidateQueries({ queryKey: ['naacMetrics'] });
       queryClient.invalidateQueries({ queryKey: ['complianceMetrics'] });
+      queryClient.invalidateQueries({ queryKey: ['studentTranscript'] });
 
       const invNum = selectedInvoice?.invoiceNumber;
       if (autoSendReceiptWhatsApp && invNum) {
@@ -193,6 +193,56 @@ export default function StudentLedger() {
     });
   };
 
+  const filteredInvoices = (ledger?.invoices || []).filter((inv) => {
+    if (!defaulterFilterOnly) return true;
+    return inv.status !== 'PAID' && Number(inv.outstandingBalance) > 0;
+  });
+
+  const exportLedgerCsv = () => {
+    if (!ledger) return;
+    const invHeaders = ['Invoice #', 'Fee Blueprint', 'Gross Amount', 'Discount', 'Net Payable', 'Paid Amount', 'Outstanding Balance', 'Due Date', 'Status'];
+    const invRows = (ledger.invoices || []).map((inv) => [
+      inv.invoiceNumber,
+      inv.feeStructureName,
+      `INR ${Number(inv.grossAmount).toLocaleString('en-IN')}`,
+      `INR ${Number(inv.discount || 0).toLocaleString('en-IN')}`,
+      `INR ${Number(inv.netAmount).toLocaleString('en-IN')}`,
+      `INR ${Number(inv.amountPaid).toLocaleString('en-IN')}`,
+      `INR ${Number(inv.outstandingBalance).toLocaleString('en-IN')}`,
+      inv.dueDate,
+      inv.status
+    ]);
+
+    const metaRows = [
+      ['STATUTORY STUDENT FINANCIAL LEDGER & FEE STATEMENT', '', '', '', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', '', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', '', '', '', '', ''],
+      ['Student Name', `${ledger.student?.firstName || ''} ${ledger.student?.lastName || ''}`, '', '', '', '', '', '', ''],
+      ['Enrollment Number', ledger.student?.enrollmentNumber || activeEnrollment, '', '', '', '', '', '', ''],
+      ['Department', ledger.student?.department || 'Academic Department', '', '', '', '', '', '', ''],
+      ['Batch / Cohort', ledger.student?.batch || 'Current Cohort', '', '', '', '', '', '', ''],
+      ['Total Assessed Fees', `INR ${Number(ledger.summary?.totalBilled || 0).toLocaleString('en-IN')}`, '', '', '', '', '', '', ''],
+      ['Total Fees Cleared', `INR ${Number(ledger.summary?.totalPaid || 0).toLocaleString('en-IN')}`, '', '', '', '', '', '', ''],
+      ['Outstanding Balance', `INR ${Number(ledger.summary?.totalOutstanding || 0).toLocaleString('en-IN')}`, '', '', '', '', '', '', ''],
+      ['Clearance Status', Number(ledger.summary?.totalOutstanding || 0) === 0 ? 'FEE CLEARANCE CERTIFIED' : 'PENDING SETTLEMENT', '', '', '', '', '', '', ''],
+      ['Generated On', new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' }), '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', '']
+    ];
+
+    const all = [...metaRows, invHeaders, ...invRows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encoded = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encoded);
+    link.setAttribute('download', `Fee_Ledger_${activeEnrollment}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Downloaded student fee ledger statement (CSV).');
+  };
+
+  const isFeeCleared = Number(ledger?.summary?.totalOutstanding || 0) === 0;
+
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -201,147 +251,208 @@ export default function StudentLedger() {
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 mb-2">
               <Receipt className="w-3.5 h-3.5" /> B2C Student Ledger &amp; Collections
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-600 font-medium">{institution.name || 'Main Campus'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              Student Fee Ledger
+              Institutional Student Fee Ledger
             </h1>
             <p className="mt-1 text-sm text-slate-600">
               Audit student billing assessments, track balance settlements, and collect offline or digital fee payments.
             </p>
           </div>
 
-          {/* Search Form */}
-          <form onSubmit={handleSearch} className="flex items-center gap-2 max-w-md w-full md:w-auto">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                aria-label="Student Enrollment Number"
-                placeholder="Search Enrollment (e.g. ENR-2026-001)"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-              />
-            </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Search Form */}
+            <form onSubmit={handleSearch} className="flex items-center gap-2 max-w-md w-full md:w-auto">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  aria-label="Student Enrollment Number"
+                  placeholder="Search Enrollment (e.g. 23CSM001)"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap cursor-pointer"
+              >
+                Search Ledger
+              </button>
+            </form>
+
             <button
-              type="submit"
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all whitespace-nowrap cursor-pointer"
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-sm transition-all"
             >
-              Search Ledger
+              <Printer className="w-3.5 h-3.5 text-slate-500" /> Print Ledger
             </button>
+
+            <button
+              type="button"
+              onClick={exportLedgerCsv}
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-sm transition-all"
+            >
+              <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
+            </button>
+
             <button
               type="button"
               onClick={() => setIsOutboxOpen(true)}
               className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
-              title="Open Parent WhatsApp & SMS Outbox Logs"
+              title="Open Parent WhatsApp &amp; SMS Outbox Logs"
             >
               <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
               <span>Outbox</span>
             </button>
-          </form>
+          </div>
         </div>
 
-        {/* Loading / Error States */}
+        {/* Loading State */}
         {isLedgerLoading && (
-          <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center">
-            <Clock className="w-8 h-8 animate-spin text-indigo-500 mb-2" />
-            <p className="text-xs font-medium">Fetching student ledger and assessment history...</p>
+          <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center shadow-sm">
+            <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full mx-auto mb-3" />
+            <p className="text-sm font-semibold text-slate-700">Loading Student Ledger Records...</p>
+            <p className="text-xs text-slate-400 mt-1">Retrieving invoice assessments and receipt vouchers for {activeEnrollment}</p>
           </div>
         )}
 
+        {/* Error / Not Found State */}
         {ledgerError && !isLedgerLoading && (
-          <div className="bg-rose-50 border border-rose-200 rounded-xl p-8 text-center max-w-lg mx-auto">
-            <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-2" />
-            <h3 className="text-sm font-bold text-rose-900">Student Account Not Found</h3>
-            <p className="text-xs text-rose-700 mt-1">
-              No registered student profile matches enrollment number "{activeEnrollment}".
+          <div className="bg-white border border-rose-200 rounded-2xl p-8 text-center shadow-sm">
+            <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-3" />
+            <h2 className="text-base font-bold text-slate-900">Student Ledger Not Found</h2>
+            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+              Could not resolve a ledger account for enrollment <strong>{activeEnrollment}</strong>. Verify the ID or create a fee assignment.
             </p>
           </div>
         )}
 
         {/* Ledger Content */}
         {ledger && !isLedgerLoading && (
-          <div className="space-y-6">
-            {/* Student Profile & KPI Summary */}
+          <>
+            {/* Student Info & Financial Summary Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              {/* Profile Card */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                    <User className="w-4 h-4 text-indigo-600" /> Student Profile
+              {/* Student Profile Card */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-lg border border-indigo-100">
+                    <User className="w-6 h-6" />
                   </div>
-                  <h3 className="text-lg font-extrabold text-slate-900">{ledger.studentName}</h3>
-                  <div className="mt-1 font-mono text-xs font-bold text-indigo-700 bg-indigo-50 inline-block px-2 py-0.5 rounded">
-                    {ledger.enrollmentNumber}
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">
+                      {ledger.student?.firstName} {ledger.student?.lastName}
+                    </h2>
+                    <p className="text-xs font-mono font-semibold text-indigo-600">
+                      {ledger.student?.enrollmentNumber || activeEnrollment}
+                    </p>
                   </div>
-                  <div className="mt-2 text-xs text-slate-500 space-y-0.5">
-                    <p>Cohort: <strong className="text-slate-700">{ledger.batchName}</strong></p>
-                    <p className="truncate">Email: {ledger.email || 'N/A'}</p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Department:</span>
+                    <span className="font-medium text-slate-800">{ledger.student?.department || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Cohort / Batch:</span>
+                    <span className="font-medium text-slate-800">{ledger.student?.batch || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Clearance Seal:</span>
+                    <span className={`font-bold ${isFeeCleared ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      {isFeeCleared ? 'Fee Cleared' : 'Defaulter / Pending'}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* Total Invoiced */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Assessed</span>
-                <div className="mt-2 text-2xl font-extrabold text-slate-900">
-                  ₹{Number(ledger.totalInvoiced || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              {/* Total Assessed */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+                  <span>Total Billed Fees</span>
+                  <Receipt className="w-4 h-4 text-indigo-600" />
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
-                  Across {ledger.invoices?.length || 0} issued fee invoices
-                </p>
+                <div className="text-3xl font-black text-slate-900 font-mono">
+                  ₹{Number(ledger.summary?.totalBilled || 0).toLocaleString('en-IN')}
+                </div>
+                <p className="text-[11px] text-slate-400">Gross tuition &amp; institutional heads</p>
               </div>
 
               {/* Total Paid */}
-              <div className="bg-emerald-50/50 border border-emerald-200/60 rounded-xl p-5 shadow-sm">
-                <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Total Collected</span>
-                <div className="mt-2 text-2xl font-extrabold text-emerald-700">
-                  ₹{Number(ledger.totalPaid || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+                  <span>Total Fees Cleared</span>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 </div>
-                <p className="text-xs text-emerald-600 mt-1">
-                  {ledger.totalInvoiced > 0
-                    ? `${Math.round((ledger.totalPaid / ledger.totalInvoiced) * 100)}% Settled`
-                    : '100% Settled'}
-                </p>
+                <div className="text-3xl font-black text-emerald-600 font-mono">
+                  ₹{Number(ledger.summary?.totalPaid || 0).toLocaleString('en-IN')}
+                </div>
+                <p className="text-[11px] text-emerald-700 font-medium">Verified payments recorded</p>
               </div>
 
-              {/* Outstanding Balance */}
-              <div className="bg-rose-50/50 border border-rose-200/60 rounded-xl p-5 shadow-sm">
-                <span className="text-xs font-bold text-rose-800 uppercase tracking-wider">Outstanding Due</span>
-                <div className="mt-2 text-2xl font-extrabold text-rose-700">
-                  ₹{Number(ledger.totalOutstanding || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              {/* Total Outstanding */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2">
+                <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
+                  <span>Outstanding Deficit</span>
+                  <AlertCircle className={`w-4 h-4 ${Number(ledger.summary?.totalOutstanding || 0) > 0 ? 'text-rose-600' : 'text-slate-400'}`} />
                 </div>
-                <p className="text-xs text-rose-600 mt-1">
-                  {Number(ledger.totalOutstanding) === 0 ? 'Clear balance' : 'Pending payment collection'}
+                <div className={`text-3xl font-black font-mono ${Number(ledger.summary?.totalOutstanding || 0) > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+                  ₹{Number(ledger.summary?.totalOutstanding || 0).toLocaleString('en-IN')}
+                </div>
+                <p className="text-[11px] text-slate-500">
+                  {Number(ledger.summary?.totalOutstanding || 0) > 0 ? 'Action required prior to hall tickets' : 'Account in good standing'}
                 </p>
               </div>
             </div>
 
-            {/* Invoices & Payments Tabs */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="border-b border-slate-200 px-4 pt-3 flex gap-6">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('invoices')}
-                  className={`pb-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${
-                    activeTab === 'invoices'
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-slate-400 hover:text-slate-700'
-                  }`}
-                >
-                  Fee Invoices ({ledger.invoices?.length || 0})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('payments')}
-                  className={`pb-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${
-                    activeTab === 'payments'
-                      ? 'border-indigo-600 text-indigo-600'
-                      : 'border-transparent text-slate-400 hover:text-slate-700'
-                  }`}
-                >
-                  Payment History ({ledger.payments?.length || 0})
-                </button>
+            {/* Invoices & Payment Receipts Table */}
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+              {/* Tab Navigation & Defaulter Filter */}
+              <div className="border-b border-slate-200 px-6 py-3 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('invoices')}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                      activeTab === 'invoices'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    Fee Invoices ({ledger.invoices?.length || 0})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('payments')}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                      activeTab === 'payments'
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    Payment Receipts ({ledger.payments?.length || 0})
+                  </button>
+                </div>
+
+                {activeTab === 'invoices' && (
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                      <Filter className="w-3.5 h-3.5 text-slate-400" />
+                      <input
+                        type="checkbox"
+                        checked={defaulterFilterOnly}
+                        onChange={(e) => setDefaulterFilterOnly(e.target.checked)}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span>Show Defaulter Invoices Only</span>
+                    </label>
+                  </div>
+                )}
               </div>
 
               {/* Tab 1: Invoices Table */}
@@ -363,7 +474,7 @@ export default function StudentLedger() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {ledger.invoices && ledger.invoices.map((inv) => {
+                      {filteredInvoices.map((inv) => {
                         const isFullyPaid = inv.status === 'PAID' || Number(inv.outstandingBalance) === 0;
                         const badgeClass = STATUS_BADGES[inv.status] || STATUS_BADGES.UNPAID;
 
@@ -417,10 +528,10 @@ export default function StudentLedger() {
                           </tr>
                         );
                       })}
-                      {(!ledger.invoices || ledger.invoices.length === 0) && (
+                      {filteredInvoices.length === 0 && (
                         <tr>
                           <td colSpan={10} className="px-4 py-8 text-center text-slate-400">
-                            No fee invoices generated for this student.
+                            {defaulterFilterOnly ? 'No outstanding defaulter invoices for this student.' : 'No fee invoices generated for this student.'}
                           </td>
                         </tr>
                       )}
@@ -448,38 +559,23 @@ export default function StudentLedger() {
                       {ledger.payments && ledger.payments.map((p) => (
                         <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
                           <td className="px-4 py-3 font-mono font-bold text-indigo-700">{p.referenceNumber || `RCP-${p.id}`}</td>
-                          <td className="px-4 py-3 font-mono text-slate-700">{p.invoiceNumber}</td>
-                          <td className="px-4 py-3 text-slate-500">
-                            {p.paymentDate ? p.paymentDate.substring(0, 10) : '—'}
-                          </td>
+                          <td className="px-4 py-3 font-mono text-slate-800">{p.invoiceNumber}</td>
+                          <td className="px-4 py-3 text-slate-500">{p.paymentDate}</td>
                           <td className="px-4 py-3">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
+                            <span className="inline-flex px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 text-slate-800 border border-slate-200">
                               {p.paymentMethod}
                             </span>
                           </td>
-                          <td className="px-4 py-3 font-extrabold text-emerald-700 text-sm">
-                            ₹{Number(p.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </td>
-                          <td className="px-4 py-3 text-slate-500">{p.notes || '—'}</td>
+                          <td className="px-4 py-3 font-bold text-emerald-700">₹{Number(p.amount).toLocaleString('en-IN')}</td>
+                          <td className="px-4 py-3 text-slate-500 italic max-w-xs truncate">{p.notes || '—'}</td>
                           <td className="px-4 py-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => setSelectedReceiptForPrint(p)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-semibold rounded-md border border-slate-300 shadow-2xs transition-colors cursor-pointer"
-                                title="Print Official Institutional Fee Receipt"
-                              >
-                                <Printer className="w-3 h-3 text-slate-600" /> Receipt
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDispatchFeeReceipt(p.invoiceNumber)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold rounded-md shadow-xs transition-colors cursor-pointer"
-                                title="Dispatch verified payment receipt directly to parent WhatsApp"
-                              >
-                                <MessageSquare className="w-3 h-3" /> WhatsApp
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReceiptForPrint(p)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded text-[11px] font-medium shadow-xs transition-colors cursor-pointer"
+                            >
+                              <Printer className="w-3 h-3 text-slate-500" /> Print Receipt
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -495,143 +591,139 @@ export default function StudentLedger() {
                 </div>
               )}
             </div>
-          </div>
+          </>
         )}
 
-        {/* Modal: Collect Payment */}
+        {/* Collect Payment Modal */}
         {showPaymentModal && selectedInvoice && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
                 <div className="flex items-center gap-2">
                   <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
                     <CreditCard className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Collect Fee Payment</h3>
-                    <p className="text-xs text-slate-500">Invoice: {selectedInvoice.invoiceNumber}</p>
+                    <h3 className="text-lg font-bold text-slate-900">Record Fee Collection</h3>
+                    <p className="text-xs text-slate-500 font-mono">Invoice: {selectedInvoice.invoiceNumber}</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowPaymentModal(false)}
-                  className="text-slate-400 hover:text-slate-600 p-1"
+                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Invoice Breakdown Banner */}
-              <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 mb-4 space-y-1 text-xs">
-                <div className="flex justify-between text-slate-600">
-                  <span>Fee Category:</span>
-                  <span className="font-semibold text-slate-900">{selectedInvoice.feeStructureName}</span>
+              {/* Outstanding Balance Banner */}
+              <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 mb-5 flex justify-between items-center text-xs">
+                <div>
+                  <span className="text-indigo-600 font-semibold block">Outstanding Balance:</span>
+                  <span className="text-xl font-black text-indigo-900 font-mono">
+                    ₹{Number(selectedInvoice.outstandingBalance).toLocaleString('en-IN')}
+                  </span>
                 </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Net Invoice Total:</span>
-                  <span className="font-semibold text-slate-900">₹{Number(selectedInvoice.netAmount).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between text-slate-600">
-                  <span>Already Paid:</span>
-                  <span className="font-semibold text-emerald-700">₹{Number(selectedInvoice.amountPaid).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between text-rose-700 font-bold pt-1 border-t border-slate-200">
-                  <span>Outstanding Balance:</span>
-                  <span>₹{Number(selectedInvoice.outstandingBalance).toLocaleString('en-IN')}</span>
+                <div className="text-right">
+                  <span className="text-slate-400 block">Due Date:</span>
+                  <span className="font-semibold text-slate-700">{selectedInvoice.dueDate}</span>
                 </div>
               </div>
 
               <form onSubmit={handlePaymentSubmit} className="space-y-4">
                 <div>
                   <label htmlFor="paymentAmountInput" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Payment Collection Amount (₹) *
+                    Amount to Collect (INR) *
                   </label>
-                  <input
-                    id="paymentAmountInput"
-                    type="number"
-                    step="0.01"
-                    min="1"
-                    max={selectedInvoice.outstandingBalance}
-                    placeholder="Enter amount"
-                    value={paymentForm.amount}
-                    onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                    className="w-full text-sm border border-slate-300 rounded-lg p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none font-bold"
-                    required
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                    <input
+                      id="paymentAmountInput"
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="0.00"
+                      value={paymentForm.amount}
+                      onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                      className="w-full pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
 
                 <div>
                   <label htmlFor="paymentMethodSelect" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Payment Method *
+                    Payment Instrument / Mode *
                   </label>
                   <select
                     id="paymentMethodSelect"
                     value={paymentForm.paymentMethod}
                     onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
-                    className="w-full text-sm border border-slate-300 rounded-lg p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full text-sm border border-slate-300 rounded-lg p-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   >
-                    <option value="UPI">UPI / QR Code</option>
-                    <option value="CASH">Cash</option>
-                    <option value="CARD">Debit / Credit Card</option>
-                    <option value="NET_BANKING">Net Banking / NEFT</option>
+                    <option value="UPI">UPI (Google Pay / PhonePe / BHIM)</option>
+                    <option value="CASH">Cash Deposit (Bursar Counter)</option>
+                    <option value="BANK_TRANSFER">NEFT / RTGS / IMPS</option>
+                    <option value="CHEQUE">Demand Draft / Bank Cheque</option>
+                    <option value="CARD">Credit / Debit Card</option>
                   </select>
                 </div>
 
                 <div>
-                  <label htmlFor="paymentRefInput" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Transaction / Reference Number
+                  <label htmlFor="referenceNumberInput" className="block text-xs font-semibold text-slate-700 mb-1">
+                    Transaction Ref / UTR / Cheque Number
                   </label>
                   <input
-                    id="paymentRefInput"
+                    id="referenceNumberInput"
                     type="text"
-                    placeholder="e.g. UPI-99882244, CHQ-1049"
+                    placeholder="e.g. UTR-982187391823"
                     value={paymentForm.referenceNumber}
                     onChange={(e) => setPaymentForm({ ...paymentForm, referenceNumber: e.target.value })}
-                    className="w-full text-sm border border-slate-300 rounded-lg p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="paymentNotesInput" className="block text-xs font-semibold text-slate-700 mb-1">
-                    Internal Notes / Remarks
+                  <label htmlFor="notesInput" className="block text-xs font-semibold text-slate-700 mb-1">
+                    Internal Bursar Notes / Remarks
                   </label>
-                  <input
-                    id="paymentNotesInput"
-                    type="text"
-                    placeholder="Optional collection notes"
+                  <textarea
+                    id="notesInput"
+                    rows={2}
+                    placeholder="e.g. Semester V installment clearance verified"
                     value={paymentForm.notes}
                     onChange={(e) => setPaymentForm({ ...paymentForm, notes: e.target.value })}
-                    className="w-full text-sm border border-slate-300 rounded-lg p-2.5 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                    className="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                   />
                 </div>
 
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    id="autoSendReceipt"
-                    type="checkbox"
-                    checked={autoSendReceiptWhatsApp}
-                    onChange={(e) => setAutoSendReceiptWhatsApp(e.target.checked)}
-                    className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <label htmlFor="autoSendReceipt" className="text-xs text-slate-700 cursor-pointer select-none">
-                    Dispatch official fee receipt to guardian WhatsApp upon clearance
+                {/* Auto WhatsApp Receipt Checkbox */}
+                <div className="pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={autoSendReceiptWhatsApp}
+                      onChange={(e) => setAutoSendReceiptWhatsApp(e.target.checked)}
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                    />
+                    <span>Automatically dispatch instant payment confirmation receipt via WhatsApp</span>
                   </label>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowPaymentModal(false)}
-                    className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    className="px-4 py-2 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={paymentMutation.isPending}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm disabled:opacity-50"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                   >
-                    {paymentMutation.isPending ? 'Processing...' : 'Process Payment'}
+                    {paymentMutation.isPending ? 'Recording Settlement...' : 'Confirm Fee Settlement'}
                   </button>
                 </div>
               </form>
@@ -639,94 +731,79 @@ export default function StudentLedger() {
           </div>
         )}
 
-        {/* Printable Official Receipt Modal */}
+        {/* Receipt Voucher Print Modal */}
         {selectedReceiptForPrint && (
           <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-              {/* Receipt Header */}
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-indigo-600" />
-                  <span className="font-bold text-sm text-slate-900">Official Fee Receipt</span>
+            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+              <div className="flex justify-between items-center border-b pb-3 mb-4">
+                <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm">
+                  <Building2 className="w-5 h-5" />
+                  <span>{institution.name || 'Central University'} — Fee Voucher</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => window.print()}
-                    className="flex items-center gap-1 px-3 py-1 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition-colors cursor-pointer"
-                  >
-                    <Printer className="w-3.5 h-3.5" /> Print
-                  </button>
-                  <button
-                    onClick={() => setSelectedReceiptForPrint(null)}
-                    className="text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+                <button onClick={() => setSelectedReceiptForPrint(null)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {/* Receipt Content */}
-              <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-slate-50/50 text-xs">
-                <div className="text-center border-b border-slate-200 pb-3">
-                  <h4 className="font-extrabold text-sm text-slate-900 uppercase tracking-tight">
-                    {institution.name || 'Central University System'}
-                  </h4>
-                  <p className="text-[11px] text-slate-500">{institution.campus || 'Main Campus'} • Code: {institution.code || 'INST-01'}</p>
-                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">Statutory Fee Settlement Voucher</p>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Receipt Number:</span>
+                  <span className="font-mono font-bold text-slate-900">{selectedReceiptForPrint.referenceNumber || `RCP-${selectedReceiptForPrint.id}`}</span>
                 </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Student Roll / ENR:</span>
+                  <span className="font-mono font-semibold text-slate-900">{activeEnrollment}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Invoice Reference:</span>
+                  <span className="font-mono text-slate-800">{selectedReceiptForPrint.invoiceNumber}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Payment Date:</span>
+                  <span className="text-slate-800">{selectedReceiptForPrint.paymentDate}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Instrument:</span>
+                  <span className="font-semibold text-slate-800">{selectedReceiptForPrint.paymentMethod}</span>
+                </div>
+                <div className="flex justify-between border-b pb-2">
+                  <span className="text-slate-500">Amount Settled:</span>
+                  <span className="font-black text-emerald-700 text-sm">₹{Number(selectedReceiptForPrint.amount).toLocaleString('en-IN')}</span>
+                </div>
+                {selectedReceiptForPrint.notes && (
+                  <div className="border-b pb-2">
+                    <span className="text-slate-500 block mb-0.5">Remarks:</span>
+                    <span className="text-slate-700 italic">{selectedReceiptForPrint.notes}</span>
+                  </div>
+                )}
+              </div>
 
-                <div className="grid grid-cols-2 gap-3 text-slate-700">
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Receipt Voucher #</span>
-                    <span className="font-mono font-bold text-slate-900">{selectedReceiptForPrint.referenceNumber || `RCP-2026-${selectedReceiptForPrint.id}`}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Payment Date</span>
-                    <span className="font-medium text-slate-900">{selectedReceiptForPrint.paymentDate ? selectedReceiptForPrint.paymentDate.substring(0, 10) : new Date().toISOString().substring(0, 10)}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Candidate Full Name</span>
-                    <span className="font-bold text-slate-900">{ledger?.student?.firstName} {ledger?.student?.lastName}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Enrollment Identifier</span>
-                    <span className="font-mono font-bold text-indigo-700">{activeEnrollment}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Associated Invoice</span>
-                    <span className="font-mono text-slate-800">{selectedReceiptForPrint.invoiceNumber}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px]">Payment Gateway / Mode</span>
-                    <span className="font-semibold text-slate-800">{selectedReceiptForPrint.paymentMethod}</span>
-                  </div>
-                </div>
-
-                <div className="border-t border-b border-slate-200 py-3 flex items-center justify-between">
-                  <span className="font-bold text-slate-700">Total Cleared Amount:</span>
-                  <span className="text-lg font-black font-mono text-emerald-700">
-                    ₹{Number(selectedReceiptForPrint.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                  <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Reconciled & Concurred
-                  </span>
-                  <span>Accounts / Bursar Office</span>
-                </div>
+              <div className="mt-5 pt-3 border-t flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedReceiptForPrint(null)}
+                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Print Voucher
+                </button>
               </div>
             </div>
           </div>
         )}
-      </div>
 
-      {/* WhatsApp & SMS Communication Outbox Drawer */}
-      <CommunicationOutboxDrawer
-        isOpen={isOutboxOpen}
-        onClose={() => setIsOutboxOpen(false)}
-        defaultFilter="FEE_DUE_NOTICE"
-      />
+        {/* WhatsApp & SMS Communication Outbox Drawer */}
+        <CommunicationOutboxDrawer
+          isOpen={isOutboxOpen}
+          onClose={() => setIsOutboxOpen(false)}
+        />
+      </div>
     </div>
   );
 }
