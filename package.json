@@ -4,8 +4,15 @@
   "description": "EduPulse ERP Windows Desktop Edition",
   "private": true,
   "scripts": {
-    "dev": "npm --prefix Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/frontend-v2 run dev",
-    "build": "npm --prefix Institutioanl_ERP_v1.0-main/Institutioanl_ERP_v1.0/frontend-v2 run build"
+    "dev": "npm --prefix frontend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "dev:desktop": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "build:web": "npm --prefix frontend run build",
+    "build:desktop": "npm --prefix frontend run build",
+    "test": "npm --prefix frontend run test",
+    "lint": "npm --prefix frontend run lint",
+    "backend:build": "mvn -f backend/pom.xml clean package -DskipTests -B"
   },
   "keywords": [
     "edupulse",

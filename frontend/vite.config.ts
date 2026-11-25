@@ -1,0 +1,29 @@
+import react from '@vitejs/plugin-react'
+import path from 'path'
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(import.meta.dirname, './src'),
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+  },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+      '/auth': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+    },
+  },
+})

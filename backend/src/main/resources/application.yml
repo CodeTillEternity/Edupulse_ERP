@@ -1,0 +1,137 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: institutional-erp-backend
+  profiles:
+    active: dev
+  flyway:
+    enabled: false
+  datasource:
+    hikari:
+      pool-name: EduPulseHikariCP
+      register-mbeans: true
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+  jpa:
+    properties:
+      hibernate:
+        session_factory:
+          statement_inspector: com.erp.config.SlowQueryInterceptor
+        session:
+          events:
+            log:
+              LOG_QUERIES_SLOWER_THAN_MS: 500
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 15MB
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+# Stripe B2B Subscription Billing Configuration
+stripe:
+  api-key: ${STRIPE_API_KEY:sk_test_placeholder}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_test_placeholder}
+  pro-price-id: ${STRIPE_PRO_PRICE_ID:price_pro_placeholder}
+  enterprise-price-id: ${STRIPE_ENTERPRISE_PRICE_ID:price_enterprise_placeholder}
+
+# Razorpay SaaS Billing Configuration (RBI Compliant)
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_placeholder}
+  key-secret: ${RAZORPAY_KEY_SECRET:rzp_secret_placeholder}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:rzp_webhook_secret_placeholder}
+
+# EduPulse Enterprise Integrations (Jitsi Meet WebRTC & Notion)
+edupulse:
+  integrations:
+    jitsi:
+      domain: ${JITSI_DOMAIN:meet.jit.si}
+    notion:
+      api-secret: ${NOTION_API_SECRET:${NOTION_API_KEY:}}
+      version: ${NOTION_VERSION:2022-06-28}
+
+# Native WebRTC Virtual Classroom Configuration (Daily.co)
+daily:
+  api-key: ${edupulse.integrations.daily.api-key}
+  domain: ${edupulse.integrations.daily.domain}
+
+# Native Notion Workspace Sync Configuration
+notion:
+  api-key: ${edupulse.integrations.notion.api-secret}
+  version: ${edupulse.integrations.notion.version}
+
+# Dedicated Database Routing Configuration (Hybrid Multi-Tenancy & HikariCP Pools)
+multitenancy:
+  datasources:
+    primary:
+      jdbc-url: ${PRIMARY_DB_URL:${SPRING_DATASOURCE_URL:jdbc:h2:mem:erp_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=VALUE}}
+      username: ${PRIMARY_DB_USERNAME:${SPRING_DATASOURCE_USERNAME:sa}}
+      password: ${PRIMARY_DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:}}
+      driver-class-name: ${PRIMARY_DB_DRIVER:${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}}
+      hikari:
+        pool-name: EduPulse-Primary-HikariPool
+        maximum-pool-size: 20
+        minimum-idle: 5
+        idle-timeout: 300000
+        connection-timeout: 20000
+    dedicated-vip-1:
+      jdbc-url: ${DEDICATED_VIP_1_DB_URL:jdbc:h2:mem:dedicated_vip_1_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=VALUE}
+      username: ${DEDICATED_VIP_1_USERNAME:sa}
+      password: ${DEDICATED_VIP_1_PASSWORD:}
+      driver-class-name: ${DEDICATED_VIP_1_DRIVER:org.h2.Driver}
+      hikari:
+        pool-name: EduPulse-Dedicated-VIP-1-HikariPool
+        maximum-pool-size: 15
+        minimum-idle: 3
+        idle-timeout: 300000
+        connection-timeout: 20000
+  dedicated:
+    url: ${DEDICATED_DB_URL:jdbc:h2:mem:dedicated_secondary_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=VALUE}
+    username: ${DEDICATED_DB_USERNAME:sa}
+    password: ${DEDICATED_DB_PASSWORD:}
+    driver-class-name: ${DEDICATED_DB_DRIVER:org.h2.Driver}
+app:
+  storage:
+    document-dir: ${APP_STORAGE_DOCUMENT_DIR:uploads/documents}
+
+# SpringDoc OpenAPI / Swagger Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+    tagsSorter: alpha
+
+# Spring Boot Actuator & Micrometer Prometheus APM Telemetry
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name:institutional-erp-backend}
+    export:
+      prometheus:
+        enabled: true
+
+

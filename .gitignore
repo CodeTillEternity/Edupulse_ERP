@@ -85,7 +85,7 @@ EduPulse-ERP-Desktop.exe
 EduPulse-ERP-Desktop-v2.exe
 *.exe
 *.jar
-backend/
+backend/target/
 jre/
 dist-installer/
 release-bundle/
