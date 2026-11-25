@@ -14,12 +14,15 @@ import {
   ArrowDown,
   FileText,
   Printer,
+  Download,
   SlidersHorizontal,
   CheckCircle2,
   Clock,
   AlertTriangle,
   XCircle,
 } from 'lucide-react';
+import { useInstitutionStore } from '../store/useInstitutionStore';
+import { toast } from 'sonner';
 
 export interface FeeInvoiceItem {
   id: number;
@@ -85,6 +88,7 @@ function InvoiceStatusBadge({ status }: { status: string }) {
 }
 
 export function FeeInvoiceList() {
+  const { institution } = useInstitutionStore();
   const [page, setPage] = useState(0);
   const [size] = useState(10);
   const [serverSearch, setServerSearch] = useState('');
@@ -124,6 +128,55 @@ export function FeeInvoiceList() {
   const rawData = data as any;
   const totalPages = rawData?.totalPages ?? 1;
   const totalElements = rawData?.totalElements ?? invoices.length;
+
+  const visibleSummary = useMemo(() => {
+    return invoices.reduce(
+      (acc, inv) => ({
+        net: acc.net + (Number(inv.netAmount) || 0),
+        paid: acc.paid + (Number(inv.amountPaid) || 0),
+        outstanding: acc.outstanding + (Number(inv.outstandingBalance) || 0),
+      }),
+      { net: 0, paid: 0, outstanding: 0 }
+    );
+  }, [invoices]);
+
+  const exportInvoicesCsv = () => {
+    if (invoices.length === 0) {
+      toast.error('No invoices on current page to export.');
+      return;
+    }
+    const headers = ['Invoice Number', 'Student Name', 'Enrollment #', 'Fee Structure', 'Gross (INR)', 'Discount (INR)', 'Net Due (INR)', 'Paid (INR)', 'Outstanding (INR)', 'Due Date', 'Status'];
+    const rows = invoices.map((inv) => [
+      inv.invoiceNumber,
+      inv.studentName || `Student #${inv.studentId}`,
+      inv.studentEnrollmentNumber || '',
+      inv.feeStructureName || '',
+      String(Number(inv.grossAmount) || 0),
+      String(Number(inv.discount) || 0),
+      String(Number(inv.netAmount) || 0),
+      String(Number(inv.amountPaid) || 0),
+      String(Number(inv.outstandingBalance) || 0),
+      formatDate(inv.dueDate),
+      inv.status,
+    ]);
+    const metaRows = [
+      ['INSTITUTIONAL FEE INVOICES REGISTER', '', '', '', '', '', '', '', '', '', ''],
+      ['Institution', institution.name || 'Central University System', '', '', '', '', '', '', '', '', ''],
+      ['Institution Code', institution.code || 'CUS-01', '', '', '', '', '', '', '', '', ''],
+      ['Exported On', new Date().toISOString(), '', '', '', '', '', '', '', '', ''],
+      ['', '', '', '', '', '', '', '', '', '', '']
+    ];
+    const all = [...metaRows, headers, ...rows];
+    const csvContent = 'data:text/csv;charset=utf-8,' + all.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Fee_Invoices_Page${page + 1}_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${invoices.length} fee invoices (CSV).`);
+  };
 
   const handleSort = (column: string) => {
     if (sortBy === column) {
@@ -184,6 +237,13 @@ export function FeeInvoiceList() {
             className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-1.5 shadow-2xs"
           >
             <Printer className="w-3.5 h-3.5 text-slate-500" /> Print
+          </button>
+          <button
+            type="button"
+            onClick={exportInvoicesCsv}
+            className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 inline-flex items-center gap-1.5 shadow-2xs"
+          >
+            <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
           </button>
         </div>
       </div>
@@ -309,6 +369,24 @@ export function FeeInvoiceList() {
           </tbody>
         </table>
       </div>
+
+      {/* Page Totals Bar */}
+      {invoices.length > 0 && (
+        <div className="px-4 py-2.5 bg-slate-50/90 border-t border-slate-200 flex flex-wrap items-center justify-end gap-6 text-xs">
+          <div>
+            <span className="text-slate-500 mr-1.5">Page Net Due:</span>
+            <span className="font-mono font-bold text-slate-900">{formatINR(visibleSummary.net)}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 mr-1.5">Collected:</span>
+            <span className="font-mono font-bold text-emerald-700">{formatINR(visibleSummary.paid)}</span>
+          </div>
+          <div>
+            <span className="text-slate-500 mr-1.5">Outstanding:</span>
+            <span className="font-mono font-bold text-rose-700">{formatINR(visibleSummary.outstanding)}</span>
+          </div>
+        </div>
+      )}
 
       {/* Pagination Footer */}
       <div className="p-3 border-t border-slate-200 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-2.5">
