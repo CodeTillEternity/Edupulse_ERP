@@ -222,6 +222,7 @@ function App() {
               <Route path="hr/payroll" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FINANCE', 'HR_MANAGER']}><PayrollDashboard /></RoleProtectedRoute>} />
               <Route path="institutions" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><InstitutionsList /></RoleProtectedRoute>} />
               <Route path="institution-profile" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><InstitutionProfile /></RoleProtectedRoute>} />
+              <Route path="migration" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><DataMigration /></RoleProtectedRoute>} />
               <Route path="data-migration" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><DataMigration /></RoleProtectedRoute>} />
               <Route path="compliance" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}><ComplianceDashboard /></RoleProtectedRoute>} />
               <Route path="audit-logs" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><AuditLogs /></RoleProtectedRoute>} />

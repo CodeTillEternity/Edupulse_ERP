@@ -20,6 +20,7 @@ import { ServerSettingsModal } from './ServerSettingsModal';
 import { OfflineSyncBadge } from './OfflineSyncBadge';
 import { ClassroomCallOverlay } from './classroom/ClassroomCallOverlay';
 import { CommunicationOutboxDrawer } from './communication/CommunicationOutboxDrawer';
+import ReadOnlyBanner from './ReadOnlyBanner';
 import { resolveBaseUrl } from '../api/axiosClient';
 
 interface NavItemProps {
@@ -216,6 +217,17 @@ export default function Layout() {
               <NavItem path="/dashboard/compliance" icon={Award} label="NAAC / NIRF Compliance" />
               <NavItem path="/dashboard/audit-logs" icon={ShieldAlert} label="System Audit Trail" />
             </NavGroup>
+
+            <NavGroup title="SaaS & Subscription">
+              <NavItem path="/dashboard/billing" icon={CreditCard} label="Billing & Plans" />
+              {role === 'SUPER_ADMIN' && (
+                <>
+                  <NavItem path="/dashboard/billing/settings" icon={Settings} label="Subscription Settings" />
+                  <NavItem path="/dashboard/saas-admin" icon={Building2} label="Tenant Directory" />
+                  <NavItem path="/dashboard/super-admin" icon={Server} label="Platform Super Admin" />
+                </>
+              )}
+            </NavGroup>
           </>
         );
 
@@ -361,6 +373,17 @@ export default function Layout() {
               <NavItem path="/dashboard/migration" icon={UploadCloud} label="Bulk Data Ingestion" />
               <NavItem path="/dashboard/compliance" icon={Award} label="NAAC / NIRF Compliance" />
               <NavItem path="/dashboard/audit-logs" icon={ShieldAlert} label="System Audit Trail" />
+            </NavGroup>
+
+            <NavGroup title="SaaS & Subscription">
+              <NavItem path="/dashboard/billing" icon={CreditCard} label="Billing & Plans" />
+              {role === 'SUPER_ADMIN' && (
+                <>
+                  <NavItem path="/dashboard/billing/settings" icon={Settings} label="Subscription Settings" />
+                  <NavItem path="/dashboard/saas-admin" icon={Building2} label="Tenant Directory" />
+                  <NavItem path="/dashboard/super-admin" icon={Server} label="Platform Super Admin" />
+                </>
+              )}
             </NavGroup>
           </>
         );
@@ -703,6 +726,7 @@ export default function Layout() {
 
         {/* Main Outlet */}
         <main className="flex-1 overflow-y-auto bg-slate-50 relative flex flex-col min-h-0 print:overflow-visible print:bg-white">
+          <ReadOnlyBanner />
           <Outlet />
           <ClassroomCallOverlay />
         </main>
