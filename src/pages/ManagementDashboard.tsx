@@ -1,10 +1,13 @@
 import { useAuthStore } from '../store/useAuthStore';
+import { useInstitutionStore } from '../store/useInstitutionStore';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '../config/api';
 import { PageFrame } from '../components/ui/PageFrame';
-import { ShieldAlert, Users, Store, UserCheck, Loader2 } from 'lucide-react';
+import { ShieldAlert, Users, Store, UserCheck, Loader2, Download, Printer, Award, CalendarCheck, Wallet, UserPlus } from 'lucide-react';
 import { StatusBadge } from '../components/ui/StatusBadge';
+import { Button } from '../components/ui/button';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import type { Student, PaginatedResponse } from '../types/student';
 
 interface UserDTO {
@@ -31,6 +34,7 @@ interface Application {
 
 export default function ManagementDashboard() {
   const { user } = useAuthStore();
+  const { institution } = useInstitutionStore();
   const role = user?.role || '';
   const isSuperAdmin = role === 'SUPER_ADMIN';
   const isAdmin = role === 'ADMIN';
@@ -66,14 +70,67 @@ export default function ManagementDashboard() {
 
   const adminName = user?.username || (isSuperAdmin ? 'Super Admin' : 'Admin');
 
+  const exportExecutiveSnapshotCsv = () => {
+    const rows = [
+      ['EXECUTIVE INSTITUTIONAL OPERATIONS SNAPSHOT', ''],
+      ['Institution', institution.name || 'Central University System'],
+      ['Institution Code', institution.code || 'CUS-01'],
+      ['Campus Node', institution.campus || 'Main Campus'],
+      ['Academic Departments', String(totalDepts)],
+      ['Total Enrolled Students', String(totalStudents)],
+      ['Pending Admissions Queue', String(pendingApps)],
+      ['System Users (Active / Locked)', totalUsersCount !== null ? `${activeUsers} / ${lockedUsers}` : 'Restricted'],
+      ['Generated On', new Date().toISOString()],
+    ];
+    const csvContent = 'data:text/csv;charset=utf-8,' + rows.map((r) => r.map((c) => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Executive_Snapshot_${institution.code || 'INST'}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported executive institutional snapshot (CSV).');
+  };
+
   return (
     <PageFrame 
-      title={`${isSuperAdmin ? "System Governance" : "Institutional Operations"} — Welcome, ${adminName}`} 
-      description={isSuperAdmin ? "Monitor system health, access control, and master configuration." : "Overview of daily operations, admissions, and student activities."}
+      title={`${institution.name || (isSuperAdmin ? 'System Governance' : 'Institutional Operations')} — Welcome, ${adminName}`} 
+      description={isSuperAdmin ? `${institution.campus || 'Campus'} • System health, access control, and master configuration.` : `${institution.campus || 'Campus'} • Overview of daily operations, admissions, and student activities.`}
+      actions={
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Printer className="w-3.5 h-3.5 mr-1 text-slate-500" /> Print Snapshot
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportExecutiveSnapshotCsv} className="h-8 text-xs font-semibold border-slate-300 bg-white">
+            <Download className="w-3.5 h-3.5 mr-1 text-slate-500" /> Export CSV
+          </Button>
+        </div>
+      }
     >
+      {/* Quick Operational Workspaces */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <Link to="/dashboard/enroll" className="bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 p-3.5 rounded-xl flex items-center gap-3 transition-colors shadow-2xs">
+          <UserPlus className="w-4 h-4 text-indigo-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-800">Enroll Student</span>
+        </Link>
+        <Link to="/dashboard/attendance/oversight" className="bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 p-3.5 rounded-xl flex items-center gap-3 transition-colors shadow-2xs">
+          <CalendarCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-800">Attendance Oversight</span>
+        </Link>
+        <Link to="/dashboard/finance/ledger" className="bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 p-3.5 rounded-xl flex items-center gap-3 transition-colors shadow-2xs">
+          <Wallet className="w-4 h-4 text-amber-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-800">Student Fee Ledger</span>
+        </Link>
+        <Link to="/dashboard/compliance" className="bg-white border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40 p-3.5 rounded-xl flex items-center gap-3 transition-colors shadow-2xs">
+          <Award className="w-4 h-4 text-cyan-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-800">NAAC / NIRF Hub</span>
+        </Link>
+      </div>
+
       <div className="grid gap-px grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8 bg-slate-200 border border-slate-200 shadow-sm">
         {/* Metric 1: System Users or Operations */}
-        <div className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors">
+        <Link to={isSuperAdmin ? '/dashboard/admin/users' : '/dashboard/students'} className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors block">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs lg:text-sm font-bold uppercase tracking-wider text-slate-500">
               {isSuperAdmin ? "System Users" : "Active Staff"}
@@ -88,10 +145,10 @@ export default function ManagementDashboard() {
               ? `${activeUsers} active, ${lockedUsers} locked` 
               : 'Institutional user status active'}
           </p>
-        </div>
+        </Link>
 
         {/* Metric 2: Departments */}
-        <div className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors">
+        <Link to="/dashboard/departments" className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors block">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs lg:text-sm font-bold uppercase tracking-wider text-slate-500">Departments</h3>
             <Store className="h-5 w-5 text-slate-400" />
@@ -100,10 +157,10 @@ export default function ManagementDashboard() {
             {departmentsData ? totalDepts : '-'}
           </div>
           <p className="text-xs lg:text-sm text-slate-500 mt-2 font-medium">Configured Academic Programs</p>
-        </div>
+        </Link>
 
         {/* Metric 3: Total Students */}
-        <div className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors">
+        <Link to="/dashboard/students" className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors block">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs lg:text-sm font-bold uppercase tracking-wider text-slate-500">Total Students</h3>
             <Users className="h-5 w-5 text-slate-400" />
@@ -112,10 +169,10 @@ export default function ManagementDashboard() {
             {studentsData ? totalStudents : '-'}
           </div>
           <p className="text-xs lg:text-sm text-slate-500 mt-2 font-medium">Enrolled Across Campuses</p>
-        </div>
+        </Link>
 
         {/* Metric 4: Admissions Pipeline */}
-        <div className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors">
+        <Link to="/dashboard/admissions" className="bg-white p-5 sm:p-6 lg:p-7 hover:bg-slate-50 transition-colors block">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-xs lg:text-sm font-bold uppercase tracking-wider text-slate-500">Admissions Queue</h3>
             <UserCheck className="h-5 w-5 text-slate-400" />
@@ -124,7 +181,7 @@ export default function ManagementDashboard() {
             {appsData ? pendingApps : '0'}
           </div>
           <p className="text-xs lg:text-sm text-slate-500 mt-2 font-medium">Requires Review / Pending</p>
-        </div>
+        </Link>
       </div>
 
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-2">
@@ -139,7 +196,7 @@ export default function ManagementDashboard() {
           ) : Array.isArray(studentsData?.content) && studentsData.content.length > 0 ? (
             <div className="divide-y divide-slate-100 border border-slate-200 bg-white shadow-sm">
               {studentsData.content.map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-slate-50 transition-colors">
+                <Link key={s.id} to={`/dashboard/students/${s.id}`} className="flex items-center justify-between p-3.5 sm:p-4 hover:bg-slate-50 transition-colors">
                   <div className="flex items-center space-x-3.5">
                     <div className="h-9 w-9 sm:h-10 sm:w-10 bg-slate-900 text-white flex items-center justify-center font-bold text-xs sm:text-sm rounded">
                       {s.firstName ? s.firstName.charAt(0) : 'S'}
@@ -150,7 +207,7 @@ export default function ManagementDashboard() {
                     </div>
                   </div>
                   <StatusBadge status={s.status} />
-                </div>
+                </Link>
               ))}
             </div>
           ) : (
