@@ -14,7 +14,8 @@ import {
   FileText,
   CreditCard,
   UserCheck,
-  ShieldAlert
+  ShieldAlert,
+  Download
 } from 'lucide-react';
 import {
   communicationService,
@@ -22,6 +23,8 @@ import {
   type GatewayStatus,
   type TriggerType
 } from '../../api/communicationService';
+import { useInstitutionStore } from '../../store/useInstitutionStore';
+import { toast } from 'sonner';
 
 interface CommunicationOutboxDrawerProps {
   isOpen: boolean;
@@ -34,6 +37,7 @@ export const CommunicationOutboxDrawer: React.FC<CommunicationOutboxDrawerProps>
   onClose,
   defaultFilter = 'ALL'
 }) => {
+  const { institution } = useInstitutionStore();
   const [logs, setLogs] = useState<CommunicationLog[]>([]);
   const [gatewayStatus, setGatewayStatus] = useState<GatewayStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -73,6 +77,44 @@ export const CommunicationOutboxDrawer: React.FC<CommunicationOutboxDrawerProps>
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleExportAuditCsv = () => {
+    if (filteredLogs.length === 0) {
+      toast.error('No communication dispatch logs to export');
+      return;
+    }
+    const headerLines = [
+      `"${(institution.name || 'Institutional ERP').replace(/"/g, '""')} — Communication Outbox Audit Ledger"`,
+      `"Filter","${activeTab}"`,
+      `"Exported At","${new Date().toISOString()}"`,
+      '',
+      'Log ID,Sent At,Channel,Trigger Type,Delivery Status,Recipient Name,Recipient Phone,Student Enrollment,Student Name,Subject,Gateway Ref,Message Content'
+    ];
+    const rows = filteredLogs.map((l) =>
+      [
+        l.id,
+        `"${(l.sentAt || '').replace(/"/g, '""')}"`,
+        l.channel,
+        l.triggerType,
+        l.deliveryStatus,
+        `"${(l.recipientName || '').replace(/"/g, '""')}"`,
+        `"${(l.recipientPhone || '').replace(/"/g, '""')}"`,
+        `"${(l.studentEnrollment || '').replace(/"/g, '""')}"`,
+        `"${(l.studentName || '').replace(/"/g, '""')}"`,
+        `"${(l.subject || '').replace(/"/g, '""')}"`,
+        `"${(l.gatewayReferenceId || '').replace(/"/g, '""')}"`,
+        `"${(l.messageContent || '').replace(/\r?\n/g, ' ').replace(/"/g, '""')}"`,
+      ].join(',')
+    );
+    const blob = new Blob([[...headerLines, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `communication-outbox-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredLogs.length} dispatch log(s)`);
   };
 
   const getTriggerBadge = (type: TriggerType) => {
@@ -151,15 +193,26 @@ export const CommunicationOutboxDrawer: React.FC<CommunicationOutboxDrawerProps>
               </span>
             )}
           </div>
-          <button
-            onClick={fetchLogs}
-            disabled={loading}
-            className="flex items-center gap-1 text-slate-600 hover:text-slate-900 font-medium transition-colors cursor-pointer"
-            title="Refresh outbox logs"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Sync</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportAuditCsv}
+              disabled={loading || filteredLogs.length === 0}
+              className="flex items-center gap-1 text-slate-600 hover:text-slate-900 disabled:opacity-40 font-medium transition-colors cursor-pointer"
+              title="Export filtered dispatch logs as CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Audit CSV</span>
+            </button>
+            <button
+              onClick={fetchLogs}
+              disabled={loading}
+              className="flex items-center gap-1 text-slate-600 hover:text-slate-900 font-medium transition-colors cursor-pointer"
+              title="Refresh outbox logs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Sync</span>
+            </button>
+          </div>
         </div>
 
         {/* Filter Navigation Tabs */}
