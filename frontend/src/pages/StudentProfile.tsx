@@ -138,7 +138,7 @@ export default function StudentProfile() {
       const res = await apiClient.get(`/api/v1/attendance/student/${id}`);
       return res.data || [];
     },
-    enabled: !!id && activeTab === 'attendance'
+    enabled: !!id
   });
 
   const guardians: GuardianResponseDto[] = guardiansResponse?.data || [];
@@ -495,13 +495,20 @@ export default function StudentProfile() {
         </div>
       }
     >
-      <div className="border-b border-slate-200 mb-6 flex overflow-x-auto hide-scrollbar">
+      <div
+        role="tablist"
+        aria-label="Student profile sections"
+        className="border-b border-slate-200 mb-6 flex overflow-x-auto hide-scrollbar"
+      >
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center space-x-1.5 px-4 py-2.5 border-b-2 text-xs font-bold uppercase tracking-wider transition-colors whitespace-nowrap ${
                 isActive 
@@ -934,9 +941,11 @@ export default function StudentProfile() {
               <div className="flex items-start space-x-3 pt-2 border-t border-slate-100">
                 <CalendarCheck className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">UGC 75% Attendance Clearance</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Attendance Clearance (75% Threshold)</p>
                   <div className="mt-1">
-                    {attendanceRecords.length > 0 ? (
+                    {isLoadingAttendance ? (
+                      <span className="text-xs text-slate-400">Checking attendance...</span>
+                    ) : attendanceRecords.length > 0 ? (
                       (() => {
                         const presentCount = attendanceRecords.filter((r: any) => r.status === 'PRESENT').length;
                         const pct = Math.round((presentCount / attendanceRecords.length) * 100);
@@ -977,13 +986,13 @@ export default function StudentProfile() {
                   <Download className="w-3.5 h-3.5 mr-2 text-slate-500" /> Export Academic Transcript
                 </button>
                 <Link
-                  to={`/dashboard/transcripts?roll=${student.rollNumber || student.enrollmentNumber || ''}`}
+                  to={`/dashboard/academic/transcripts?enrollment=${student.enrollmentNumber || student.rollNumber || ''}`}
                   className="w-full flex items-center px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                 >
                   <FileText className="w-3.5 h-3.5 mr-2 text-slate-500" /> View University Transcript Portal
                 </Link>
                 <Link
-                  to="/dashboard/fees/ledger"
+                  to="/dashboard/finance/ledger"
                   className="w-full flex items-center px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
                 >
                   <Wallet className="w-3.5 h-3.5 mr-2 text-slate-500" /> View Student Fee Ledger

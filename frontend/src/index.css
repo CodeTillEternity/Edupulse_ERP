@@ -67,6 +67,32 @@
 }
 
 @layer base {
+  /* Marketing website scope — overrides ERP fluid font scaling and sharp radii */
+  .marketing {
+    font-size: 16px !important;
+    --radius: 0.5rem;
+    user-select: text;
+    -webkit-user-select: text;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marketing *,
+    .marketing *::before,
+    .marketing *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+  .marketing h1,
+  .marketing h2,
+  .marketing h3,
+  .marketing h4 {
+    font-family: 'Inter', 'Geist', system-ui, sans-serif;
+    letter-spacing: -0.025em;
+  }
   * {
     @apply border-border;
   }

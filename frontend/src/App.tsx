@@ -1,62 +1,12 @@
-import { Component } from 'react';
+import { Component, Suspense, lazy } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
-import Dashboard from './pages/Dashboard';
-import StudentsList from './pages/StudentsList';
-import StudentProfile from './pages/StudentProfile';
-import DepartmentsList from './pages/DepartmentsList';
-import Attendance from './pages/Attendance';
-import FinanceDashboard from './pages/FinanceDashboard';
-import InstitutionsList from './pages/InstitutionsList';
-import CampusesList from './pages/CampusesList';
-import GuardiansList from './pages/GuardiansList';
-import AdminUsersList from './pages/AdminUsersList';
-import Admissions from './pages/Admissions';
-import Academics from './pages/Academics';
-import FacultySections from './pages/FacultySections';
-import PublicAdmissions from './pages/PublicAdmissions';
-import RegisterInstitution from './pages/RegisterInstitution';
-import RegistrationSuccess from './pages/RegistrationSuccess';
-import SubscriptionLockout from './pages/SubscriptionLockout';
-import SuperAdminDashboard from './pages/SuperAdminDashboard';
-import SaaSTenantDashboard from './pages/SaaSTenantDashboard';
-import TenantBillingSettings from './pages/TenantBillingSettings';
-import PaymentSuccess from './pages/PaymentSuccess';
-import PaymentCancelled from './pages/PaymentCancelled';
-import BillingDashboard from './pages/BillingDashboard';
-import EnrollStudent from './pages/Admissions/EnrollStudent';
-import SaaSBillingDashboard from './pages/Billing/BillingDashboard';
-import CheckoutSuccess from './pages/Billing/CheckoutSuccess';
-import CheckoutCancel from './pages/Billing/CheckoutCancel';
-import CourseManager from './pages/Academic/CourseManager';
-import ExamManager from './pages/Academic/ExamManager';
-import TranscriptViewer from './pages/Academic/TranscriptViewer';
-import TimetableManager from './pages/Operations/TimetableManager';
-import AttendanceTracker from './pages/Operations/AttendanceTracker';
-import LibraryManager from './pages/Operations/LibraryManager';
-import TransportManager from './pages/Operations/TransportManager';
-import FeeManager from './pages/Finance/FeeManager';
-import StudentLedger from './pages/Finance/StudentLedger';
-import LeaveManager from './pages/HR/LeaveManager';
-import PayrollDashboard from './pages/HR/PayrollDashboard';
 import LandingPage from './pages/LandingPage';
 import OnboardingFlow from './pages/OnboardingFlow';
-import InstitutionProfile from './pages/InstitutionProfile';
-import { DataMigration } from './pages/DataMigration';
-import { ComplianceDashboard } from './pages/ComplianceDashboard';
-import { AuditLogs } from './pages/AuditLogs';
-import PublicVerification from './pages/PublicVerification';
-import StudentPortalLayout from './layouts/StudentPortalLayout';
-import StudentDashboard from './pages/Portal/StudentDashboard';
-import FeeCenter from './pages/Portal/FeeCenter';
-import StudentFeeLedger from './pages/Portal/StudentFeeLedger';
-import VirtualClassroom from './components/classroom/VirtualClassroom';
-import AcademicMaterialView from './components/materials/AcademicMaterialView';
-import { ProfileRedirect } from './components/ProfileRedirect';
 import Layout from './components/Layout';
 import { GlobalSearch } from './components/GlobalSearch';
 import { VideoProvider } from './context/VideoContext';
@@ -65,6 +15,71 @@ import { Toaster } from './components/ui/sonner';
 import { Toaster as HotToaster } from 'react-hot-toast';
 import { Button } from './components/ui/button';
 import { useTenantTheme } from './hooks/useTenantTheme';
+
+// Lazy-loaded secondary marketing pages
+const PlatformPage = lazy(() => import('./pages/marketing/PlatformPage'));
+const PricingPage = lazy(() => import('./pages/marketing/PricingPage'));
+const SecurityPage = lazy(() => import('./pages/marketing/SecurityPage'));
+const ContactPage = lazy(() => import('./pages/marketing/ContactPage'));
+const DesktopPage = lazy(() => import('./pages/marketing/DesktopPage'));
+
+// Lazy-loaded ERP & Portal routes so public visitors don't pay full ERP bundle cost
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const StudentsList = lazy(() => import('./pages/StudentsList'));
+const StudentProfile = lazy(() => import('./pages/StudentProfile'));
+const DepartmentsList = lazy(() => import('./pages/DepartmentsList'));
+const Attendance = lazy(() => import('./pages/Attendance'));
+const FinanceDashboard = lazy(() => import('./pages/FinanceDashboard'));
+const InstitutionsList = lazy(() => import('./pages/InstitutionsList'));
+const CampusesList = lazy(() => import('./pages/CampusesList'));
+const GuardiansList = lazy(() => import('./pages/GuardiansList'));
+const AdminUsersList = lazy(() => import('./pages/AdminUsersList'));
+const Admissions = lazy(() => import('./pages/Admissions'));
+const Academics = lazy(() => import('./pages/Academics'));
+const FacultySections = lazy(() => import('./pages/FacultySections'));
+const PublicAdmissions = lazy(() => import('./pages/PublicAdmissions'));
+const RegisterInstitution = lazy(() => import('./pages/RegisterInstitution'));
+const RegistrationSuccess = lazy(() => import('./pages/RegistrationSuccess'));
+const SubscriptionLockout = lazy(() => import('./pages/SubscriptionLockout'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
+const SaaSTenantDashboard = lazy(() => import('./pages/SaaSTenantDashboard'));
+const TenantBillingSettings = lazy(() => import('./pages/TenantBillingSettings'));
+const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
+const PaymentCancelled = lazy(() => import('./pages/PaymentCancelled'));
+const BillingDashboard = lazy(() => import('./pages/BillingDashboard'));
+const EnrollStudent = lazy(() => import('./pages/Admissions/EnrollStudent'));
+const SaaSBillingDashboard = lazy(() => import('./pages/Billing/BillingDashboard'));
+const CheckoutSuccess = lazy(() => import('./pages/Billing/CheckoutSuccess'));
+const CheckoutCancel = lazy(() => import('./pages/Billing/CheckoutCancel'));
+const CourseManager = lazy(() => import('./pages/Academic/CourseManager'));
+const ExamManager = lazy(() => import('./pages/Academic/ExamManager'));
+const TranscriptViewer = lazy(() => import('./pages/Academic/TranscriptViewer'));
+const TimetableManager = lazy(() => import('./pages/Operations/TimetableManager'));
+const AttendanceTracker = lazy(() => import('./pages/Operations/AttendanceTracker'));
+const LibraryManager = lazy(() => import('./pages/Operations/LibraryManager'));
+const TransportManager = lazy(() => import('./pages/Operations/TransportManager'));
+const FeeManager = lazy(() => import('./pages/Finance/FeeManager'));
+const StudentLedger = lazy(() => import('./pages/Finance/StudentLedger'));
+const LeaveManager = lazy(() => import('./pages/HR/LeaveManager'));
+const PayrollDashboard = lazy(() => import('./pages/HR/PayrollDashboard'));
+const InstitutionProfile = lazy(() => import('./pages/InstitutionProfile'));
+const DataMigration = lazy(() => import('./pages/DataMigration').then((m) => ({ default: m.DataMigration })));
+const ComplianceDashboard = lazy(() => import('./pages/ComplianceDashboard').then((m) => ({ default: m.ComplianceDashboard })));
+const AuditLogs = lazy(() => import('./pages/AuditLogs').then((m) => ({ default: m.AuditLogs })));
+const PublicVerification = lazy(() => import('./pages/PublicVerification'));
+const StudentPortalLayout = lazy(() => import('./layouts/StudentPortalLayout'));
+const StudentDashboard = lazy(() => import('./pages/Portal/StudentDashboard'));
+const FeeCenter = lazy(() => import('./pages/Portal/FeeCenter'));
+const StudentFeeLedger = lazy(() => import('./pages/Portal/StudentFeeLedger'));
+const VirtualClassroom = lazy(() => import('./components/classroom/VirtualClassroom'));
+const AcademicMaterialView = lazy(() => import('./components/materials/AcademicMaterialView'));
+const ProfileRedirect = lazy(() => import('./components/ProfileRedirect').then((m) => ({ default: m.ProfileRedirect })));
+
+const RouteFallback = () => (
+  <div className="flex min-h-screen items-center justify-center bg-white">
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-enterprise-navy border-t-transparent" />
+  </div>
+);
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   state = { hasError: false };
@@ -159,12 +174,20 @@ function App() {
         <Router>
           <VideoProvider>
             <GlobalSearch />
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
             <Route path="/login" element={
               <PublicOnlyRoute>
                 <Login />
               </PublicOnlyRoute>
             } />
+            <Route path="/sign-in" element={<Navigate to="/login" replace />} />
+            <Route path="/start-trial" element={<OnboardingFlow />} />
+            <Route path="/platform" element={<PlatformPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/security" element={<SecurityPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/desktop" element={<DesktopPage />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/register" element={<RegisterInstitution />} />
@@ -218,6 +241,7 @@ function App() {
               <Route path="finance/fees" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FINANCE', 'FINANCE_MANAGER']}><FeeManager /></RoleProtectedRoute>} />
               <Route path="finance/structures" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FINANCE', 'FINANCE_MANAGER']}><FeeManager /></RoleProtectedRoute>} />
               <Route path="finance/ledger" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FINANCE', 'FINANCE_MANAGER']}><StudentLedger /></RoleProtectedRoute>} />
+              <Route path="fees/ledger" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FINANCE', 'FINANCE_MANAGER']}><StudentLedger /></RoleProtectedRoute>} />
               <Route path="hr/leaves" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'HR_MANAGER']}><LeaveManager /></RoleProtectedRoute>} />
               <Route path="hr/payroll" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FINANCE', 'HR_MANAGER']}><PayrollDashboard /></RoleProtectedRoute>} />
               <Route path="institutions" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><InstitutionsList /></RoleProtectedRoute>} />
@@ -228,9 +252,14 @@ function App() {
               <Route path="audit-logs" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><AuditLogs /></RoleProtectedRoute>} />
               <Route path="campuses" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN']}><CampusesList /></RoleProtectedRoute>} />
               <Route path="admissions" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><Admissions /></RoleProtectedRoute>} />
+              <Route path="admissions/enroll" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><EnrollStudent /></RoleProtectedRoute>} />
+              <Route path="enroll" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><EnrollStudent /></RoleProtectedRoute>} />
+              <Route path="attendance/oversight" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'PARENT']}><Attendance /></RoleProtectedRoute>} />
               <Route path="academics" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}><Academics /></RoleProtectedRoute>} />
+              <Route path="academic/courses" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY']}><CourseManager /></RoleProtectedRoute>} />
               <Route path="academic/exams" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ACADEMIC_ADMIN', 'FACULTY']}><ExamManager /></RoleProtectedRoute>} />
               <Route path="academic/transcripts" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ACADEMIC_ADMIN', 'FACULTY', 'STUDENT']}><TranscriptViewer /></RoleProtectedRoute>} />
+              <Route path="transcripts" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'ACADEMIC_ADMIN', 'FACULTY', 'STUDENT']}><TranscriptViewer /></RoleProtectedRoute>} />
               <Route path="academic/classroom" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE']}><VirtualClassroom /></RoleProtectedRoute>} />
               <Route path="classroom" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE']}><VirtualClassroom /></RoleProtectedRoute>} />
               <Route path="academic/materials" element={<RoleProtectedRoute allowedRoles={['SUPER_ADMIN', 'ADMIN', 'FACULTY', 'STUDENT', 'PARENT', 'FINANCE']}><AcademicMaterialView /></RoleProtectedRoute>} />
@@ -305,6 +334,7 @@ function App() {
             <Route path="/www" element={<LandingPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </VideoProvider>
         </Router>
         <Toaster position="top-right" richColors />

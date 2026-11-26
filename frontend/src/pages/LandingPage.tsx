@@ -1,772 +1,757 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
-import { Button } from '../components/ui/button';
-import { Pricing } from '../components/marketing/Pricing';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
-  Menu,
-  X,
-  UserCheck,
-  ShieldCheck,
-  CheckCircle2,
+  Check,
+  ChevronDown,
+  ChevronRight,
   GraduationCap,
-  Receipt,
-  CalendarCheck,
-  Award,
-  Users,
+  BookOpen,
+  IndianRupee,
+  ClipboardCheck,
   Building2,
-  QrCode,
-  Printer,
-  Download,
+  Shield,
+  Database,
   Globe,
+  Smartphone,
+  BarChart3,
 } from 'lucide-react';
+import MarketingLayout from '../components/marketing/MarketingLayout';
+import ScreenshotFrame from '../components/marketing/ScreenshotFrame';
 
-type ShowcaseTab = 'overview' | 'transcript' | 'finance' | 'attendance';
+/* ─── Data ────────────────────────────────────────────────────────── */
 
-const SHOWCASE_TABS: { id: ShowcaseTab; label: string; route: string }[] = [
-  { id: 'overview', label: 'NAAC & Executive Hub', route: 'app.edupulseerp.in/dashboard/compliance' },
-  { id: 'transcript', label: 'CBCS Transcript & QR', route: 'app.edupulseerp.in/dashboard/academic/transcripts' },
-  { id: 'finance', label: 'Fee Ledger & 80mm POS', route: 'app.edupulseerp.in/dashboard/finance/ledger' },
-  { id: 'attendance', label: 'UGC 75% Attendance', route: 'app.edupulseerp.in/dashboard/attendance' },
-];
-
-const CORE_PILLARS = [
-  {
-    icon: Users,
-    title: 'Admissions & Student Lifecycle',
-    description:
-      'Public admission applications, document verification, batch enrollment, and printable student ID cards.',
-  },
+const CAPABILITIES = [
   {
     icon: GraduationCap,
-    title: 'CBCS Academics & Examinations',
-    description:
-      'Programs, course offerings, timetable allocation, 10-point CBCS grading, and SHA-256 verifiable transcripts.',
+    title: 'Student lifecycle',
+    body: 'Track every student from admission inquiry to graduation in a unified 360° profile.',
   },
   {
-    icon: Receipt,
-    title: 'INR Fee Ledgers & 80mm POS',
-    description:
-      'Custom fee structures, Razorpay online payments, itemized 80mm thermal receipts, and defaulter tracking.',
+    icon: BookOpen,
+    title: 'Academic management',
+    body: 'Configure departments, programs, credit courses, batches, and conflict-free timetables.',
   },
   {
-    icon: CalendarCheck,
-    title: 'UGC 75% Attendance & Alerts',
-    description:
-      'Section-wise live attendance registers, debarment alerts, and WhatsApp/SMS parent outbox notifications.',
+    icon: BarChart3,
+    title: 'Examinations & GPA',
+    body: 'Schedule exams, enter grades, compute CBCS GPA, and issue verified transcripts.',
   },
   {
-    icon: Award,
-    title: 'NAAC / NIRF & Audit Trail',
-    description:
-      'Live Student-Faculty Ratio, cadre distribution, CSV/print registers, and immutable system audit logs.',
+    icon: IndianRupee,
+    title: 'Finance & fees',
+    body: 'Manage INR fee structures, student ledgers, online payments, and cash/cheque receipts.',
+  },
+  {
+    icon: ClipboardCheck,
+    title: 'Attendance operations',
+    body: 'Mark section-wise attendance fast with instant oversight for department heads.',
   },
   {
     icon: Building2,
-    title: 'Multi-Tenant Cloud + Desktop',
+    title: 'Campus administration',
+    body: 'Run multi-campus nodes, library circulation, transport routes, and staff payroll.',
+  },
+] as const;
+
+const LIFECYCLE_STEPS = [
+  {
+    label: 'Admissions',
+    desc: 'Capture inquiries, review documents, and approve applications.',
+    detail: 'Public intake portals feed directly into your registrar queue with status tracking and one-click approval.',
+  },
+  {
+    label: 'Enrollment',
+    desc: 'Assign programs, batches, sections, and guardian contacts.',
+    detail: 'Approved applicants convert into active student records with auto-generated enrollment IDs and batch placement.',
+  },
+  {
+    label: 'Academics',
+    desc: 'Deliver courses, timetables, study materials, and attendance.',
+    detail: 'Faculty and registrars coordinate schedules, course catalogs, and daily section-wise attendance in one workspace.',
+  },
+  {
+    label: 'Assessment',
+    desc: 'Schedule exams, record marks, and publish official transcripts.',
+    detail: 'Run CBCS-compliant grading, verify marksheets, and share QR-verifiable academic transcripts.',
+  },
+  {
+    label: 'Finance',
+    desc: 'Generate INR invoices, collect fees, and track pending dues.',
+    detail: 'Term-wise fee structures, student ledgers, and real-time collection summaries keep finance teams aligned.',
+  },
+  {
+    label: 'Administration',
+    desc: 'Oversee library, transport, HR payroll, and audit compliance.',
+    detail: 'Centralized role-based access, audit logs, and campus operations keep every department accountable.',
+  },
+] as const;
+
+const SHOWCASE_TABS = [
+  {
+    id: 'dashboard',
+    label: 'Institution overview',
     description:
-      'PostgreSQL row-level isolation per institution, custom crest branding, and native Windows Desktop parity.',
+      'Monitor active users, departments, student strength, and admissions from one live command view.',
+    screenshot: '/screenshots/erp-dashboard.png',
+    alt: 'EduPulse Institution Dashboard showing system users, departments, total students, admissions queue, and recent enrollments',
+  },
+  {
+    id: 'students',
+    label: 'Student directory',
+    description:
+      'Filter students across departments and batches, and open complete 360° profiles in one click.',
+    screenshot: '/screenshots/erp-students.png',
+    alt: 'EduPulse Student Directory displaying enrolled students with enrollment numbers, departments, semesters, and status',
+  },
+  {
+    id: 'academics',
+    label: 'Academic catalog',
+    description:
+      'Organize degree programs, credit-bearing courses, batches, and active academic sections.',
+    screenshot: '/screenshots/erp-academics.png',
+    alt: 'EduPulse Academic Catalog showing B.Tech Computer Science and B.Sc Physics programs, courses, and batches',
+  },
+  {
+    id: 'finance',
+    label: 'Finance & billing',
+    description:
+      'Track INR fee collections, pending balances, and individual student invoices in real time.',
+    screenshot: '/screenshots/erp-finance.png',
+    alt: 'EduPulse Finance Dashboard showing ₹53,500 collected, ₹53,500 pending, and recent student fee invoices',
+  },
+  {
+    id: 'attendance',
+    label: 'Attendance',
+    description:
+      'Record section-wise attendance and give registrars instant visibility into student participation.',
+    screenshot: '/screenshots/erp-attendance.png',
+    alt: 'EduPulse Attendance Oversight screen with section selector and attendance summary',
+  },
+] as const;
+
+type ShowcaseId = (typeof SHOWCASE_TABS)[number]['id'];
+
+const PRICING_TIERS: {
+  name: string;
+  audience: string;
+  highlight?: boolean;
+  features: string[];
+}[] = [
+  {
+    name: 'Starter',
+    audience: 'For schools and single-campus institutions',
+    features: [
+      'Student directory & 360° profiles',
+      'Admissions pipeline',
+      'Academic catalog & timetables',
+      'Attendance tracking',
+      'INR fee structures & invoicing',
+      'CSV data import',
+    ],
+  },
+  {
+    name: 'Professional',
+    audience: 'For growing colleges and multi-department institutes',
+    highlight: true,
+    features: [
+      'Everything in Starter',
+      'Examinations, GPA & transcripts',
+      'Student & guardian self-service portal',
+      'Library & transport management',
+      'HR leave & payroll management',
+      'Role-based access & audit logs',
+    ],
+  },
+  {
+    name: 'Enterprise',
+    audience: 'For universities and multi-campus trusts',
+    features: [
+      'Everything in Professional',
+      'Multi-campus governance',
+      'Custom onboarding & data migration',
+      'Dedicated implementation support',
+      'Compliance & audit reporting',
+      'Custom institutional agreements',
+    ],
   },
 ];
 
+const FAQ_ITEMS = [
+  {
+    q: 'What is EduPulse?',
+    a: 'EduPulse is a multi-tenant institutional ERP built for Indian schools, colleges, and universities. It unifies student records, admissions, academics, examinations, INR fee management, attendance, HR, library, and transport into one connected platform.',
+  },
+  {
+    q: 'How long is the free trial?',
+    a: 'Every institution receives a 14-day full-featured trial. No credit card is required to start.',
+  },
+  {
+    q: 'How is pricing structured?',
+    a: 'Pricing is in INR and tailored to your institution size and modules. Contact our team for a custom institutional quote.',
+  },
+  {
+    q: 'How is institutional data isolated?',
+    a: 'Every institution operates in its own isolated tenant context backed by PostgreSQL Row-Level Security (RLS). Your data is never shared with or visible to any other institution.',
+  },
+  {
+    q: 'Can I import existing student data?',
+    a: 'Yes. EduPulse includes a bulk CSV data ingestion tool for students, faculty, departments, and fee records with pre-import validation.',
+  },
+  {
+    q: 'Does EduPulse work offline?',
+    a: 'The web application requires an internet connection. A native Windows Desktop application is currently in pre-release development.',
+  },
+  {
+    q: 'What payment methods are supported for student fees?',
+    a: 'EduPulse supports online fee collection as well as manual offline payment recording for cash and cheque transactions.',
+  },
+  {
+    q: 'How do I get started?',
+    a: 'Click "Start 14-day trial" and provide your institution name, administrator email, and password to provision your workspace.',
+  },
+] as const;
+
+/* ─── Component ───────────────────────────────────────────────────── */
+
 export default function LandingPage() {
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuthStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<ShowcaseTab>('overview');
+  const [activeShowcase, setActiveShowcase] = useState<ShowcaseId>('dashboard');
+  const [activeLifecycle, setActiveLifecycle] = useState(0);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const shouldReduceMotion = useReducedMotion();
+  const { hash } = useLocation();
 
-  const currentTabMeta = SHOWCASE_TABS.find((t) => t.id === activeTab) || SHOWCASE_TABS[0];
+  useEffect(() => {
+    if (hash) {
+      const id = hash.slice(1);
+      setTimeout(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+      }, 50);
+    }
+  }, [hash]);
 
-  const scrollToSection = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
-  };
+  const currentShowcase = SHOWCASE_TABS.find((t) => t.id === activeShowcase) || SHOWCASE_TABS[0];
+  const currentStep = LIFECYCLE_STEPS[activeLifecycle] || LIFECYCLE_STEPS[0];
+
+  const revealProps = (delay = 0) =>
+    shouldReduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 18 },
+          whileInView: { opacity: 1, y: 0 },
+          viewport: { once: true, margin: '-60px' },
+          transition: { duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] as const },
+        };
 
   return (
-    <div className="min-h-screen bg-white text-zinc-950 flex flex-col font-sans antialiased selection:bg-zinc-950 selection:text-white">
-      {/* 1. Clean Top Navigation */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-zinc-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2.5">
-              <img
-                src="/logo.jpg"
-                alt="EduPulse Logo"
-                className="h-8 w-8 rounded-lg object-cover border border-zinc-200"
-              />
-              <span className="font-bold text-base tracking-tight text-zinc-950">EduPulse</span>
-              <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-600 border border-zinc-200">
-                ERP
-              </span>
-            </Link>
-
-            <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-zinc-600">
-              <a
-                href="#product"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection('product');
-                }}
-                className="hover:text-zinc-950 transition-colors"
+    <MarketingLayout>
+      {/* ────────────────────────── 2. HERO ───────────────────────────── */}
+      <section className="relative pt-16 sm:pt-24 pb-16 sm:pb-24 overflow-hidden">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent" />
+        <div className="relative max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <motion.div
+            className="max-w-4xl mx-auto text-center mb-12 sm:mb-16"
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[64px] font-semibold tracking-[-0.03em] leading-[1.08] text-white">
+              Run your institution with one connected system.
+            </h1>
+            <p className="mt-5 text-lg sm:text-xl xl:text-[22px] text-gray-300 leading-relaxed max-w-3xl mx-auto">
+              EduPulse brings admissions, academics, examinations, finance, and
+              campus operations into a single platform built for Indian schools
+              and colleges.
+            </p>
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to="/onboard"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-gray-950 text-base font-medium hover:bg-gray-200 transition-colors shadow-sm"
               >
-                Product
-              </a>
-              <a
-                href="#modules"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection('modules');
-                }}
-                className="hover:text-zinc-950 transition-colors"
-              >
-                Modules
-              </a>
-              <a
-                href="#pricing"
-                onClick={(e) => {
-                  e.preventDefault();
-                  scrollToSection('pricing');
-                }}
-                className="hover:text-zinc-950 transition-colors"
-              >
-                Pricing
-              </a>
-              <Link to="/verify" className="hover:text-zinc-950 transition-colors">
-                Verify Credential
+                Start 14-day trial
+                <ArrowRight className="w-4 h-4" />
               </Link>
-            </nav>
-
-            <div className="hidden md:flex items-center gap-2.5">
-              {isAuthenticated ? (
-                <Button
-                  onClick={() => navigate('/dashboard')}
-                  className="bg-zinc-950 hover:bg-zinc-800 text-white text-[13px] font-medium rounded-lg h-9 px-4"
-                >
-                  <UserCheck className="h-3.5 w-3.5 mr-1.5" />
-                  Open Workspace ({user?.role})
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate('/login')}
-                    className="text-zinc-700 hover:text-zinc-950 text-[13px] font-medium h-9 px-3.5"
-                  >
-                    Sign in
-                  </Button>
-                  <Button
-                    onClick={() => navigate('/onboard')}
-                    className="bg-zinc-950 hover:bg-zinc-800 text-white text-[13px] font-medium rounded-lg h-9 px-4"
-                  >
-                    Start Free Trial
-                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                  </Button>
-                </>
-              )}
-            </div>
-
-            <div className="md:hidden">
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                aria-label="Toggle navigation menu"
-                className="p-2 rounded-lg text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100"
-              >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-white border-b border-zinc-200 px-4 pt-3 pb-5 space-y-3">
-            <nav className="flex flex-col space-y-1 text-sm font-medium text-zinc-700">
-              <a
-                href="#product"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMobileMenuOpen(false);
-                  scrollToSection('product');
-                }}
-                className="px-3 py-2 rounded-lg hover:bg-zinc-50"
-              >
-                Product
-              </a>
-              <a
-                href="#modules"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMobileMenuOpen(false);
-                  scrollToSection('modules');
-                }}
-                className="px-3 py-2 rounded-lg hover:bg-zinc-50"
-              >
-                Modules
-              </a>
-              <a
-                href="#pricing"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setMobileMenuOpen(false);
-                  scrollToSection('pricing');
-                }}
-                className="px-3 py-2 rounded-lg hover:bg-zinc-50"
-              >
-                Pricing
-              </a>
-              <Link to="/verify" onClick={() => setMobileMenuOpen(false)} className="px-3 py-2 rounded-lg hover:bg-zinc-50">
-                Verify Credential
-              </Link>
-            </nav>
-            <div className="pt-2 border-t border-zinc-100 flex flex-col gap-2">
-              <Button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  navigate('/onboard');
-                }}
-                className="w-full justify-center bg-zinc-950 text-white hover:bg-zinc-800 text-sm font-medium rounded-lg h-9"
-              >
-                Start Free Trial
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  navigate('/login');
-                }}
-                className="w-full justify-center border-zinc-300 text-zinc-800 hover:bg-zinc-50 text-sm font-medium rounded-lg h-9"
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-gray-800 text-white text-base font-medium border border-gray-700 hover:bg-gray-700 transition-colors"
               >
                 Sign in
-              </Button>
+                <ChevronRight className="w-4 h-4" />
+              </Link>
             </div>
-          </div>
-        )}
-      </header>
+          </motion.div>
 
-      {/* 2. Hero + Real Interactive Product Window */}
-      <section id="product" className="pt-14 pb-16 md:pt-20 md:pb-24 border-b border-zinc-200/80 bg-[#FAFAFA]">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-4">
-            Cloud SaaS &amp; Windows Desktop · Multi-Tenant Institutional ERP
-          </p>
+          {/* Hero screenshot — genuine product */}
+          <motion.div
+            className="max-w-7xl mx-auto"
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <ScreenshotFrame
+              src="/screenshots/erp-dashboard.png"
+              alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
+              url="app.edupulseerp.in/dashboard"
+              priority
+            />
+          </motion.div>
+        </div>
+      </section>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-bold tracking-tight text-zinc-950 leading-[1.06]">
-            University &amp; College ERP, built to run.
-          </h1>
+      {/* ────────────────── 3. PLATFORM INTRODUCTION ──────────────────── */}
+      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800" id="platform">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
+            <p className="text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-3">
+              Platform
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+              More than separate tools.{' '}
+              <span className="text-indigo-300">One connected platform.</span>
+            </h2>
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+              Every institutional function shares the same data foundation — no
+              more spreadsheets or disconnected modules.
+            </p>
+          </motion.div>
 
-          <p className="mt-4 text-base sm:text-lg text-zinc-600 max-w-2xl mx-auto leading-relaxed">
-            Admissions, CBCS academics, examinations, INR fee ledgers, attendance, and verifiable
-            transcripts in one isolated workspace for every institution.
-          </p>
-
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              onClick={() => navigate('/onboard')}
-              className="bg-zinc-950 hover:bg-zinc-800 text-white font-medium text-sm rounded-lg h-11 px-6 shadow-sm"
-            >
-              Start Free Trial
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/login')}
-              className="border-zinc-300 bg-white text-zinc-900 hover:bg-zinc-50 font-medium text-sm rounded-lg h-11 px-5"
-            >
-              Live ERP Sign In
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/admissions')}
-              className="text-zinc-600 hover:text-zinc-950 font-medium text-sm rounded-lg h-11 px-4"
-            >
-              Admissions Portal →
-            </Button>
+          {/* Capability cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {CAPABILITIES.map((cap, idx) => (
+              <motion.div
+                key={cap.title}
+                {...revealProps(idx * 0.05)}
+                className="group bg-gray-900/90 rounded-2xl border border-gray-800 p-7 sm:p-8 hover:border-indigo-400/50 hover:-translate-y-1 transition-all duration-200"
+              >
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/15 flex items-center justify-center mb-5 group-hover:bg-indigo-500/25 transition-colors">
+                  <cap.icon className="w-6 h-6 text-indigo-300" />
+                </div>
+                <h3 className="text-lg lg:text-xl font-semibold text-white mb-2.5">
+                  {cap.title}
+                </h3>
+                <p className="text-base text-gray-300 leading-relaxed">
+                  {cap.body}
+                </p>
+              </motion.div>
+            ))}
           </div>
         </div>
+      </section>
 
-        {/* Real Product App Frame */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-          {/* Interactive Module Switcher */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-            {SHOWCASE_TABS.map((tab) => {
-              const active = activeTab === tab.id;
+      {/* ────────────────── 4. INSTITUTIONAL LIFECYCLE ─────────────────── */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+              The complete institutional lifecycle
+            </h2>
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+              Click any stage to see how student and operational data flows
+              from first inquiry to compliance.
+            </p>
+          </motion.div>
+
+          {/* Interactive stepper */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {LIFECYCLE_STEPS.map((step, i) => {
+              const isActive = activeLifecycle === i;
               return (
                 <button
-                  key={tab.id}
+                  key={step.label}
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
-                    active
-                      ? 'bg-zinc-950 text-white border-zinc-950 shadow-sm'
-                      : 'bg-white text-zinc-600 border-zinc-200 hover:text-zinc-950 hover:border-zinc-300'
+                  onClick={() => setActiveLifecycle(i)}
+                  className={`relative text-left sm:text-center rounded-2xl border p-5 transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-gray-950 border-indigo-400/70 ring-1 ring-indigo-400/30 shadow-lg'
+                      : 'bg-gray-950/40 border-gray-800 hover:border-gray-700 hover:bg-gray-950/70'
                   }`}
                 >
-                  {tab.label}
+                  <div
+                    className={`w-11 h-11 sm:mx-auto rounded-full flex items-center justify-center text-base font-semibold mb-3 transition-colors ${
+                      isActive
+                        ? 'bg-indigo-500 text-white'
+                        : 'bg-indigo-500/15 text-indigo-300 border border-indigo-400/30'
+                    }`}
+                  >
+                    {i + 1}
+                  </div>
+                  <h4 className="text-base lg:text-lg font-semibold text-white mb-1.5">
+                    {step.label}
+                  </h4>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    {step.desc}
+                  </p>
                 </button>
               );
             })}
           </div>
 
-          {/* Browser / Desktop Window Chrome */}
-          <div className="rounded-2xl border border-zinc-200 bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] overflow-hidden">
-            <div className="h-10 bg-zinc-100/90 border-b border-zinc-200 px-4 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
-                <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
-                <span className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
-              </div>
-              <div className="text-[11px] font-mono text-zinc-500 bg-white border border-zinc-200 rounded px-3 py-0.5 truncate max-w-md">
-                https://{currentTabMeta.route}
+          {/* Active stage detail bar */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep.label}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="mt-8 max-w-4xl mx-auto rounded-2xl border border-gray-800 bg-gray-950/80 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+            >
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-300 mb-1">
+                  Stage {activeLifecycle + 1} · {currentStep.label}
+                </p>
+                <p className="text-base text-gray-200 leading-relaxed">
+                  {currentStep.detail}
+                </p>
               </div>
               <Link
-                to="/login"
-                className="text-[11px] font-medium text-zinc-700 hover:text-zinc-950 hidden sm:inline"
+                to="/platform"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded-lg shrink-0 transition-colors"
               >
-                Open Live App →
+                Explore modules
+                <ArrowRight className="w-4 h-4" />
               </Link>
-            </div>
-
-            {/* Real Workspace Shell Preview */}
-            <div className="grid grid-cols-1 md:grid-cols-12 min-h-[430px] text-left">
-              {/* Left Sidebar (Mirrors Layout.tsx) */}
-              <aside className="hidden md:flex md:col-span-3 border-r border-zinc-200 bg-white p-4 flex-col justify-between">
-                <div className="space-y-5">
-                  <div className="flex items-center gap-2.5 pb-3 border-b border-zinc-100">
-                    <img src="/logo.jpg" alt="Institution" className="w-8 h-8 rounded-lg border border-zinc-200" />
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-zinc-900 truncate">Central University</div>
-                      <div className="text-[10px] font-mono text-zinc-500 uppercase">MAIN CAMPUS · 101</div>
-                    </div>
-                  </div>
-                  <div className="space-y-1 text-xs">
-                    <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                      Workspace
-                    </div>
-                    {[
-                      ['overview', 'NAAC / NIRF Compliance'],
-                      ['transcript', 'Transcripts & GPA'],
-                      ['finance', 'Student Fee Ledger'],
-                      ['attendance', 'Attendance Oversight'],
-                    ].map(([id, label]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setActiveTab(id as ShowcaseTab)}
-                        className={`w-full text-left px-2.5 py-2 rounded-md transition-colors cursor-pointer ${
-                          activeTab === id
-                            ? 'bg-zinc-900 text-white font-semibold'
-                            : 'text-zinc-600 hover:bg-zinc-100'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-zinc-100 flex items-center gap-2 text-xs text-zinc-500">
-                  <div className="w-6 h-6 rounded-full bg-zinc-200 flex items-center justify-center font-bold text-zinc-700 text-[10px]">
-                    A
-                  </div>
-                  <span className="font-medium text-zinc-700">superadmin</span>
-                </div>
-              </aside>
-
-              {/* Main View Area */}
-              <div className="md:col-span-9 bg-slate-50/70 p-5 sm:p-6">
-                {activeTab === 'overview' && (
-                  <div className="space-y-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-700">
-                          Statutory Accreditation &amp; Rankings Engine
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-900">
-                          NAAC &amp; NIRF Institutional Quality Hub
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-md bg-white border border-slate-200 text-slate-700">
-                          <Download className="w-3.5 h-3.5" /> Export SSR CSV
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1.5 rounded-md bg-slate-900 text-white">
-                          <Printer className="w-3.5 h-3.5" /> Print Report
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                      {[
-                        ['Student-Faculty Ratio', '14.2 : 1', 'AICTE Compliant (≤ 15:1)', 'text-emerald-600'],
-                        ['Projected NIRF Score', '84.3 / 100', 'Band: Rank 51–100', 'text-blue-600'],
-                        ['Gender Diversity', '42.5%', 'Female Enrollment Ratio', 'text-slate-600'],
-                        ['Fee Collection', '₹1,42,80,000', '91.4% Settled This Term', 'text-emerald-600'],
-                      ].map(([label, val, sub, cls]) => (
-                        <div key={label} className="bg-white border border-slate-200 rounded-xl p-3.5">
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                            {label}
-                          </div>
-                          <div className="text-xl font-bold text-slate-900 mt-1">{val}</div>
-                          <div className={`text-[10px] font-medium mt-1 ${cls}`}>{sub}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="bg-white border border-slate-200 rounded-xl p-4">
-                      <div className="text-xs font-bold text-slate-800 mb-3">
-                        Department-Wise University Exam Pass Percentages
-                      </div>
-                      <div className="space-y-2.5 text-xs">
-                        {[
-                          ['Computer Science & Engineering', '96.4%', 'w-[96%]'],
-                          ['Information Technology', '94.1%', 'w-[94%]'],
-                          ['Electronics & Communication', '92.8%', 'w-[93%]'],
-                        ].map(([dept, pct, w]) => (
-                          <div key={dept} className="space-y-1">
-                            <div className="flex justify-between font-medium text-slate-700">
-                              <span>{dept}</span>
-                              <span className="font-mono font-bold text-emerald-700">{pct}</span>
-                            </div>
-                            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                              <div className={`h-full bg-emerald-600 rounded-full ${w}`} />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'transcript' && (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900">Official University Transcript</h3>
-                        <p className="text-xs text-slate-500">
-                          10-Point UGC CBCS Scale · Cryptographic SHA-256 Verification
-                        </p>
-                      </div>
-                      <Link
-                        to="/verify"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
-                      >
-                        <QrCode className="w-3.5 h-3.5" /> Try Live /verify
-                      </Link>
-                    </div>
-
-                    <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-4">
-                      <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-slate-200">
-                        <div>
-                          <div className="text-xs font-bold uppercase tracking-wide text-slate-900">
-                            Aarav Sharma · PRN: 23CSM001
-                          </div>
-                          <div className="text-[11px] text-slate-500">
-                            B.Tech Computer Science &amp; Engineering (2024–2028)
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[10px] uppercase font-semibold text-slate-500">Cumulative CGPA</div>
-                          <div className="text-xl font-black text-slate-900">9.25 / 10.00</div>
-                        </div>
-                      </div>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
-                            <tr>
-                              <th className="text-left py-2 px-3 font-semibold">Code</th>
-                              <th className="text-left py-2 px-3 font-semibold">Course Title</th>
-                              <th className="text-right py-2 px-3 font-semibold">Credits</th>
-                              <th className="text-right py-2 px-3 font-semibold">Marks</th>
-                              <th className="text-right py-2 px-3 font-semibold">Grade</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {[
-                              ['CS301', 'Advanced Distributed Systems', '4', '88 / 100', 'A+ (9.0)'],
-                              ['CS302', 'Database Internals & Optimization', '4', '92 / 100', 'O (10.0)'],
-                              ['CS303', 'Operating Systems Architecture', '4', '86 / 100', 'A (8.5)'],
-                            ].map(([code, title, cr, marks, grade]) => (
-                              <tr key={code}>
-                                <td className="py-2 px-3 font-mono font-semibold text-slate-900">{code}</td>
-                                <td className="py-2 px-3 text-slate-700">{title}</td>
-                                <td className="py-2 px-3 text-right">{cr}</td>
-                                <td className="py-2 px-3 text-right font-mono">{marks}</td>
-                                <td className="py-2 px-3 text-right font-bold text-emerald-700">{grade}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      <div className="pt-2 border-t border-dashed border-slate-200 flex items-center justify-between text-[11px] text-slate-500">
-                        <span className="font-mono">SEAL: EDP-VRF-23CSM001-8594641E</span>
-                        <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                          <ShieldCheck className="w-3.5 h-3.5" /> Tamper-Evident Ledger
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'finance' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-                    <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-bold text-slate-900">Student Fee Ledger (INR)</h3>
-                        <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
-                          RAZORPAY SYNCED
-                        </span>
-                      </div>
-                      <div className="divide-y divide-slate-100 text-xs">
-                        {[
-                          ['INV-2026-1042', 'Semester V Tuition & Lab', '₹68,500.00', 'PAID'],
-                          ['INV-2026-1088', 'Hostel & Mess Term Fee', '₹32,000.00', 'PAID'],
-                          ['INV-2026-1120', 'University Exam Registration', '₹3,500.00', 'PENDING'],
-                        ].map(([inv, desc, amt, status]) => (
-                          <div key={inv} className="py-2.5 flex items-center justify-between gap-2">
-                            <div>
-                              <div className="font-mono font-semibold text-slate-900">{inv}</div>
-                              <div className="text-[11px] text-slate-500">{desc}</div>
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-slate-900">{amt}</div>
-                              <span
-                                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                  status === 'PAID'
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : 'bg-amber-100 text-amber-800'
-                                }`}
-                              >
-                                {status}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Actual 80mm POS Thermal Receipt Preview */}
-                    <div className="lg:col-span-5 bg-white border border-slate-300 rounded-lg p-4 font-mono text-[11px] text-slate-900 shadow-sm">
-                      <div className="text-center border-b border-dashed border-slate-400 pb-2">
-                        <div className="font-bold uppercase">CENTRAL UNIVERSITY SYSTEM</div>
-                        <div className="text-[9px] text-slate-500">80mm Cashier Fee Voucher</div>
-                      </div>
-                      <div className="py-2 space-y-1 border-b border-dashed border-slate-400 text-[10px]">
-                        <div className="flex justify-between">
-                          <span>Receipt #:</span>
-                          <span className="font-bold">INV-2026-1042</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Student:</span>
-                          <span>Aarav Sharma (23CSM001)</span>
-                        </div>
-                      </div>
-                      <div className="py-2 space-y-1 border-b border-slate-900 text-[10px]">
-                        <div className="flex justify-between">
-                          <span>Academic Tuition Fee</span>
-                          <span>51,375.00</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Exam &amp; Lab Cess</span>
-                          <span>17,125.00</span>
-                        </div>
-                      </div>
-                      <div className="pt-2 flex justify-between font-bold text-xs">
-                        <span>TOTAL PAID (INR):</span>
-                        <span>₹68,500.00</span>
-                      </div>
-                      <div className="mt-2 text-[9px] text-emerald-700 font-bold text-center">
-                        ✓ PAYMENT CLEARED &amp; AUDITED
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'attendance' && (
-                  <div className="space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-900">
-                          UGC 75% Attendance Oversight
-                        </h3>
-                        <p className="text-xs text-slate-500">
-                          CS301 · Section A · Automatic parent absence alerts via WhatsApp &amp; SMS
-                        </p>
-                      </div>
-                      <span className="text-[11px] font-semibold px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        Minimum Threshold: 75%
-                      </span>
-                    </div>
-
-                    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                      <table className="w-full text-xs">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
-                          <tr>
-                            <th className="text-left py-2.5 px-4 font-semibold">Enrollment</th>
-                            <th className="text-left py-2.5 px-4 font-semibold">Student</th>
-                            <th className="text-right py-2.5 px-4 font-semibold">Cumulative</th>
-                            <th className="text-right py-2.5 px-4 font-semibold">UGC Standing</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {[
-                            ['23CSM001', 'Aarav Sharma', '92.0%', 'Cleared', 'bg-emerald-100 text-emerald-800'],
-                            ['23CSM014', 'Priya Nair', '81.5%', 'Cleared', 'bg-emerald-100 text-emerald-800'],
-                            ['23CSM029', 'Rohan Verma', '68.0%', 'Debarment Risk', 'bg-rose-100 text-rose-800'],
-                          ].map(([id, name, pct, status, badge]) => (
-                            <tr key={id}>
-                              <td className="py-2.5 px-4 font-mono font-semibold">{id}</td>
-                              <td className="py-2.5 px-4 text-slate-800">{name}</td>
-                              <td className="py-2.5 px-4 text-right font-mono font-bold">{pct}</td>
-                              <td className="py-2.5 px-4 text-right">
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}`}>
-                                  {status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
       </section>
 
-      {/* 3. Major ERP Capabilities (Crisp 6-Tile Grid) */}
-      <section id="modules" className="py-16 md:py-24 bg-white border-b border-zinc-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl mb-12">
-            <div className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-2">
-              Core ERP Modules
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-zinc-950">
-              Everything required to run an institution.
-            </h2>
-            <p className="mt-3 text-base text-zinc-600">
-              Built around Indian and international higher-education workflows—with zero bolted-on tools.
+      {/* ─────────────────── 5. PRODUCT SHOWCASE ──────────────────────── */}
+      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-10">
+            <p className="text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-3">
+              Product
             </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+              See the work behind the interface.
+            </h2>
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+              Real screens captured from the live EduPulse application — switch
+              modules below to inspect each workspace.
+            </p>
+          </motion.div>
+
+          {/* Tabs */}
+          <div className="flex flex-wrap justify-center gap-2.5 mb-8" role="tablist">
+            {SHOWCASE_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={activeShowcase === tab.id}
+                onClick={() => setActiveShowcase(tab.id)}
+                className={`px-5 py-2.5 rounded-lg text-sm lg:text-base font-medium transition-all cursor-pointer ${
+                  activeShowcase === tab.id
+                    ? 'bg-white text-gray-950 shadow-sm'
+                    : 'bg-gray-900 text-gray-300 border border-gray-700 hover:text-white hover:border-gray-500'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {CORE_PILLARS.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div
-                  key={item.title}
-                  className="p-6 rounded-xl border border-zinc-200 bg-white hover:border-zinc-300 transition-colors"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-zinc-100 border border-zinc-200 flex items-center justify-center text-zinc-900 mb-4">
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <h3 className="text-base font-semibold text-zinc-950">{item.title}</h3>
-                  <p className="mt-2 text-sm text-zinc-600 leading-relaxed">{item.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Pricing */}
-      <section id="pricing" className="py-16 md:py-24 bg-[#FAFAFA] border-b border-zinc-200/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Pricing />
-        </div>
-      </section>
-
-      {/* 5. Direct Enterprise CTA */}
-      <section className="py-16 md:py-20 bg-zinc-950 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-            Launch your campus workspace today.
-          </h2>
-          <p className="mt-3 text-sm sm:text-base text-zinc-400 max-w-xl mx-auto">
-            Create an isolated tenant workspace in minutes, upload your institution crest, and invite your
-            staff and students.
-          </p>
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-            <Button
-              onClick={() => navigate('/onboard')}
-              className="bg-white text-zinc-950 hover:bg-zinc-100 font-semibold text-sm rounded-lg h-11 px-6"
-            >
-              Start Free Trial
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/register')}
-              className="border-zinc-700 text-zinc-200 hover:bg-zinc-900 hover:text-white font-medium text-sm rounded-lg h-11 px-5 bg-transparent"
-            >
-              Register Institution
-            </Button>
-          </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-zinc-400">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> PostgreSQL RLS Isolation
-            </span>
-            <span className="flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> SHA-256 Transcript Verification
-            </span>
+          {/* Active screenshot with smooth crossfade */}
+          <div className="max-w-7xl mx-auto">
+            <p className="text-center text-base lg:text-lg text-gray-300 mb-6 max-w-2xl mx-auto">
+              {currentShowcase.description}
+            </p>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentShowcase.id}
+                initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.99 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.99 }}
+                transition={{ duration: 0.25 }}
+              >
+                <ScreenshotFrame
+                  src={currentShowcase.screenshot}
+                  alt={currentShowcase.alt}
+                  url={`app.edupulseerp.in/${currentShowcase.id === 'dashboard' ? 'dashboard' : `dashboard/${currentShowcase.id}`}`}
+                />
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </section>
 
-      {/* 6. Clean Footer */}
-      <footer className="bg-white border-t border-zinc-200 py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 pb-8 border-b border-zinc-200/80">
-            <div className="col-span-2 md:col-span-1 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <img src="/logo.jpg" alt="EduPulse" className="w-7 h-7 rounded-md border border-zinc-200" />
-                <span className="font-bold text-sm text-zinc-950">EduPulse ERP</span>
-              </div>
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                Multi-tenant institutional ERP for universities and colleges.
+      {/* ────────────── 6. ROLE-BASED EXPERIENCE (SPLIT) ─────────────── */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+              Built for every role in your institution
+            </h2>
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+              Each user sees exactly what they need — from the registrar&apos;s
+              admissions pipeline to a student&apos;s fee ledger.
+            </p>
+          </motion.div>
+
+          {/* Management view */}
+          <motion.div {...revealProps()} className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center mb-24">
+            <div className="lg:col-span-5 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-300 mb-4">
+                Management & Registrar
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-4">
+                Complete institutional visibility
+              </h3>
+              <p className="text-base lg:text-lg text-gray-300 leading-relaxed mb-5">
+                See system-wide KPIs, departmental breakdowns, enrollment
+                trends, and user activity — all from a single dashboard.
               </p>
-            </div>
-
-            <div>
-              <div className="text-xs font-semibold text-zinc-950 uppercase tracking-wider mb-3">Product</div>
-              <ul className="space-y-2 text-xs text-zinc-600">
-                <li><a href="#product" onClick={(e) => { e.preventDefault(); scrollToSection('product'); }} className="hover:text-zinc-950">Interactive Preview</a></li>
-                <li><a href="#modules" onClick={(e) => { e.preventDefault(); scrollToSection('modules'); }} className="hover:text-zinc-950">Core Modules</a></li>
-                <li><a href="#pricing" onClick={(e) => { e.preventDefault(); scrollToSection('pricing'); }} className="hover:text-zinc-950">Pricing</a></li>
+              <ul className="space-y-3">
+                {['Real-time enrollment and admissions metrics', 'Cross-department student directory', 'System access and audit logs', 'Multi-campus node management'].map(
+                  (item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-base text-gray-300">
+                      <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      {item}
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
+            <div className="lg:col-span-7 min-w-0">
+              <ScreenshotFrame
+                src="/screenshots/erp-student-profile.png"
+                alt="Student 360° profile showing personal information, academic placement, guardians, and document actions"
+                url="app.edupulseerp.in/dashboard/students/1"
+              />
+            </div>
+          </motion.div>
 
-            <div>
-              <div className="text-xs font-semibold text-zinc-950 uppercase tracking-wider mb-3">Portals</div>
-              <ul className="space-y-2 text-xs text-zinc-600">
-                <li><Link to="/login" className="hover:text-zinc-950">ERP Sign In</Link></li>
-                <li><Link to="/admissions" className="hover:text-zinc-950">Public Admissions</Link></li>
-                <li><Link to="/register" className="hover:text-zinc-950">Register Institution</Link></li>
-                <li><Link to="/onboard" className="hover:text-zinc-950">Workspace Onboarding</Link></li>
+          {/* Faculty view */}
+          <motion.div {...revealProps()} className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+            <div className="lg:col-span-7 order-2 lg:order-1 min-w-0">
+              <ScreenshotFrame
+                src="/screenshots/erp-exams.png"
+                alt="Faculty examination center showing exam scheduling form, grade entry toggle, and scheduled examinations table"
+                url="app.edupulseerp.in/dashboard/academic/exams"
+              />
+            </div>
+            <div className="lg:col-span-5 order-1 lg:order-2 min-w-0">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 mb-4">
+                Faculty
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-4">
+                Focused academic tools
+              </h3>
+              <p className="text-base lg:text-lg text-gray-300 leading-relaxed mb-5">
+                Faculty get a streamlined view of their sections, course
+                materials, attendance tracking, and exams — without clutter.
+              </p>
+              <ul className="space-y-3">
+                {['Exam scheduling and grade entry', 'Section-wise attendance recording', 'Course material management', 'Timetable and schedule view'].map(
+                  (item) => (
+                    <li key={item} className="flex items-start gap-2.5 text-base text-gray-300">
+                      <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      {item}
+                    </li>
+                  ),
+                )}
               </ul>
             </div>
+          </motion.div>
+        </div>
+      </section>
 
-            <div>
-              <div className="text-xs font-semibold text-zinc-950 uppercase tracking-wider mb-3">Trust</div>
-              <ul className="space-y-2 text-xs text-zinc-600">
-                <li>
-                  <Link to="/verify" className="hover:text-zinc-950 inline-flex items-center gap-1">
-                    <Globe className="w-3 h-3" /> Verify Credential
-                  </Link>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-zinc-500">
-            <span>&copy; {new Date().getFullYear()} EduPulse ERP Technologies.</span>
-            <span>edupulseerp.in · Cloud SaaS &amp; Desktop Edition</span>
+      {/* ─────────────── 7. TRUST & ARCHITECTURE ──────────────────────── */}
+      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+              Built for institutional trust
+            </h2>
+          </motion.div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: Shield,
+                title: 'Tenant isolation',
+                body: 'Every institution runs in its own PostgreSQL RLS boundary — data is never shared across tenants.',
+              },
+              {
+                icon: Database,
+                title: 'Your data, your control',
+                body: 'Export students, fees, and academic records anytime with zero proprietary lock-in.',
+              },
+              {
+                icon: Globe,
+                title: 'Built for India',
+                body: 'INR fee ledgers, UGC-compliant CBCS grading, and NAAC/NIRF reporting workflows.',
+              },
+              {
+                icon: Smartphone,
+                title: 'Web & desktop',
+                body: 'Access from any browser today. Windows Desktop client is currently in pre-release.',
+              },
+            ].map((item, idx) => (
+              <motion.div
+                key={item.title}
+                {...revealProps(idx * 0.05)}
+                className="bg-gray-900/90 rounded-2xl border border-gray-800 p-7 hover:border-gray-700 transition-colors"
+              >
+                <div className="w-11 h-11 rounded-xl bg-indigo-500/15 flex items-center justify-center mb-4">
+                  <item.icon className="w-5 h-5 text-indigo-300" />
+                </div>
+                <h3 className="text-lg font-semibold text-white mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-base text-gray-300 leading-relaxed">
+                  {item.body}
+                </p>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </footer>
-    </div>
+      </section>
+
+      {/* ─────────────────────── 8. PRICING ───────────────────────────── */}
+      <section className="py-20 sm:py-28" id="pricing">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
+            <p className="text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-3">
+              Pricing
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+              Transparent institutional pricing
+            </h2>
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+              Every plan starts with a 14-day full-featured trial. No credit
+              card required. Pricing is in INR and tailored to your institution.
+            </p>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {PRICING_TIERS.map((tier, idx) => (
+              <motion.div
+                key={tier.name}
+                {...revealProps(idx * 0.06)}
+                className={`rounded-2xl border p-7 sm:p-8 flex flex-col transition-all duration-200 hover:-translate-y-1 ${
+                  tier.highlight
+                    ? 'border-indigo-400/70 bg-gray-950 shadow-lg ring-1 ring-indigo-400/20'
+                    : 'border-gray-800 bg-gray-950/60 hover:border-gray-700'
+                }`}
+              >
+                {tier.highlight && (
+                  <span className="inline-flex self-start items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-indigo-500 text-white mb-3">
+                    Most popular
+                  </span>
+                )}
+                <h3 className="text-xl font-semibold text-white">
+                  {tier.name}
+                </h3>
+                <p className="text-base text-gray-300 mt-1.5 mb-6">
+                  {tier.audience}
+                </p>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {tier.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-base text-gray-300">
+                      <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to="/onboard"
+                  className={`block w-full text-center px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                    tier.highlight
+                      ? 'bg-white text-gray-950 hover:bg-gray-200'
+                      : 'bg-gray-800 text-gray-100 border border-gray-700 hover:bg-gray-700'
+                  }`}
+                >
+                  Start 14-day trial
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+
+          <p className="text-center text-base text-gray-300 mt-8">
+            Need custom pricing for your institution?{' '}
+            <a
+              href="mailto:contact@edupulseerp.in"
+              className="text-indigo-300 font-medium hover:underline"
+            >
+              Contact us
+            </a>
+          </p>
+        </div>
+      </section>
+
+      {/* ──────────────────────── 9. FAQ ──────────────────────────────── */}
+      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800" id="faq">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <div className="max-w-3xl mx-auto text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+              Frequently asked questions
+            </h2>
+          </div>
+
+          <div className="max-w-3xl mx-auto divide-y divide-gray-800">
+            {FAQ_ITEMS.map((item, i) => (
+              <div key={i} className="py-5">
+                <button
+                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                  className="flex items-center justify-between w-full text-left cursor-pointer group"
+                  aria-expanded={openFaq === i}
+                >
+                  <span className="text-lg font-medium text-gray-100 group-hover:text-indigo-300 transition-colors pr-4">
+                    {item.q}
+                  </span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-400 shrink-0 transition-transform duration-200 ${
+                      openFaq === i ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                <AnimatePresence initial={false}>
+                  {openFaq === i && (
+                    <motion.p
+                      initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={shouldReduceMotion ? undefined : { opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden mt-3 text-base text-gray-300 leading-relaxed"
+                    >
+                      {item.a}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────────── 10. FINAL CTA ───────────────────────────── */}
+      <section className="py-20 sm:py-28">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 text-center">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-4">
+            Bring your institution&apos;s operations together.
+          </h2>
+          <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto mb-8">
+            Start a 14-day trial and see how EduPulse replaces disconnected
+            tools with one integrated platform.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              to="/onboard"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-gray-950 text-base font-medium hover:bg-gray-200 transition-colors shadow-sm"
+            >
+              Start 14-day trial
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-gray-800 text-white text-base font-medium border border-gray-700 hover:bg-gray-700 transition-colors"
+            >
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </section>
+    </MarketingLayout>
   );
 }

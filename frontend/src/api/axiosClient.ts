@@ -196,6 +196,14 @@ axiosClient.interceptors.request.use(
       } else {
         // Fallback for non-Tauri web development environment
         token = localStorage.getItem('auth_token');
+        if (!token) {
+          try {
+            const persisted = JSON.parse(localStorage.getItem('auth-storage') || 'null');
+            token = persisted?.state?.token || null;
+          } catch {
+            token = null;
+          }
+        }
       }
 
       if (config.headers) {
@@ -279,6 +287,14 @@ axiosClient.interceptors.response.use(
           refreshToken = tokens?.refresh_token || null;
         } else {
           refreshToken = localStorage.getItem('refresh_token');
+          if (!refreshToken) {
+            try {
+              const persisted = JSON.parse(localStorage.getItem('auth-storage') || 'null');
+              refreshToken = persisted?.state?.refreshToken || null;
+            } catch {
+              refreshToken = null;
+            }
+          }
         }
 
         if (!refreshToken) {

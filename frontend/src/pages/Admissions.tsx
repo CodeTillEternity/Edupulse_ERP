@@ -24,6 +24,8 @@ import { formatProgramLabel } from '../lib/academicUtils';
 import { NewApplicationDialog } from '../components/NewApplicationDialog';
 import { OnboardStudentDialog } from '../components/OnboardStudentDialog';
 import type { AdmissionApplication } from '../hooks/queries/useAdmissions';
+import { PageFrame } from '../components/ui/PageFrame';
+import { StatusBadge } from '../components/ui/StatusBadge';
 import {
   Dialog,
   DialogContent,
@@ -47,8 +49,8 @@ export default function Admissions() {
     }
   }, [queryTab]);
 
-  const { data: applicants, isLoading: isLoadingInquiries } = useApplicants();
-  const { data: applications, isLoading: isLoadingApplications } = useApplications();
+  const { data: applicants, isLoading: isLoadingInquiries, isError: isErrorInquiries } = useApplicants();
+  const { data: applications, isLoading: isLoadingApplications, isError: isErrorApplications } = useApplications();
   const { data: programs = [] } = usePrograms();
 
   const getApplicantName = (applicantId: number) => {
@@ -187,6 +189,7 @@ export default function Admissions() {
   const getTableContent = () => {
     if (activeTab === 'inquiries') {
       if (isLoadingInquiries) return <SkeletonTable />;
+      if (isErrorInquiries) return <ErrorState />;
       if (!filteredApplicants || filteredApplicants.length === 0) return <EmptyState tab="Inquiries" />;
       return filteredApplicants.map(app => (
         <TableRow key={app.id}>
@@ -194,7 +197,7 @@ export default function Admissions() {
           <TableCell className="text-slate-600 px-6 py-4">{app.email}</TableCell>
           <TableCell className="text-slate-600 px-6 py-4">{app.phone}</TableCell>
           <TableCell className="text-slate-600 px-6 py-4">{app.inquiryDate ? new Date(app.inquiryDate).toLocaleDateString() : 'N/A'}</TableCell>
-          <TableCell className="px-6 py-4"><span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">INQUIRY</span></TableCell>
+          <TableCell className="px-6 py-4"><StatusBadge status="INQUIRY" /></TableCell>
           <TableCell className="text-right px-6 py-4">
             <span className="text-xs text-slate-400">ID #{app.id}</span>
           </TableCell>
@@ -204,6 +207,7 @@ export default function Admissions() {
 
     if (activeTab === 'applications') {
       if (isLoadingApplications) return <SkeletonTable />;
+      if (isErrorApplications) return <ErrorState />;
       if (!filteredApplications || filteredApplications.length === 0) return <EmptyState tab="Applications" />;
       return filteredApplications.map(app => (
         <TableRow key={app.id}>
@@ -212,9 +216,7 @@ export default function Admissions() {
           <TableCell className="text-slate-600 px-6 py-4">{getProgramName(app.programId)}</TableCell>
           <TableCell className="text-slate-600 px-6 py-4">{app.applicationDate ? new Date(app.applicationDate).toLocaleDateString() : 'N/A'}</TableCell>
           <TableCell className="px-6 py-4">
-            <span className={`px-2 py-1 rounded text-xs font-bold ${app.status === 'DRAFT' ? 'bg-slate-100 text-slate-700' : app.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-700' : app.status === 'UNDER_REVIEW' ? 'bg-yellow-100 text-yellow-800' : 'bg-slate-100 text-slate-700'}`}>
-              {app.status}
-            </span>
+            <StatusBadge status={app.status} />
           </TableCell>
           <TableCell className="text-right px-6 py-4">
             <span className="text-xs text-slate-400">AY #{app.academicYearId}</span>
@@ -225,6 +227,7 @@ export default function Admissions() {
 
     if (activeTab === 'verification') {
       if (isLoadingApplications) return <SkeletonTable />;
+      if (isErrorApplications) return <ErrorState />;
       const verificationApps = filteredApplications?.filter(app => ['SUBMITTED', 'DOCUMENT_VERIFICATION_PENDING', 'UNDER_REVIEW'].includes(app.status));
       if (!verificationApps || verificationApps.length === 0) return <EmptyState tab="Pending Verifications" />;
 
@@ -233,9 +236,7 @@ export default function Admissions() {
           <TableCell className="font-semibold px-6 py-4">APP-{app.id}</TableCell>
           <TableCell className="text-slate-800 font-medium px-6 py-4">{getApplicantName(app.applicantId)}</TableCell>
           <TableCell className="px-6 py-4">
-            <span className={`px-2 py-1 rounded text-xs font-bold ${app.status === 'SUBMITTED' ? 'bg-blue-100 text-blue-700' : app.status === 'UNDER_REVIEW' ? 'bg-yellow-100 text-yellow-800' : 'bg-amber-100 text-amber-700'}`}>
-              {app.status}
-            </span>
+            <StatusBadge status={app.status} />
           </TableCell>
           <TableCell className="text-right px-6 py-4">
             <Button variant="outline" size="sm" onClick={() => setSelectedVerificationApp(app)}>
@@ -248,6 +249,7 @@ export default function Admissions() {
 
     if (activeTab === 'decisions') {
       if (isLoadingApplications) return <SkeletonTable />;
+      if (isErrorApplications) return <ErrorState />;
       const decisionApps = filteredApplications?.filter(app => ['UNDER_REVIEW', 'WAITLISTED'].includes(app.status));
       if (!decisionApps || decisionApps.length === 0) return <EmptyState tab="Pending Decisions" />;
 
@@ -257,9 +259,7 @@ export default function Admissions() {
           <TableCell className="text-slate-800 font-medium px-6 py-4">{getApplicantName(app.applicantId)}</TableCell>
           <TableCell className="text-slate-600 px-6 py-4">{getProgramName(app.programId)}</TableCell>
           <TableCell className="px-6 py-4">
-            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold">
-              {app.status}
-            </span>
+            <StatusBadge status={app.status} />
           </TableCell>
           <TableCell className="text-right px-6 py-4">
             <div className="flex justify-end space-x-2">
@@ -289,6 +289,7 @@ export default function Admissions() {
 
     if (activeTab === 'onboarding') {
       if (isLoadingApplications) return <SkeletonTable />;
+      if (isErrorApplications) return <ErrorState />;
       const onboardingApps = filteredApplications?.filter(app => ['ADMITTED'].includes(app.status));
       if (!onboardingApps || onboardingApps.length === 0) return <EmptyState tab="Onboarding" />;
 
@@ -298,9 +299,7 @@ export default function Admissions() {
           <TableCell className="text-slate-800 font-medium px-6 py-4">{getApplicantName(app.applicantId)}</TableCell>
           <TableCell className="text-slate-600 px-6 py-4">{getProgramName(app.programId)}</TableCell>
           <TableCell className="px-6 py-4">
-            <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">
-              {app.status}
-            </span>
+            <StatusBadge status={app.status} />
           </TableCell>
           <TableCell className="text-right px-6 py-4">
             <Button
@@ -321,23 +320,44 @@ export default function Admissions() {
     return null;
   };
 
-  const SkeletonTable = () => (
-    <>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <TableRow key={i}>
-          <TableCell className="px-6 py-4"><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell className="px-6 py-4"><Skeleton className="h-4 w-48" /></TableCell>
-          <TableCell className="px-6 py-4"><Skeleton className="h-4 w-32" /></TableCell>
-          <TableCell className="px-6 py-4"><Skeleton className="h-4 w-24" /></TableCell>
-          <TableCell className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
-        </TableRow>
-      ))}
-    </>
+  const getColumnCount = () => {
+    if (activeTab === 'verification') return 4;
+    if (activeTab === 'decisions' || activeTab === 'onboarding') return 5;
+    return 6;
+  };
+
+  const SkeletonTable = () => {
+    const colCount = getColumnCount();
+    return (
+      <>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <TableRow key={i}>
+            {Array.from({ length: colCount }).map((__, colIdx) => (
+              <TableCell key={colIdx} className="px-6 py-4">
+                <Skeleton className="h-4 w-full max-w-[140px]" />
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </>
+    );
+  };
+
+  const ErrorState = () => (
+    <TableRow>
+      <TableCell colSpan={getColumnCount()} className="h-48 text-center text-rose-600">
+        <div className="flex flex-col items-center justify-center">
+          <AlertCircle className="w-7 h-7 mb-2" />
+          <div className="font-semibold text-sm">Failed to load admissions records.</div>
+          <div className="text-xs text-slate-500 mt-1">Verify backend connectivity and refresh the view.</div>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 
   const EmptyState = ({ tab }: { tab: string }) => (
     <TableRow>
-      <TableCell colSpan={6} className="h-48 text-center text-slate-500">
+      <TableCell colSpan={getColumnCount()} className="h-48 text-center text-slate-500">
         <div className="flex flex-col items-center justify-center">
           <FileText className="w-8 h-8 text-slate-300 mb-2" />
           <div className="font-medium text-slate-900">No {tab} found.</div>
@@ -348,48 +368,57 @@ export default function Admissions() {
   );
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-1">Admissions</h1>
-          <p className="text-slate-500 text-sm">Manage new inquiries, applications, document verification, and final enrollment decisions.</p>
-        </div>
+    <PageFrame
+      title="Admissions"
+      description="Manage new inquiries, applications, document verification, and final enrollment decisions."
+      breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Admissions' }]}
+      actions={
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs h-11 px-4 rounded-xl cursor-pointer"
+            size="sm"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs h-8 cursor-pointer"
             onClick={exportAdmissionsReport}
             title="Export filtered records to CSV"
           >
-            <Download className="w-4 h-4 mr-1.5" />
+            <Download className="w-3.5 h-3.5 mr-1.5" />
             Export CSV
           </Button>
           <Button
             variant="outline"
-            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs h-11 px-4 rounded-xl cursor-pointer"
+            size="sm"
+            className="border-slate-300 text-slate-700 hover:bg-slate-50 text-xs h-8 cursor-pointer"
             onClick={() => window.print()}
             title="Print current admissions list"
           >
-            <Printer className="w-4 h-4 mr-1.5" />
+            <Printer className="w-3.5 h-3.5 mr-1.5" />
             Print
           </Button>
-          <Button 
-            className="bg-black text-white hover:bg-black/80 px-6 rounded-xl h-11"
+          <Button
+            size="sm"
+            className="bg-slate-900 text-white hover:bg-slate-800 text-xs h-8"
             onClick={() => setIsNewInquiryOpen(true)}
           >
-            <UserCheck className="w-4 h-4 mr-2" />
+            <UserCheck className="w-3.5 h-3.5 mr-1.5" />
             New Inquiry
           </Button>
         </div>
-      </div>
-
-      <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-        <div className="flex border-b border-slate-100 px-6 pt-4 space-x-8 overflow-x-auto whitespace-nowrap custom-scrollbar">
+      }
+    >
+      <div className="bg-white border border-slate-200 overflow-hidden shadow-sm">
+        <div
+          role="tablist"
+          aria-label="Admissions workflow stages"
+          className="flex border-b border-slate-200 px-6 pt-3 space-x-8 overflow-x-auto whitespace-nowrap custom-scrollbar"
+        >
           {['inquiries', 'applications', 'verification', 'decisions', 'onboarding'].map((tab) => (
             <button
               key={tab}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-4 px-2 text-sm font-semibold capitalize transition-all border-b-2 ${activeTab === tab ? 'border-black text-black' : 'border-transparent text-slate-400 hover:text-slate-700'}`}
+              className={`pb-3 px-1 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${activeTab === tab ? 'border-slate-900 text-slate-900' : 'border-transparent text-slate-400 hover:text-slate-700'}`}
             >
               {tab === 'inquiries' ? '1. Inquiries' :
                tab === 'applications' ? '2. Applications' :
@@ -552,6 +581,6 @@ export default function Admissions() {
         isOpen={isNewInquiryOpen}
         onClose={() => setIsNewInquiryOpen(false)}
       />
-    </div>
+    </PageFrame>
   );
 }

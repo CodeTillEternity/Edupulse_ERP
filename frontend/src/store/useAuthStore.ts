@@ -83,6 +83,18 @@ export const useAuthStore = create<AuthState>()(
           tenantStatus: tenantStatus || undefined,
           email: user.email,
         };
+        if (!isTauriDesktop() && typeof window !== 'undefined') {
+          if (token) {
+            localStorage.setItem('auth_token', token);
+          } else {
+            localStorage.removeItem('auth_token');
+          }
+          if (refreshToken) {
+            localStorage.setItem('refresh_token', refreshToken);
+          } else {
+            localStorage.removeItem('refresh_token');
+          }
+        }
         set({
           token,
           refreshToken,

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /portal/
+Disallow: /super-admin/
+Disallow: /saas-admin/
+Disallow: /billing/
+
+Sitemap: https://edupulseerp.in/sitemap.xml

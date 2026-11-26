@@ -48,6 +48,14 @@ export default function StudentsList() {
     return () => clearTimeout(handler);
   }, [search]);
 
+  const { data: departmentsList = [] } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ['departments-filter-list'],
+    queryFn: async () => {
+      const res = await apiClient.get('/api/v1/departments');
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
+    },
+  });
+
   const { data, isLoading, isError } = useQuery<PaginatedResponse<Student>>({
     queryKey: ['students', page, size, debouncedSearch, statusFilter, departmentFilter],
     queryFn: async () => {
@@ -128,7 +136,7 @@ export default function StudentsList() {
         <div className="flex items-center gap-2">
           <button
             onClick={exportStudentRoster}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
             title="Export filtered student roster to CSV"
           >
             <Download className="w-3.5 h-3.5 text-slate-600" />
@@ -136,7 +144,7 @@ export default function StudentsList() {
           </button>
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
             title="Print current student roster"
           >
             <Printer className="w-3.5 h-3.5 text-slate-600" />
@@ -161,6 +169,7 @@ export default function StudentsList() {
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Filter className="w-4 h-4 text-slate-400 hidden md:block" />
             <select 
+              aria-label="Filter by department"
               className="bg-white border border-slate-300 text-xs rounded px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900"
               value={departmentFilter}
               onChange={(e) => {
@@ -169,14 +178,15 @@ export default function StudentsList() {
               }}
             >
               <option value="">All Departments</option>
-              <option value="Computer Science & Engineering">Computer Science & Engineering</option>
-              <option value="Information Technology">Information Technology</option>
-              <option value="Electronics & Communication">Electronics & Communication</option>
-              <option value="Mechanical Engineering">Mechanical Engineering</option>
-              <option value="Civil Engineering">Civil Engineering</option>
+              {departmentsList.map((dept) => (
+                <option key={dept.id} value={dept.name}>
+                  {dept.name}
+                </option>
+              ))}
             </select>
 
             <select 
+              aria-label="Filter by student status"
               className="bg-white border border-slate-300 text-xs rounded px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-1 focus:ring-slate-900"
               value={statusFilter}
               onChange={(e) => {

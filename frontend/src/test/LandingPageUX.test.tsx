@@ -12,240 +12,181 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-describe('LandingPage Authentic Enterprise UX & Architecture', () => {
+describe('LandingPage Public Marketing Website', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders the authoritative enterprise hero headline and verified proof points', () => {
+  it('renders the hero headline and primary CTAs', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    // Hero Headline & Subcopy
-    expect(screen.getByText(/One platform to run your entire institution\./i)).toBeInTheDocument();
-    expect(screen.getByText(/Bring academics, student management, finance and institutional operations together in one connected platform\./i)).toBeInTheDocument();
-    expect(screen.getByText(/EduPulse SaaS V1.4 • Institutional ERP Platform/i)).toBeInTheDocument();
-    
-    // Verifiable Trust Proof Points
-    expect(screen.getByText(/Role-Based Multi-Tenancy/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/PostgreSQL Row-Level Security/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/14-Day Free Evaluation/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Zero Setup Fees/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/Run your institution with one connected system\./i)
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /EduPulse brings admissions, academics, examinations, finance, and campus operations into a single platform/i
+      )
+    ).toBeInTheDocument();
+
+    // Primary CTAs
+    const trialLinks = screen.getAllByRole('link', { name: /Start 14-day trial/i });
+    expect(trialLinks.length).toBeGreaterThan(0);
+
+    const signInLinks = screen.getAllByRole('link', { name: /Sign in/i });
+    expect(signInLinks.length).toBeGreaterThan(0);
   });
 
-  it('renders the authentic live workspace console with interactive tabs', async () => {
+  it('renders all 6 platform capability cards', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    // Inspector Header & Initial Student SIS Tab
-    expect(screen.getByText(/The EduPulse Institutional System Core/i)).toBeInTheDocument();
-    expect(screen.getByText(/EduPulse Institutional Operating System/i)).toBeInTheDocument();
-    expect(screen.getByText(/Aarav Mehta/i)).toBeInTheDocument();
-    expect(screen.getByText(/ENR-2026-0104/i)).toBeInTheDocument();
-
-    // Tab buttons: Timetable & Meet
-    const timetableTab = screen.getByRole('button', { name: /Timetable & Meet/i });
-    expect(timetableTab).toBeInTheDocument();
-    fireEvent.click(timetableTab);
-    expect(await screen.findByText(/CS-301/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Distributed Systems & Cloud Computing/i)).toBeInTheDocument();
-    expect((await screen.findAllByText(/Google Meet Ready/i)).length).toBeGreaterThan(0);
-
-    // Tab buttons: Razorpay Fees
-    const feesTab = screen.getByRole('button', { name: /Razorpay Fees/i });
-    expect(feesTab).toBeInTheDocument();
-    fireEvent.click(feesTab);
-    expect(await screen.findByText(/Recent Settled Transactions via Razorpay Gateway/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Fall 2026 Tuition & Computing Fee/i)).toBeInTheDocument();
-
-    // Tab buttons: Exams & SEB
-    const examsTab = screen.getByRole('button', { name: /Exams & SEB/i });
-    expect(examsTab).toBeInTheDocument();
-    fireEvent.click(examsTab);
-    expect(await screen.findByText(/Safe Exam Browser \(SEB 3\.x\) Active Lockdown/i)).toBeInTheDocument();
-    expect(await screen.findByText(/BrowserExamKey Handshake Verified/i)).toBeInTheDocument();
+    expect(screen.getByText('Student lifecycle')).toBeInTheDocument();
+    expect(screen.getByText('Academic management')).toBeInTheDocument();
+    expect(screen.getByText('Examinations & GPA')).toBeInTheDocument();
+    expect(screen.getByText('Finance & fees')).toBeInTheDocument();
+    expect(screen.getByText('Attendance operations')).toBeInTheDocument();
+    expect(screen.getByText('Campus administration')).toBeInTheDocument();
   });
 
-  it('renders all 6 institutional capabilities and core ERP module cards', () => {
+  it('renders the institutional lifecycle steps', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/Academics & Curriculum Planning/i)).toBeInTheDocument();
-    expect(screen.getByText(/Student Lifecycle & Admissions \(SIS\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Fee Management & Recurring Invoicing/i)).toBeInTheDocument();
-    expect(screen.getByText(/Biometric & Class Attendance/i)).toBeInTheDocument();
-    expect(screen.getByText(/Examinations & Grade Books/i)).toBeInTheDocument();
-    expect(screen.getByText(/Staff Payroll & HR Operations/i)).toBeInTheDocument();
+    expect(screen.getByText('The complete institutional lifecycle')).toBeInTheDocument();
+    expect(screen.getByText('Admissions')).toBeInTheDocument();
+    expect(screen.getByText('Enrollment')).toBeInTheDocument();
+    expect(screen.getByText('Academics')).toBeInTheDocument();
+    expect(screen.getByText('Assessment')).toBeInTheDocument();
+    expect(screen.getByText('Finance')).toBeInTheDocument();
+    expect(screen.getByText('Administration')).toBeInTheDocument();
   });
 
-  it('renders the complete 23-domain functional blueprint with interactive status and search filters', async () => {
+  it('renders the product showcase with interactive tabs', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/259-Module Functional (Blueprint|Architecture)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Complete Institutional ERP Breadth\./i)).toBeInTheDocument();
-    expect(screen.getAllByText(/V1.4 Operational/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Blueprint Roadmap/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/See the work behind the interface/i)).toBeInTheDocument();
 
-    // Filter by Roadmap Only
-    const roadmapFilterBtn = screen.getByRole('button', { name: /Roadmap Only/i });
-    expect(roadmapFilterBtn).toBeInTheDocument();
-    fireEvent.click(roadmapFilterBtn);
-    expect(await screen.findByText(/Alumni Network & Degree Conferral/i)).toBeInTheDocument();
+    // Verify tab buttons exist
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs.length).toBe(5);
 
-    // Filter by Active Only
-    const activeFilterBtn = screen.getByRole('button', { name: /Active Only/i });
-    expect(activeFilterBtn).toBeInTheDocument();
-    fireEvent.click(activeFilterBtn);
-    expect(await screen.findByText(/Degree Programs & Academic Departments/i)).toBeInTheDocument();
+    // Click Student directory tab
+    const studentTab = screen.getByRole('tab', { name: /Student directory/i });
+    fireEvent.click(studentTab);
+    expect(studentTab).toHaveAttribute('aria-selected', 'true');
+
+    // Click Finance tab
+    const financeTab = screen.getByRole('tab', { name: /Finance & billing/i });
+    fireEvent.click(financeTab);
+    expect(financeTab).toHaveAttribute('aria-selected', 'true');
   });
 
-  it('renders connected 5-step academic and administrative workflows', () => {
+  it('renders genuine screenshot images with alt text', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/How data connects across institutional departments\./i)).toBeInTheDocument();
-    expect(screen.getByText(/Admissions & Inquiry/i)).toBeInTheDocument();
-    expect(screen.getByText(/Enrollment Registry/i)).toBeInTheDocument();
-    expect(screen.getByText(/Course & Timetable/i)).toBeInTheDocument();
-    expect(screen.getByText(/Fee Voucher Issuance/i)).toBeInTheDocument();
-    expect(screen.getByText(/Exams & Transcripts/i)).toBeInTheDocument();
+    const images = screen.getAllByRole('img');
+    // Should have at least: hero screenshot, role showcase screenshots, logo images
+    expect(images.length).toBeGreaterThan(2);
+
+    // Hero screenshot references genuine product
+    const heroImg = images.find((img) =>
+      img.getAttribute('src')?.includes('/screenshots/erp-dashboard.png')
+    );
+    expect(heroImg).toBeDefined();
+    expect(heroImg?.getAttribute('alt')).toBeTruthy();
   });
 
-  it('renders campus operations coverage for library, transport, and SaaS admin', () => {
+  it('renders pricing section with 3 tiers and no invented INR amounts', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/Library Resource Circulation/i)).toBeInTheDocument();
-    expect(screen.getByText(/Campus Transport & Routes/i)).toBeInTheDocument();
-    expect(screen.getByText(/SaaS Multi-Tenant Control Plane/i)).toBeInTheDocument();
+    expect(screen.getByText('Transparent institutional pricing')).toBeInTheDocument();
+    expect(screen.getByText('Starter')).toBeInTheDocument();
+    expect(screen.getByText('Professional')).toBeInTheDocument();
+    expect(screen.getByText('Enterprise')).toBeInTheDocument();
+    expect(screen.getByText('Most popular')).toBeInTheDocument();
+
+    // No invented rupee amounts should appear
+    const container = document.body.textContent || '';
+    expect(container).not.toMatch(/₹\d+,\d+/);
   });
 
-  it('renders confirmed third-party integrations with interactive showcase tabs', async () => {
+  it('renders FAQ section with expandable questions', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    // Headline & Subcopy
-    expect(screen.getByText(/Your institution's tools\. Working together\./i)).toBeInTheDocument();
-    expect(screen.getByText(/EduPulse connects institutional workflows with the services your faculty and students already use\./i)).toBeInTheDocument();
+    expect(screen.getByText('Frequently asked questions')).toBeInTheDocument();
+    expect(screen.getByText('What is EduPulse?')).toBeInTheDocument();
+    expect(screen.getByText('How long is the free trial?')).toBeInTheDocument();
 
-    // Razorpay Integration is default active tab
-    expect(screen.getAllByText(/Razorpay Fee Collection/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Accept institutional fee payments through an integrated online payment experience\./i)).toBeInTheDocument();
-    expect(screen.getByText(/Institutional Payment Journey & Settlement Pipeline/i)).toBeInTheDocument();
-    expect(screen.getByText(/Direct Bank Settlement/i)).toBeInTheDocument();
-
-    // Switch to Google Meet Integration
-    const meetTabBtn = screen.getByRole('button', { name: /Google Meet Classrooms/i });
-    fireEvent.click(meetTabBtn);
-    expect(await screen.findByText(/Connect institutional academic schedules with online classroom experiences\./i)).toBeInTheDocument();
-    expect(await screen.findByText(/Virtual Lecture Delivery & Academic Timetable Synchronization/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Enrollment-Restricted Access/i)).toBeInTheDocument();
-
-    // Switch to Notion Integration
-    const notionTabBtn = screen.getByRole('button', { name: /Notion Course Notes/i });
-    fireEvent.click(notionTabBtn);
-    expect(await screen.findByText(/Bring academic notes and learning resources closer to the courses students study\./i)).toBeInTheDocument();
-    expect(await screen.findByText(/Curriculum Repository & Notion Workspace Linking/i)).toBeInTheDocument();
-    expect(await screen.findByText(/Rich Collaborative Canvas/i)).toBeInTheDocument();
+    // Click to expand
+    const faqBtn = screen.getByText('How long is the free trial?');
+    fireEvent.click(faqBtn);
+    expect(
+      screen.getAllByText(/14-day full-featured trial/i).length
+    ).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders verifiable multi-tenant architecture explorer with interactive layers', async () => {
+  it('renders trust and architecture section', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/How EduPulse Enforces Tenant Data Isolation/i)).toBeInTheDocument();
-    expect(screen.getByText(/Multi-Tenant Data Isolation & Security Architecture/i)).toBeInTheDocument();
-
-    // Layer 1: Identity Resolution
-    const layer1Btn = screen.getByRole('button', { name: /1\. Identity Resolution/i });
-    fireEvent.click(layer1Btn);
-    expect(await screen.findByText(/com\.erp\.multitenancy\.TenantFilter\.java/i)).toBeInTheDocument();
-
-    // Layer 2: Thread Confinement
-    const layer2Btn = screen.getByRole('button', { name: /2\. Thread Confinement/i });
-    fireEvent.click(layer2Btn);
-    expect(await screen.findByText(/com\.erp\.multitenancy\.TenantContextFilter\.java/i)).toBeInTheDocument();
-
-    // Layer 3: PostgreSQL RLS
-    const layer3Btn = screen.getByRole('button', { name: /3\. PostgreSQL RLS/i });
-    fireEvent.click(layer3Btn);
-    expect(await screen.findByText(/V15__enable_postgres_rls_tenant_tables\.sql/i)).toBeInTheDocument();
-
-    // Layer 4: Dynamic Routing
-    const layer4Btn = screen.getByRole('button', { name: /4\. Dynamic Routing/i });
-    fireEvent.click(layer4Btn);
-    expect(await screen.findByText(/TenantRoutingDataSource\.java/i)).toBeInTheDocument();
+    expect(screen.getByText('Built for institutional trust')).toBeInTheDocument();
+    expect(screen.getByText('Tenant isolation')).toBeInTheDocument();
+    expect(screen.getByText('Built for India')).toBeInTheDocument();
   });
 
-  it('renders authentic examination security and open-source Safe Exam Browser explanation', () => {
+  it('renders footer with edupulseerp.in branding', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    expect(screen.getByText(/Exam Security with Safe Exam Browser \(SEB\)/i)).toBeInTheDocument();
-    expect(screen.getByText(/Safe Exam Browser \(SEB\) & Assessment Security/i)).toBeInTheDocument();
-    expect(screen.getByText(/Assessment Configuration/i)).toBeInTheDocument();
-    expect(screen.getByText(/SEB Profile Generation/i)).toBeInTheDocument();
-    expect(screen.getByText(/Browser Exam Key Verification/i)).toBeInTheDocument();
-    expect(screen.getByText(/Grading & Transcript Recording/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/edupulseerp\.in/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/Built for Indian educational institutions/i)).toBeInTheDocument();
   });
 
-  it('navigates to self-serve onboarding when Start Free Trial CTA buttons are clicked', () => {
+  it('renders role-based experience sections', () => {
     render(
       <BrowserRouter>
         <LandingPage />
       </BrowserRouter>
     );
 
-    const startTrialBtns = screen.getAllByRole('button', { name: /Start free trial/i });
-    expect(startTrialBtns.length).toBeGreaterThan(0);
-
-    fireEvent.click(startTrialBtns[0]);
-    expect(mockNavigate).toHaveBeenCalledWith('/onboard');
-  });
-
-  it('renders embedded Pricing section with interactive monthly/annual toggle', () => {
-    render(
-      <BrowserRouter>
-        <LandingPage />
-      </BrowserRouter>
-    );
-
-    expect(screen.getByText(/Predictable Tiers for Every Institution/i)).toBeInTheDocument();
-    expect(screen.getByText(/Starter Evaluation/i)).toBeInTheDocument();
-    expect(screen.getByText(/Pro Institution/i)).toBeInTheDocument();
-    expect(screen.getByText(/Enterprise High-Sec/i)).toBeInTheDocument();
-
-    // Toggle Annual Invoicing
-    const annualBtn = screen.getByRole('button', { name: /Annual/i });
-    fireEvent.click(annualBtn);
-    expect(screen.getByText(/Save 20%/i)).toBeInTheDocument();
+    expect(screen.getByText('Built for every role in your institution')).toBeInTheDocument();
+    expect(screen.getByText('Management & Registrar')).toBeInTheDocument();
+    expect(screen.getByText('Faculty')).toBeInTheDocument();
+    expect(screen.getByText('Complete institutional visibility')).toBeInTheDocument();
+    expect(screen.getByText('Focused academic tools')).toBeInTheDocument();
   });
 });

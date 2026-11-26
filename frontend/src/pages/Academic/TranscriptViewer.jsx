@@ -19,17 +19,16 @@ import {
   Globe
 } from 'lucide-react';
 import { getStudentTranscript } from '../../api/examService';
-import { openExternalUrl } from '../../api/axiosClient';
+import { openExternalUrl, resolveBaseUrl } from '../../api/axiosClient';
 import { useInstitutionStore } from '../../store/useInstitutionStore';
 
 export default function TranscriptViewer() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { institution } = useInstitutionStore();
-  const queryEnrollment = searchParams.get('enrollment');
-  const defaultEnrollment = queryEnrollment || '23CSM001';
-  const [searchInput, setSearchInput] = useState(defaultEnrollment);
-  const [activeEnrollmentNumber, setActiveEnrollmentNumber] = useState(defaultEnrollment);
+  const queryEnrollment = searchParams.get('enrollment') || searchParams.get('roll') || '';
+  const [searchInput, setSearchInput] = useState(queryEnrollment);
+  const [activeEnrollmentNumber, setActiveEnrollmentNumber] = useState(queryEnrollment);
   const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false);
 
   useEffect(() => {
@@ -89,17 +88,20 @@ export default function TranscriptViewer() {
   const calculatedCgpa = totalCredits > 0 ? (totalCreditPoints / totalCredits).toFixed(2) : (Number(transcript?.cumulativeGpa || 0)).toFixed(2);
   const totalMarksSum = results.reduce((acc, r) => acc + Number(r.totalMarks || 100), 0);
   const marksObtainedSum = results.reduce((acc, r) => acc + Number(r.marksObtained || 0), 0);
-  const percentage = totalMarksSum > 0 ? ((marksObtainedSum / totalMarksSum) * 100).toFixed(1) : '88.5';
+  const percentage = totalMarksSum > 0 ? ((marksObtainedSum / totalMarksSum) * 100).toFixed(1) : '0.0';
 
-  const instName = institution?.name || 'EduPulse Institute of Technology & Advanced Studies';
-  const instCode = institution?.code || 'INST-2026-ENG';
+  const instName = institution?.name || 'EduPulse Institutional ERP';
+  const instCode = institution?.code || 'INST-01';
   const instCampus = institution?.campus || 'Main Campus';
-  const instTagline = institution?.tagline || 'Autonomous Institution Affiliated to State Technological University';
+  const instTagline = institution?.tagline || 'Official Institutional Record';
   const instLogo = institution?.logoUrl;
 
-  const verificationToken = transcript?.verificationToken || `EDP-VRF-${activeEnrollmentNumber}-3BF2C1FC`;
-  const verificationUrl = `${window.location.origin}/verify/${verificationToken}`;
-  const browserVerificationUrl = `http://localhost:8081/api/v1/verify/portal/${encodeURIComponent(verificationToken)}?instName=${encodeURIComponent(instName)}&instCode=${encodeURIComponent(instCode)}`;
+  const verificationToken = transcript?.verificationToken || '';
+  const verificationUrl = verificationToken ? `${window.location.origin}/verify/${verificationToken}` : '';
+  const apiBase = resolveBaseUrl();
+  const browserVerificationUrl = verificationToken
+    ? `${apiBase}/api/v1/verify/portal/${encodeURIComponent(verificationToken)}?instName=${encodeURIComponent(instName)}&instCode=${encodeURIComponent(instCode)}`
+    : `${window.location.origin}/verify`;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto px-4 sm:px-6 py-8">
@@ -107,13 +109,13 @@ export default function TranscriptViewer() {
       <div className="print:hidden flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
+            <Award className="w-5 h-5 text-slate-700" />
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
               Official University Transcripts
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Authoritative Academic Ledger • Choice-Based Credit System (CBCS) • Cryptographic SHA-256 Non-Repudiation
+            Academic grade ledger &amp; verifiable student evaluation record
           </p>
         </div>
 
@@ -226,7 +228,7 @@ export default function TranscriptViewer() {
               {instCampus ? `${instCampus} • ` : ''}({instTagline})
             </p>
             <p className="text-[11px] text-slate-600 font-sans">
-              Statutory Autonomous Higher Education Authority • NAAC 'A+' / Global Quality Standard • Institutional Code: <strong className="text-indigo-900 font-mono">{instCode}</strong>
+              Academic Evaluation Record • Institutional Code: <strong className="text-indigo-900 font-mono">{instCode}</strong>
             </p>
 
             <div className="pt-3">
@@ -234,7 +236,7 @@ export default function TranscriptViewer() {
                 Official Transcript of Academic Record
               </span>
               <p className="text-[11px] text-slate-600 font-sans mt-1 italic">
-                Bachelor of Technology (Choice Based Credit System - CBCS)
+                Choice Based Credit System (CBCS) Evaluation Statement
               </p>
             </div>
           </div>
@@ -242,43 +244,47 @@ export default function TranscriptViewer() {
           {/* 2. Document Control & Anti-Counterfeiting Bar */}
           <div className="grid grid-cols-1 sm:grid-cols-3 items-center justify-between gap-4 py-2 px-3 bg-slate-50 border border-slate-300 text-xs font-sans relative z-10 rounded-sm">
             <div className="space-y-0.5 text-left">
-              <p><span className="font-semibold text-slate-600">Transcript Sl. No:</span> <strong className="font-mono text-slate-900">{instCode.toUpperCase()}/2026/TR-00482</strong></p>
-              <p><span className="font-semibold text-slate-600">Folio Reference:</span> <span className="font-mono text-slate-700">FOL-{instCode.toUpperCase()}-X</span></p>
+              <p><span className="font-semibold text-slate-600">Student ID:</span> <strong className="font-mono text-slate-900">#{transcript.studentId || '—'}</strong></p>
+              <p><span className="font-semibold text-slate-600">Enrollment Ref:</span> <span className="font-mono text-slate-700">{transcript.enrollmentNumber}</span></p>
             </div>
 
             <div className="text-center space-y-0.5">
-              <p><span className="font-semibold text-slate-600">Date of Concurrence:</span> <strong>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</strong></p>
+              <p><span className="font-semibold text-slate-600">Date of Issue:</span> <strong>{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</strong></p>
               <p className="text-emerald-700 font-bold flex items-center justify-center gap-1 text-[11px]">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Statutory Institutional Ledger
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Verified ERP Ledger
               </p>
             </div>
 
             {/* Cryptographic 2D QR Verification Block */}
             <div className="flex items-center justify-end gap-2.5">
-              <div 
-                onClick={() => setIsVerifyModalOpen(true)}
-                className="w-12 h-12 bg-white p-0.5 border border-slate-300 rounded shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-500 transition shrink-0"
-                title="Scan or click to verify online"
-              >
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(verificationUrl)}`}
-                  alt="Verification QR Code"
-                  className="w-full h-full"
-                />
-              </div>
-              <div className="text-left text-[10px] space-y-0.5">
-                <span className="font-bold text-slate-900 block flex items-center gap-0.5">
-                  <ShieldCheck className="w-3 h-3 text-emerald-600 inline" /> Anti-Counterfeit
-                </span>
-                <span className="font-mono font-bold text-indigo-700 block">{verificationToken}</span>
-                <button
-                  type="button"
-                  onClick={() => setIsVerifyModalOpen(true)}
-                  className="text-[10px] text-emerald-700 font-bold hover:underline print:hidden flex items-center gap-0.5"
-                >
-                  Verify Online <ExternalLink className="w-2.5 h-2.5" />
-                </button>
-              </div>
+              {verificationToken ? (
+                <>
+                  <div
+                    onClick={() => setIsVerifyModalOpen(true)}
+                    className="w-12 h-12 bg-slate-50 p-0.5 border border-slate-300 rounded shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-500 transition shrink-0 flex items-center justify-center"
+                    title="Click to inspect verification token"
+                  >
+                    <QrCode className="w-8 h-8 text-slate-800" />
+                  </div>
+                  <div className="text-left text-[10px] space-y-0.5">
+                    <span className="font-bold text-slate-900 block flex items-center gap-0.5">
+                      <ShieldCheck className="w-3 h-3 text-emerald-600 inline" /> Verification Seal
+                    </span>
+                    <span className="font-mono font-bold text-indigo-700 block truncate max-w-[140px]">{verificationToken}</span>
+                    <button
+                      type="button"
+                      onClick={() => setIsVerifyModalOpen(true)}
+                      className="text-[10px] text-emerald-700 font-bold hover:underline print:hidden flex items-center gap-0.5"
+                    >
+                      Verify Online <ExternalLink className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-right text-[10px] text-slate-500">
+                  Verification token pending backend seal
+                </div>
+              )}
             </div>
           </div>
 
@@ -294,18 +300,18 @@ export default function TranscriptViewer() {
                 <span className="font-mono font-bold text-indigo-900 text-sm">{transcript.enrollmentNumber}</span>
               </div>
               <div className="p-3">
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Department / Branch</span>
-                <span className="font-bold text-slate-800">Computer Science & Engineering</span>
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Department / Email</span>
+                <span className="font-bold text-slate-800 truncate block">{transcript.departmentName || transcript.email || '—'}</span>
               </div>
               <div className="p-3">
                 <span className="text-[10px] uppercase font-bold text-slate-500 block">Academic Cohort</span>
-                <span className="font-semibold text-slate-800">{transcript.batchName || '2024 - 2028 (Semester V)'}</span>
+                <span className="font-semibold text-slate-800">{transcript.batchName || 'Assigned Cohort'}</span>
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-slate-300 border-t border-slate-300 bg-slate-50/70">
               <div className="p-2.5">
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Degree Conferred</span>
-                <span className="font-semibold text-slate-800">Bachelor of Technology (B.Tech)</span>
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Evaluations Count</span>
+                <span className="font-semibold text-slate-800">{transcript.totalExams ?? results.length}</span>
               </div>
               <div className="p-2.5">
                 <span className="text-[10px] uppercase font-bold text-slate-500 block">Medium of Instruction</span>
@@ -317,7 +323,7 @@ export default function TranscriptViewer() {
               </div>
               <div className="p-2.5">
                 <span className="text-[10px] uppercase font-bold text-slate-500 block">Grading Standard</span>
-                <span className="font-semibold text-indigo-900">10-Point UGC CBCS Scale</span>
+                <span className="font-semibold text-indigo-900">10-Point CBCS Scale</span>
               </div>
             </div>
           </div>
@@ -327,9 +333,9 @@ export default function TranscriptViewer() {
             <div className="flex items-center justify-between">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-indigo-700" />
-                Semester V Course Evaluations & Grade Point Details
+                Recorded Course Evaluations &amp; Grade Point Details
               </h3>
-              <span className="text-[11px] text-slate-500 italic">Academic Session: Fall 2026</span>
+              <span className="text-[11px] text-slate-500 italic">{transcript.batchName || 'Academic Session'}</span>
             </div>
 
             <div className="border border-slate-300 rounded-sm overflow-hidden">
@@ -354,7 +360,7 @@ export default function TranscriptViewer() {
                       <td className="py-2.5 px-3 font-mono font-bold text-slate-900">{row.courseCode}</td>
                       <td className="py-2.5 px-3 font-medium text-slate-900">{row.courseName}</td>
                       <td className="py-2.5 px-3 text-center font-bold text-slate-700">{row.credits}</td>
-                      <td className="py-2.5 px-3 text-right text-slate-600">100</td>
+                      <td className="py-2.5 px-3 text-right text-slate-600">{row.totalMarks || 100}</td>
                       <td className="py-2.5 px-3 text-right font-bold text-slate-900">{row.marksObtained}</td>
                       <td className="py-2.5 px-3 text-center">
                         <span className="inline-block px-2 py-0.5 font-bold text-xs bg-slate-100 border border-slate-300 rounded text-indigo-900">
@@ -387,13 +393,13 @@ export default function TranscriptViewer() {
               <div className="text-3xl font-extrabold text-indigo-950 font-mono tracking-tight my-0.5">
                 {calculatedCgpa} <span className="text-sm font-bold text-slate-500">/ 10.00</span>
               </div>
-              <p className="text-[11px] text-slate-600 font-semibold">Scale: 10.00 Point UGC Choice Based Credit System</p>
+              <p className="text-[11px] text-slate-600 font-semibold">Scale: 10.00 Point Choice Based Credit System</p>
             </div>
 
             <div className="space-y-1 text-xs text-right sm:text-right">
               <p><span className="text-slate-600">Overall Percentage:</span> <strong className="font-mono text-slate-900">{percentage}%</strong></p>
-              <p><span className="text-slate-600">Conferred Division:</span> <strong className="text-emerald-800 uppercase">First Class with Distinction</strong></p>
-              <p><span className="text-slate-600">Result Standing:</span> <strong className="text-slate-900">CONCURRED & PROMOTED</strong></p>
+              <p><span className="text-slate-600">Academic Standing:</span> <strong className="text-emerald-800 uppercase">{Number(percentage) >= 75 ? 'Distinction' : Number(percentage) >= 60 ? 'First Division' : Number(percentage) >= 40 ? 'Passed' : 'Re-appear'}</strong></p>
+              <p><span className="text-slate-600">Evaluations Recorded:</span> <strong className="text-slate-900">{results.length}</strong></p>
             </div>
           </div>
 
@@ -443,11 +449,13 @@ export default function TranscriptViewer() {
 
           {/* 8. Bottom Cryptographic Security Guarantee Notice */}
           <div className="pt-3 border-t border-slate-300 text-[9.5px] text-slate-500 font-sans text-center space-y-0.5">
-            <p className="font-mono">
-              Security SHA-256 Hash Digest: <strong className="text-indigo-900 select-all">{transcript.digitalSignature || '3BF2C1FC89A29DE019B829A01C984712F0E91823A4B5C6D7E8F90123456789AB'}</strong>
-            </p>
+            {transcript.digitalSignature && (
+              <p className="font-mono">
+                Verification Digest: <strong className="text-indigo-900 select-all">{transcript.digitalSignature}</strong>
+              </p>
+            )}
             <p>
-              This document is cryptographically attested under W3C Verifiable Credential standard. Third-party employers and academic institutions can verify its authenticity at <strong className="text-slate-700 underline">{verificationUrl}</strong>.
+              Issued by {instName} ({instCode}).{verificationUrl ? <> Employers and academic institutions can verify record status at <strong className="text-slate-700 underline">{verificationUrl}</strong>.</> : null}
             </p>
           </div>
         </div>
@@ -478,6 +486,7 @@ export default function TranscriptViewer() {
               </div>
               <button
                 type="button"
+                aria-label="Close verification dialog"
                 onClick={() => setIsVerifyModalOpen(false)}
                 className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
               >

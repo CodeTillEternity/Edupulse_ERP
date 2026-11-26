@@ -78,7 +78,7 @@ export default function ExamManager() {
         examId: exam.id,
         examTitle: exam.name || exam.title,
         examDate: exam.examDate,
-        hallLocation: 'Academic Block C, Hall 304',
+        hallLocation: exam.roomName || exam.venue || 'Assigned Exam Hall',
         channel: 'WHATSAPP',
       });
       toast.success(
@@ -167,7 +167,7 @@ export default function ExamManager() {
           onClick: () => {
             const firstStudent = enrolledStudents.find(s => s.id === savedResults[0]?.studentId);
             if (firstStudent?.enrollmentNumber) {
-              window.location.href = `/dashboard/transcripts?enrollment=${firstStudent.enrollmentNumber}`;
+              window.location.href = `/dashboard/academic/transcripts?enrollment=${firstStudent.enrollmentNumber}`;
             }
           }
         }
@@ -328,8 +328,8 @@ export default function ExamManager() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-5">
-        <div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 pb-5">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">
             <Award className="w-3.5 h-3.5" /> Office of the Controller of Examinations
             <span className="text-slate-300">•</span>
@@ -340,14 +340,14 @@ export default function ExamManager() {
             Examinations &amp; Evaluation Center
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Schedule university assessments, record student marks, and process automated UGC 10-point CBCS classifications.
+            Schedule university assessments, record student marks, and process UGC 10-point CBCS classifications.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap shrink-0">
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
           >
             <Printer className="w-3.5 h-3.5 text-slate-500" />
             <span>Print Register</span>
@@ -355,23 +355,23 @@ export default function ExamManager() {
 
           <button
             onClick={activeTab === 'exams' ? exportExamScheduleCsv : exportGradeLedgerCsv}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
           >
             <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>{activeTab === 'exams' ? 'Export Schedule (CSV)' : 'Export Grades (CSV)'}</span>
+            <span>{activeTab === 'exams' ? 'Export CSV' : 'Export Grades'}</span>
           </button>
 
           <button
             onClick={() => setIsOutboxOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors cursor-pointer"
-            title="Open WhatsApp &amp; SMS Outbox Logs"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+            title="Open WhatsApp & SMS Outbox Logs"
           >
             <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Admit Card Outbox</span>
+            <span>Outbox</span>
           </button>
 
           {/* Tab Controls */}
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
             <button
               onClick={() => setActiveTab('exams')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -422,20 +422,20 @@ export default function ExamManager() {
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-            <span>Grading Standard</span>
+            <span>Grading Scale</span>
             <Award className="w-4 h-4 text-cyan-600" />
           </div>
-          <div className="text-xl font-black text-slate-900 mt-1">UGC 10-Point</div>
-          <p className="text-[11px] text-cyan-700 font-medium mt-0.5">Choice-Based Credit System (CBCS)</p>
+          <div className="text-xl font-black text-slate-900 mt-1">10-Point CBCS</div>
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5">O through F grade point bands</p>
         </div>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 text-xs font-medium">
-            <span>Admit Card Dispatch</span>
+            <span>Enrolled Candidates</span>
             <MessageSquare className="w-4 h-4 text-emerald-600" />
           </div>
-          <div className="text-xl font-black text-slate-900 mt-1">Automated</div>
-          <p className="text-[11px] text-emerald-700 font-medium mt-0.5">WhatsApp &amp; SMS Gateway Synced</p>
+          <div className="text-xl font-black text-slate-900 mt-1">{selectedExamId ? `${enrolledStudents.length} Students` : 'Select Exam'}</div>
+          <p className="text-[11px] text-slate-500 font-medium mt-0.5">{selectedExamId ? 'Loaded for selected paper' : 'Pick a paper under Grade Entry'}</p>
         </div>
       </div>
 

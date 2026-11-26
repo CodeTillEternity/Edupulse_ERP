@@ -252,7 +252,7 @@ export default function CourseManager() {
             <button
               type="button"
               onClick={exportData}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-sm transition-colors cursor-pointer"
               title="Export current tab records to CSV"
             >
               <Download className="w-3.5 h-3.5 text-slate-600" />
@@ -261,7 +261,7 @@ export default function CourseManager() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-2xs transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 shadow-sm transition-colors cursor-pointer"
               title="Print current tab records"
             >
               <Printer className="w-3.5 h-3.5 text-slate-600" />

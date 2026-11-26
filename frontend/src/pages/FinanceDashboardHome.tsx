@@ -90,8 +90,9 @@ export default function FinanceDashboardHome() {
 
   return (
     <PageFrame
-      title={`Institutional Treasury & Receivables — Welcome, ${financeName}`}
-      description={`${institution.name || 'Institutional'} live financial ledger, revenue collections, and student receivables oversight.`}
+      title="Institutional Treasury & Receivables"
+      description={`${institution.name || 'Institutional'} live financial ledger, revenue collections, and receivables overview (${financeName}).`}
+      breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Treasury & Receivables' }]}
       actions={
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => window.print()} className="h-8 text-xs font-semibold border-slate-300 bg-white">

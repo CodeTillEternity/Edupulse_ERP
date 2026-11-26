@@ -25,8 +25,10 @@ import { useInstitutionStore } from '../../store/useInstitutionStore';
 const STATUS_BADGES = {
   PAID: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   PARTIAL: 'bg-amber-50 text-amber-700 border-amber-200',
+  PARTIALLY_PAID: 'bg-amber-50 text-amber-700 border-amber-200',
   UNPAID: 'bg-rose-50 text-rose-700 border-rose-200',
-  OVERDUE: 'bg-purple-50 text-purple-700 border-purple-200',
+  PENDING: 'bg-slate-100 text-slate-700 border-slate-200',
+  OVERDUE: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
 export default function StudentLedger() {
@@ -34,8 +36,8 @@ export default function StudentLedger() {
   const { institution } = useInstitutionStore();
 
   // Search state
-  const [searchInput, setSearchInput] = useState('23CSM001');
-  const [activeEnrollment, setActiveEnrollment] = useState('23CSM001');
+  const [searchInput, setSearchInput] = useState('');
+  const [activeEnrollment, setActiveEnrollment] = useState('');
 
   // Active view tab: 'invoices' | 'payments'
   const [activeTab, setActiveTab] = useState('invoices');
@@ -55,6 +57,11 @@ export default function StudentLedger() {
   });
 
   const handleDispatchFeeNotice = async (inv) => {
+    const phone = ledger?.student?.phone || ledger?.student?.guardianPhone || '';
+    if (!phone) {
+      toast.error('No registered student or guardian phone number on file for this invoice.');
+      return;
+    }
     try {
       const res = await communicationService.dispatchFeeNotice({
         invoiceNumber: inv.invoiceNumber,
@@ -63,7 +70,7 @@ export default function StudentLedger() {
         title: inv.feeStructureName || 'Tuition & Fee Assessment',
         amount: Number(inv.outstandingBalance || inv.netAmount),
         dueDate: inv.dueDate,
-        recipientPhone: '+919829012345',
+        recipientPhone: phone,
         channel: 'WHATSAPP',
       });
       toast.success(`WhatsApp Fee Notice dispatched for ${inv.invoiceNumber}!`, {
@@ -247,8 +254,8 @@ export default function StudentLedger() {
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-6">
-          <div>
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-200 pb-6">
+          <div className="min-w-0">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 mb-2">
               <Receipt className="w-3.5 h-3.5" /> B2C Student Ledger &amp; Collections
               <span className="text-slate-300">•</span>
@@ -262,15 +269,15 @@ export default function StudentLedger() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap xl:flex-nowrap shrink-0">
             {/* Search Form */}
-            <form onSubmit={handleSearch} className="flex items-center gap-2 max-w-md w-full md:w-auto">
-              <div className="relative flex-1">
+            <form onSubmit={handleSearch} className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:w-48">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   aria-label="Student Enrollment Number"
-                  placeholder="Search Enrollment (e.g. 23CSM001)"
+                  placeholder="Enrollment (e.g. 23CSM001)"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 text-xs font-medium border border-slate-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
@@ -287,7 +294,7 @@ export default function StudentLedger() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-sm transition-all whitespace-nowrap"
             >
               <Printer className="w-3.5 h-3.5 text-slate-500" /> Print Ledger
             </button>
@@ -295,7 +302,7 @@ export default function StudentLedger() {
             <button
               type="button"
               onClick={exportLedgerCsv}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-sm transition-all"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-300 shadow-sm transition-all whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5 text-slate-500" /> Export CSV
             </button>
@@ -303,14 +310,25 @@ export default function StudentLedger() {
             <button
               type="button"
               onClick={() => setIsOutboxOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-2xs transition-colors cursor-pointer whitespace-nowrap"
-              title="Open Parent WhatsApp &amp; SMS Outbox Logs"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg border border-slate-200 shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+              title="Open Parent WhatsApp & SMS Outbox Logs"
             >
               <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
               <span>Outbox</span>
             </button>
           </div>
         </div>
+
+        {/* Prompt When No Enrollment Selected */}
+        {!activeEnrollment && !isLedgerLoading && (
+          <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-sm">
+            <Receipt className="w-9 h-9 text-slate-300 mx-auto mb-3" />
+            <h2 className="text-base font-bold text-slate-900">Lookup a Student Fee Ledger</h2>
+            <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+              Enter a canonical student enrollment number above to review invoice assessments, collect counter settlements, and print receipts.
+            </p>
+          </div>
+        )}
 
         {/* Loading State */}
         {isLedgerLoading && (
@@ -596,7 +614,12 @@ export default function StudentLedger() {
 
         {/* Collect Payment Modal */}
         {showPaymentModal && selectedInvoice && (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Record Fee Collection"
+            className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
             <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
                 <div className="flex items-center gap-2">
@@ -610,6 +633,7 @@ export default function StudentLedger() {
                 </div>
                 <button
                   type="button"
+                  aria-label="Close payment modal"
                   onClick={() => setShowPaymentModal(false)}
                   className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
                 >
@@ -733,14 +757,24 @@ export default function StudentLedger() {
 
         {/* Receipt Voucher Print Modal */}
         {selectedReceiptForPrint && (
-          <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Print Fee Receipt Voucher"
+            className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          >
             <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
               <div className="flex justify-between items-center border-b pb-3 mb-4">
                 <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm">
                   <Building2 className="w-5 h-5" />
-                  <span>{institution.name || 'Central University'} — Fee Voucher</span>
+                  <span>{institution.name || 'EduPulse Institutional ERP'} — Fee Voucher</span>
                 </div>
-                <button onClick={() => setSelectedReceiptForPrint(null)} className="text-slate-400 hover:text-slate-600">
+                <button
+                  type="button"
+                  aria-label="Close receipt modal"
+                  onClick={() => setSelectedReceiptForPrint(null)}
+                  className="text-slate-400 hover:text-slate-600"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>

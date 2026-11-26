@@ -528,7 +528,7 @@ export default function Academics() {
     }
 
     if (activeTab === 'batches') {
-      if (isLoadingBatches) return <SkeletonTable columns={6} />;
+      if (isLoadingBatches) return <SkeletonTable columns={5} />;
       if (!filteredBatches || filteredBatches.length === 0) return <EmptyState tab="Batches" />;
       return filteredBatches.map(b => {
         const prog = programs?.find(p => p.id === b.programId);
@@ -782,9 +782,9 @@ export default function Academics() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
           <div className="flex items-center gap-2 text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-1">
-            <Award className="w-3.5 h-3.5" /> UGC Choice-Based Credit System (CBCS)
+            <Award className="w-3.5 h-3.5" /> Choice-Based Credit System (CBCS)
             <span className="text-slate-300">•</span>
-            <span className="text-slate-600 font-medium normal-case">{institution.name || 'Central University'}</span>
+            <span className="text-slate-600 font-medium normal-case">{institution.name || 'EduPulse ERP'}</span>
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-1">Academics Core</h1>
           <p className="text-slate-500 text-sm">Configure degree programs, CBCS course credits, student cohorts, and prerequisites.</p>
