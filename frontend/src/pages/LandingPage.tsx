@@ -273,7 +273,7 @@ export default function LandingPage() {
               <span>Built for Indian Schools &amp; Colleges · 14-day Trial</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl lg:text-[68px] font-semibold tracking-[-0.035em] leading-[1.05] bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl sm:text-6xl lg:text-[68px] font-semibold tracking-[-0.035em] leading-[1.12] pb-1 bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent">
               Run your institution with one connected system.
             </h1>
             <p className="mt-6 text-lg sm:text-xl xl:text-[22px] text-zinc-400 leading-relaxed max-w-3xl mx-auto">
