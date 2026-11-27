@@ -240,7 +240,7 @@ export default function LandingPage() {
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-end mb-12 sm:mb-16">
             <div className="lg:col-span-8">
-              <h1 className="text-4xl sm:text-5xl lg:text-[64px] xl:text-[72px] font-medium tracking-[-0.04em] leading-[1.05] text-white">
+              <h1 className="text-4xl sm:text-5xl lg:text-[64px] xl:text-[72px] font-medium tracking-[-0.04em] leading-[1.12] text-white">
                 Run your institution with one connected system.
               </h1>
             </div>
