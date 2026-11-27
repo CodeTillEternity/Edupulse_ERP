@@ -115,29 +115,29 @@ export default function PlatformPage() {
   return (
     <MarketingLayout>
       {/* Hero */}
-      <section className="pt-16 pb-16 sm:pt-24 sm:pb-20 border-b border-zinc-800">
-        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+      <section className="pt-12 pb-12 sm:pt-16 sm:pb-14 border-b border-zinc-800">
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
           <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             Platform
           </p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.035em] text-white max-w-4xl">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.035em] leading-[1.12] text-white max-w-3xl">
             Every institutional workflow on one shared data foundation.
           </h1>
-          <p className="mt-5 text-lg text-zinc-400 max-w-2xl leading-relaxed">
+          <p className="mt-4 text-base sm:text-lg text-zinc-400 max-w-2xl leading-relaxed">
             Explore the core modules inside EduPulse. Every screen below is
             captured directly from the live ERP application.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
+          <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               to="/start-trial"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-white text-zinc-950 text-sm sm:text-base font-medium hover:bg-zinc-200 transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-white text-zinc-950 text-sm sm:text-base font-medium hover:bg-zinc-200 transition-colors"
             >
               Start 14-day trial
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               to="/contact"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-zinc-900 text-zinc-200 text-sm sm:text-base font-medium border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-zinc-900 text-zinc-200 text-sm sm:text-base font-medium border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors"
             >
               Talk to our team
             </Link>
@@ -146,8 +146,8 @@ export default function PlatformPage() {
       </section>
 
       {/* Modules */}
-      <section className="py-20 sm:py-28">
-        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 space-y-24">
+      <section className="py-14 sm:py-20">
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-10 space-y-16 sm:space-y-20">
           {MODULES.map((mod, idx) => {
             const isEven = idx % 2 === 1;
             return (

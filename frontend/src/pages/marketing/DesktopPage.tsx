@@ -6,7 +6,7 @@ export default function DesktopPage() {
   return (
     <MarketingLayout>
       <section className="pt-16 pb-14 sm:pt-24 sm:pb-16 border-b border-zinc-800">
-        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
           <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             <Clock className="w-3.5 h-3.5" />
             <span>Pre-release · Windows Desktop</span>
@@ -23,7 +23,7 @@ export default function DesktopPage() {
       </section>
 
       <section className="py-20 sm:py-24">
-        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
           <div className="border border-zinc-800 bg-zinc-950/60 p-8 sm:p-12">
             <div className="flex items-center gap-2.5 mb-3">
               <Monitor className="w-5 h-5 text-zinc-400" />

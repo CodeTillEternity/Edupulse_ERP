@@ -51,7 +51,7 @@ export default function PricingPage() {
   return (
     <MarketingLayout>
       <section className="pt-16 pb-14 sm:pt-24 sm:pb-16 border-b border-zinc-800">
-        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
           <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             Pricing
           </p>
@@ -67,7 +67,7 @@ export default function PricingPage() {
       </section>
 
       <section className="py-20 sm:py-24">
-        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
           <div className="grid md:grid-cols-3 border border-zinc-800 divide-y md:divide-y-0 md:divide-x divide-zinc-800">
             {PRICING_TIERS.map((tier) => (
               <div
