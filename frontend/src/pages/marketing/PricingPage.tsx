@@ -50,16 +50,15 @@ const PRICING_TIERS: {
 export default function PricingPage() {
   return (
     <MarketingLayout>
-      <section className="relative pt-16 pb-14 sm:pt-24 sm:pb-16 bg-[#0C0D12] border-b border-white/[0.07] overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(99,102,241,0.14),transparent)]" />
-        <div className="relative max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 text-center">
-          <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+      <section className="pt-16 pb-14 sm:pt-24 sm:pb-16 border-b border-zinc-800">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             Pricing
           </p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-[-0.03em] text-white max-w-3xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.035em] text-white max-w-3xl">
             Transparent institutional pricing in INR
           </h1>
-          <p className="mt-5 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 text-lg text-zinc-400 max-w-2xl leading-relaxed">
             Every institution starts with a 14-day full-featured trial. Commercial
             plans are billed in INR and tailored to your institution&apos;s
             student strength and campus structure.
@@ -69,38 +68,33 @@ export default function PricingPage() {
 
       <section className="py-20 sm:py-24">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 border border-zinc-800 divide-y md:divide-y-0 md:divide-x divide-zinc-800">
             {PRICING_TIERS.map((tier) => (
               <div
                 key={tier.name}
-                className={`relative overflow-hidden rounded-2xl border p-8 flex flex-col justify-between transition-all duration-200 hover:-translate-y-1 ${
-                  tier.highlight
-                    ? 'border-indigo-400/60 bg-gradient-to-b from-indigo-500/[0.1] to-white/[0.02] ring-1 ring-indigo-400/25 shadow-[0_24px_60px_-20px_rgba(99,102,241,0.35)]'
-                    : 'border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] hover:border-white/[0.16]'
+                className={`p-8 sm:p-9 flex flex-col justify-between ${
+                  tier.highlight ? 'bg-zinc-900/60' : 'bg-transparent'
                 }`}
               >
-                {tier.highlight && (
-                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
-                )}
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <h2 className="text-xl font-semibold text-white">
+                    <h2 className="text-xl font-medium text-white">
                       {tier.name}
                     </h2>
                     {tier.highlight && (
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono uppercase tracking-wider bg-indigo-500 text-white">
+                      <span className="px-2 py-0.5 rounded text-xs font-mono uppercase tracking-wider border border-zinc-700 text-white">
                         Most popular
                       </span>
                     )}
                   </div>
-                  <p className="text-base text-zinc-400 mb-6">
+                  <p className="text-sm sm:text-base text-zinc-400 mb-6">
                     {tier.audience}
                   </p>
-                  <div className="mb-6 pb-6 border-b border-white/[0.08]">
-                    <span className="text-2xl font-semibold text-white">
+                  <div className="mb-6 pb-6 border-b border-zinc-800">
+                    <span className="text-2xl font-medium text-white">
                       Custom INR quote
                     </span>
-                    <p className="text-sm text-zinc-400 mt-1">
+                    <p className="text-sm text-zinc-500 mt-1">
                       Based on active student count &amp; modules
                     </p>
                   </div>
@@ -108,9 +102,9 @@ export default function PricingPage() {
                     {tier.features.map((feat) => (
                       <li
                         key={feat}
-                        className="flex items-start gap-2.5 text-base text-zinc-300"
+                        className="flex items-start gap-2.5 text-sm sm:text-base text-zinc-300"
                       >
-                        <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                        <Check className="w-4 h-4 text-zinc-400 shrink-0 mt-1" />
                         <span>{feat}</span>
                       </li>
                     ))}
@@ -120,10 +114,10 @@ export default function PricingPage() {
                 <div className="space-y-2.5">
                   <Link
                     to="/start-trial"
-                    className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-base font-medium transition-colors ${
+                    className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-md text-sm sm:text-base font-medium transition-colors ${
                       tier.highlight
                         ? 'bg-white text-zinc-950 hover:bg-zinc-200'
-                        : 'bg-white/[0.06] text-white border border-white/[0.1] hover:bg-white/[0.12]'
+                        : 'bg-zinc-900 text-white border border-zinc-800 hover:bg-zinc-800'
                     }`}
                   >
                     Start 14-day trial
@@ -133,7 +127,7 @@ export default function PricingPage() {
                     href={`mailto:contact@edupulseerp.in?subject=${encodeURIComponent(
                       `EduPulse ${tier.name} Plan Enquiry`
                     )}`}
-                    className="w-full inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+                    className="w-full inline-flex items-center justify-center px-4 py-2 rounded-md text-sm font-medium text-zinc-400 hover:text-white transition-colors"
                   >
                     Request INR quote
                   </a>

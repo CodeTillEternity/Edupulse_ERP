@@ -29,18 +29,18 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="marketing min-h-screen flex flex-col bg-[#09090B] text-zinc-100 font-sans antialiased selection:bg-indigo-500/30 selection:text-white">
+    <div className="marketing min-h-screen flex flex-col bg-[#09090B] text-zinc-100 font-sans antialiased selection:bg-zinc-700 selection:text-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#09090B]/80 backdrop-blur-xl border-b border-white/[0.07]">
+      <header className="sticky top-0 z-50 bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-800">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
-          <div className="flex items-center justify-between h-16 lg:h-[72px]">
+          <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2.5 shrink-0">
               <img
                 src="/logo.jpg"
                 alt="EduPulse"
-                className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
+                className="h-7 w-7 rounded-md object-cover"
               />
-              <span className="font-semibold text-lg tracking-tight text-white">
+              <span className="font-semibold text-base tracking-tight text-white">
                 EduPulse
               </span>
             </Link>
@@ -56,7 +56,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
                     key={item.to}
                     to={item.to}
                     onClick={(e) => handleNavClick(item, e)}
-                    className={`text-sm lg:text-[15px] font-medium transition-colors ${
+                    className={`text-sm font-medium transition-colors ${
                       active
                         ? 'text-white'
                         : 'text-zinc-400 hover:text-white'
@@ -71,13 +71,13 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             <div className="hidden md:flex items-center gap-3">
               <Link
                 to="/login"
-                className="text-sm lg:text-[15px] font-medium text-zinc-400 hover:text-white transition-colors px-3 py-2"
+                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors px-3 py-2"
               >
                 Sign in
               </Link>
               <Link
                 to="/start-trial"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-zinc-950 text-sm lg:text-[15px] font-medium hover:bg-zinc-200 transition-colors shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_1px_2px_rgba(0,0,0,0.4)]"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-white text-zinc-950 text-sm font-medium hover:bg-zinc-200 transition-colors"
               >
                 Start 14-day trial
               </Link>

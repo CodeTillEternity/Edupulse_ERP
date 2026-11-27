@@ -28,16 +28,15 @@ const SECURITY_PILLARS = [
 export default function SecurityPage() {
   return (
     <MarketingLayout>
-      <section className="relative pt-16 pb-14 sm:pt-24 sm:pb-16 bg-[#0C0D12] border-b border-white/[0.07] overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(99,102,241,0.14),transparent)]" />
-        <div className="relative max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 text-center">
-          <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+      <section className="pt-16 pb-14 sm:pt-24 sm:pb-16 border-b border-zinc-800">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             Security &amp; Architecture
           </p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-[-0.03em] text-white max-w-3xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.035em] text-white max-w-3xl">
             Built for institutional data isolation and accountability.
           </h1>
-          <p className="mt-5 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 text-lg text-zinc-400 max-w-2xl leading-relaxed">
             EduPulse separates every school and college at the database and
             application layers while giving administrators clear visibility and
             ownership of their records.
@@ -47,18 +46,18 @@ export default function SecurityPage() {
 
       <section className="py-20 sm:py-24">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
-          <div className="grid sm:grid-cols-2 gap-6">
+          <div className="grid sm:grid-cols-2 border-t border-l border-zinc-800">
             {SECURITY_PILLARS.map((pillar) => (
               <div
                 key={pillar.title}
-                className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.05] to-white/[0.015] p-8 hover:border-white/[0.16] transition-colors"
+                className="border-r border-b border-zinc-800 p-8 sm:p-10"
               >
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/15 ring-1 ring-inset ring-indigo-400/25 flex items-center justify-center mb-5">
-                  <pillar.icon className="w-6 h-6 text-indigo-300" />
+                <div className="flex items-center gap-2.5 mb-3">
+                  <pillar.icon className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <h2 className="text-xl font-medium text-white">
+                    {pillar.title}
+                  </h2>
                 </div>
-                <h2 className="text-xl font-semibold text-white mb-2.5">
-                  {pillar.title}
-                </h2>
                 <p className="text-base text-zinc-400 leading-relaxed">
                   {pillar.body}
                 </p>
@@ -66,9 +65,9 @@ export default function SecurityPage() {
             ))}
           </div>
 
-          <div className="mt-10 rounded-2xl border border-white/[0.08] bg-[#0C0D12] p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <div className="mt-10 border border-zinc-800 bg-zinc-950/60 p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
-              <h3 className="text-xl font-semibold text-white mb-1.5">
+              <h3 className="text-xl font-medium text-white mb-1.5">
                 Need architectural details for your IT committee?
               </h3>
               <p className="text-base text-zinc-400">
@@ -77,7 +76,7 @@ export default function SecurityPage() {
             </div>
             <Link
               to="/contact"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white text-zinc-950 text-base font-medium hover:bg-zinc-200 transition-colors shrink-0"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-white text-zinc-950 text-sm sm:text-base font-medium hover:bg-zinc-200 transition-colors shrink-0"
             >
               Contact team
               <ArrowRight className="w-4 h-4" />

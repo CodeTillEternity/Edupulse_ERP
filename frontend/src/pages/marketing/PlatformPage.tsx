@@ -115,30 +115,29 @@ export default function PlatformPage() {
   return (
     <MarketingLayout>
       {/* Hero */}
-      <section className="relative pt-16 pb-16 sm:pt-24 sm:pb-20 border-b border-white/[0.07] bg-[#0C0D12] overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_-10%,rgba(99,102,241,0.14),transparent)]" />
-        <div className="relative max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 text-center">
-          <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+      <section className="pt-16 pb-16 sm:pt-24 sm:pb-20 border-b border-zinc-800">
+        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
+          <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             Platform
           </p>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-[-0.03em] text-white max-w-4xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium tracking-[-0.035em] text-white max-w-4xl">
             Every institutional workflow on one shared data foundation.
           </h1>
-          <p className="mt-5 text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+          <p className="mt-5 text-lg text-zinc-400 max-w-2xl leading-relaxed">
             Explore the core modules inside EduPulse. Every screen below is
             captured directly from the live ERP application.
           </p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               to="/start-trial"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-zinc-950 font-medium hover:bg-zinc-200 transition-colors shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_8px_24px_-4px_rgba(255,255,255,0.18)]"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-white text-zinc-950 text-sm sm:text-base font-medium hover:bg-zinc-200 transition-colors"
             >
               Start 14-day trial
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               to="/contact"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white/[0.05] text-white font-medium border border-white/[0.1] hover:bg-white/[0.09] transition-colors"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-zinc-900 text-zinc-200 text-sm sm:text-base font-medium border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors"
             >
               Talk to our team
             </Link>
@@ -158,23 +157,23 @@ export default function PlatformPage() {
                 className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center"
               >
                 <div className={`lg:col-span-5 min-w-0 ${isEven ? 'lg:order-2' : ''}`}>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/25 mb-4">
+                  <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
                     <mod.icon className="w-3.5 h-3.5" />
-                    {mod.badge}
-                  </span>
-                  <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-3">
+                    <span>{mod.badge}</span>
+                  </div>
+                  <h2 className="text-2xl sm:text-3xl font-medium tracking-tight text-white mb-3">
                     {mod.title}
                   </h2>
-                  <p className="text-base lg:text-lg text-zinc-400 leading-relaxed mb-5">
+                  <p className="text-base text-zinc-400 leading-relaxed mb-6">
                     {mod.description}
                   </p>
-                  <ul className="space-y-2.5">
+                  <ul className="space-y-2.5 border-t border-zinc-800 pt-5">
                     {mod.points.map((pt) => (
                       <li
                         key={pt}
-                        className="flex items-start gap-2.5 text-base text-zinc-300"
+                        className="flex items-start gap-2.5 text-sm sm:text-base text-zinc-300"
                       >
-                        <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                        <Check className="w-4 h-4 text-zinc-400 shrink-0 mt-1" />
                         <span>{pt}</span>
                       </li>
                     ))}
