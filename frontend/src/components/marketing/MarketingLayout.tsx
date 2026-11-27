@@ -29,16 +29,16 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="marketing min-h-screen flex flex-col bg-gray-900 text-gray-100 font-sans antialiased selection:bg-indigo-500/30 selection:text-white">
+    <div className="marketing min-h-screen flex flex-col bg-[#09090B] text-zinc-100 font-sans antialiased selection:bg-indigo-500/30 selection:text-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-gray-900/90 backdrop-blur-lg border-b border-gray-800">
+      <header className="sticky top-0 z-50 bg-[#09090B]/80 backdrop-blur-xl border-b border-white/[0.07]">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <div className="flex items-center justify-between h-16 lg:h-[72px]">
             <Link to="/" className="flex items-center gap-2.5 shrink-0">
               <img
                 src="/logo.jpg"
                 alt="EduPulse"
-                className="h-8 w-8 rounded-lg object-cover"
+                className="h-8 w-8 rounded-lg object-cover ring-1 ring-white/15"
               />
               <span className="font-semibold text-lg tracking-tight text-white">
                 EduPulse
@@ -59,7 +59,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
                     className={`text-sm lg:text-[15px] font-medium transition-colors ${
                       active
                         ? 'text-white'
-                        : 'text-gray-300 hover:text-white'
+                        : 'text-zinc-400 hover:text-white'
                     }`}
                   >
                     {item.label}
@@ -71,20 +71,20 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             <div className="hidden md:flex items-center gap-3">
               <Link
                 to="/login"
-                className="text-sm lg:text-[15px] font-medium text-gray-300 hover:text-white transition-colors px-3 py-2"
+                className="text-sm lg:text-[15px] font-medium text-zinc-400 hover:text-white transition-colors px-3 py-2"
               >
                 Sign in
               </Link>
               <Link
                 to="/start-trial"
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-white text-gray-950 text-sm lg:text-[15px] font-medium hover:bg-gray-200 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white text-zinc-950 text-sm lg:text-[15px] font-medium hover:bg-zinc-200 transition-colors shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_1px_2px_rgba(0,0,0,0.4)]"
               >
                 Start 14-day trial
               </Link>
             </div>
 
             <button
-              className="md:hidden p-2 text-gray-300 hover:text-white"
+              className="md:hidden p-2 text-zinc-400 hover:text-white"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileMenuOpen}
@@ -94,29 +94,29 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
           </div>
 
           {mobileMenuOpen && (
-            <div className="md:hidden border-t border-gray-800 py-4 space-y-1">
+            <div className="md:hidden border-t border-white/[0.07] py-4 space-y-1">
               {NAV_ITEMS.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}
                   onClick={(e) => handleNavClick(item, e)}
-                  className="block px-3 py-2.5 text-base font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+                  className="block px-3 py-2.5 text-base font-medium text-zinc-300 hover:text-white hover:bg-white/[0.05] rounded-lg transition-colors"
                 >
                   {item.label}
                 </Link>
               ))}
-              <div className="pt-3 space-y-2 border-t border-gray-800 mt-3">
+              <div className="pt-3 space-y-2 border-t border-white/[0.07] mt-3">
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 text-base font-medium text-gray-200 hover:text-white border border-gray-700 rounded-lg"
+                  className="block w-full text-center px-4 py-2.5 text-base font-medium text-zinc-200 hover:text-white border border-white/[0.1] rounded-lg"
                 >
                   Sign in
                 </Link>
                 <Link
                   to="/start-trial"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block w-full text-center px-4 py-2.5 text-base font-medium text-gray-950 bg-white rounded-lg hover:bg-gray-200"
+                  className="block w-full text-center px-4 py-2.5 text-base font-medium text-zinc-950 bg-white rounded-lg hover:bg-zinc-200"
                 >
                   Start 14-day trial
                 </Link>
@@ -129,7 +129,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 bg-gray-950">
+      <footer className="border-t border-white/[0.07] bg-[#060608]">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 py-14">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
             <div className="col-span-2 sm:col-span-1">
