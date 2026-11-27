@@ -247,8 +247,20 @@ export default function LandingPage() {
   return (
     <MarketingLayout>
       {/* ────────────────────────── 2. HERO ───────────────────────────── */}
-      <section className="relative pt-16 sm:pt-24 pb-16 sm:pb-24 overflow-hidden">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[500px] bg-gradient-to-b from-indigo-500/10 via-transparent to-transparent" />
+      <section className="relative pt-16 sm:pt-24 pb-20 sm:pb-28 overflow-hidden">
+        {/* Radial ambient spotlight + subtle architectural grid */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(99,102,241,0.18),transparent)]" />
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.18]"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.06) 1px, transparent 1px)',
+            backgroundSize: '48px 48px',
+            maskImage: 'radial-gradient(ellipse 75% 60% at 50% 15%, #000 35%, transparent 100%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 75% 60% at 50% 15%, #000 35%, transparent 100%)',
+          }}
+        />
+
         <div className="relative max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <motion.div
             className="max-w-4xl mx-auto text-center mb-12 sm:mb-16"
@@ -256,85 +268,118 @@ export default function LandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-[64px] font-semibold tracking-[-0.03em] leading-[1.08] text-white">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/[0.1] bg-white/[0.04] backdrop-blur-md text-xs sm:text-sm text-zinc-300 mb-7">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              <span>Built for Indian Schools &amp; Colleges · 14-day Trial</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-6xl lg:text-[68px] font-semibold tracking-[-0.035em] leading-[1.05] bg-gradient-to-b from-white via-white to-zinc-400 bg-clip-text text-transparent">
               Run your institution with one connected system.
             </h1>
-            <p className="mt-5 text-lg sm:text-xl xl:text-[22px] text-gray-300 leading-relaxed max-w-3xl mx-auto">
+            <p className="mt-6 text-lg sm:text-xl xl:text-[22px] text-zinc-400 leading-relaxed max-w-3xl mx-auto">
               EduPulse brings admissions, academics, examinations, finance, and
               campus operations into a single platform built for Indian schools
               and colleges.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3.5">
               <Link
                 to="/onboard"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-gray-950 text-base font-medium hover:bg-gray-200 transition-colors shadow-sm"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-zinc-950 text-base font-medium hover:bg-zinc-200 transition-colors shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_8px_24px_-4px_rgba(255,255,255,0.18)]"
               >
                 Start 14-day trial
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-gray-800 text-white text-base font-medium border border-gray-700 hover:bg-gray-700 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white/[0.05] text-white text-base font-medium border border-white/[0.1] hover:bg-white/[0.09] transition-colors"
               >
                 Sign in
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
               </Link>
             </div>
           </motion.div>
 
-          {/* Hero screenshot — genuine product */}
+          {/* Hero screenshot — genuine product with ambient rim glow */}
           <motion.div
-            className="max-w-7xl mx-auto"
+            className="relative max-w-7xl mx-auto"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
           >
+            <div className="pointer-events-none absolute -inset-x-10 -top-6 h-48 bg-indigo-500/20 blur-3xl opacity-45" />
             <ScreenshotFrame
               src="/screenshots/erp-dashboard.png"
               alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
               url="app.edupulseerp.in/dashboard"
               priority
+              className="relative"
             />
           </motion.div>
         </div>
       </section>
 
-      {/* ────────────────── 3. PLATFORM INTRODUCTION ──────────────────── */}
-      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800" id="platform">
+      {/* ────────────────── 3. PLATFORM INTRODUCTION (BENTO) ──────────── */}
+      <section className="py-24 sm:py-32 bg-[#0C0D12] border-y border-white/[0.07]" id="platform">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
-          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
-            <p className="text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-3">
-              Platform
-            </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
-              More than separate tools.{' '}
-              <span className="text-indigo-300">One connected platform.</span>
-            </h2>
-            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
-              Every institutional function shares the same data foundation — no
-              more spreadsheets or disconnected modules.
-            </p>
+          <motion.div
+            {...revealProps()}
+            className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-14"
+          >
+            <div className="max-w-2xl">
+              <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+                Platform
+              </p>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.03em] text-white">
+                More than separate tools.{' '}
+                <span className="text-zinc-400">One connected platform.</span>
+              </h2>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:pb-1">
+              <p className="text-base lg:text-lg text-zinc-400 max-w-md leading-relaxed">
+                Every institutional function shares the same data foundation.
+              </p>
+              <Link
+                to="/platform"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] px-4 py-2.5 rounded-lg shrink-0 transition-colors"
+              >
+                Explore modules
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </motion.div>
 
-          {/* Capability cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {CAPABILITIES.map((cap, idx) => (
-              <motion.div
-                key={cap.title}
-                {...revealProps(idx * 0.05)}
-                className="group bg-gray-900/90 rounded-2xl border border-gray-800 p-7 sm:p-8 hover:border-indigo-400/50 hover:-translate-y-1 transition-all duration-200"
-              >
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/15 flex items-center justify-center mb-5 group-hover:bg-indigo-500/25 transition-colors">
-                  <cap.icon className="w-6 h-6 text-indigo-300" />
-                </div>
-                <h3 className="text-lg lg:text-xl font-semibold text-white mb-2.5">
-                  {cap.title}
-                </h3>
-                <p className="text-base text-gray-300 leading-relaxed">
-                  {cap.body}
-                </p>
-              </motion.div>
-            ))}
+          {/* Asymmetric Bento Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
+            {CAPABILITIES.map((cap, idx) => {
+              const isFeatured = idx === 0 || idx === 3;
+              return (
+                <motion.div
+                  key={cap.title}
+                  {...revealProps(idx * 0.05)}
+                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-b from-white/[0.05] to-white/[0.015] border border-white/[0.08] p-7 sm:p-8 hover:border-indigo-400/40 hover:-translate-y-0.5 transition-all duration-200 ${
+                    isFeatured ? 'md:col-span-6' : 'md:col-span-6 lg:col-span-3'
+                  }`}
+                >
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-60" />
+                  <div className="flex items-center justify-between gap-3 mb-5">
+                    <div className="w-11 h-11 rounded-xl bg-indigo-500/15 ring-1 ring-inset ring-indigo-400/25 flex items-center justify-center group-hover:bg-indigo-500/25 transition-colors">
+                      <cap.icon className="w-5 h-5 text-indigo-300" />
+                    </div>
+                    {isFeatured && (
+                      <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400 px-2.5 py-1 rounded-md bg-white/[0.04] border border-white/[0.07]">
+                        {idx === 0 ? 'Core Record' : 'INR Ledgers'}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-2.5">
+                    {cap.title}
+                  </h3>
+                  <p className="text-base text-zinc-400 leading-relaxed">
+                    {cap.body}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
