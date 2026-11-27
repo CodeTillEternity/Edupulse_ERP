@@ -385,20 +385,27 @@ export default function LandingPage() {
       </section>
 
       {/* ────────────────── 4. INSTITUTIONAL LIFECYCLE ─────────────────── */}
-      <section className="py-20 sm:py-28">
+      <section className="py-24 sm:py-32">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
-          <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
-              The complete institutional lifecycle
-            </h2>
-            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
-              Click any stage to see how student and operational data flows
-              from first inquiry to compliance.
+          <motion.div
+            {...revealProps()}
+            className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-14"
+          >
+            <div className="max-w-2xl">
+              <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+                Lifecycle
+              </p>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.03em] text-white">
+                The complete institutional lifecycle
+              </h2>
+            </div>
+            <p className="text-base lg:text-lg text-zinc-400 max-w-md leading-relaxed lg:pb-1">
+              Click any stage to trace how records flow from inquiry to compliance.
             </p>
           </motion.div>
 
           {/* Interactive stepper */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
             {LIFECYCLE_STEPS.map((step, i) => {
               const isActive = activeLifecycle === i;
               return (
@@ -406,25 +413,30 @@ export default function LandingPage() {
                   key={step.label}
                   type="button"
                   onClick={() => setActiveLifecycle(i)}
-                  className={`relative text-left sm:text-center rounded-2xl border p-5 transition-all cursor-pointer ${
+                  className={`relative text-left rounded-2xl border p-5 transition-all cursor-pointer overflow-hidden ${
                     isActive
-                      ? 'bg-gray-950 border-indigo-400/70 ring-1 ring-indigo-400/30 shadow-lg'
-                      : 'bg-gray-950/40 border-gray-800 hover:border-gray-700 hover:bg-gray-950/70'
+                      ? 'bg-[#12141C] border-indigo-400/60 ring-1 ring-indigo-400/25 shadow-[0_12px_32px_-12px_rgba(99,102,241,0.35)]'
+                      : 'bg-white/[0.02] border-white/[0.08] hover:border-white/[0.16] hover:bg-white/[0.04]'
                   }`}
                 >
-                  <div
-                    className={`w-11 h-11 sm:mx-auto rounded-full flex items-center justify-center text-base font-semibold mb-3 transition-colors ${
-                      isActive
-                        ? 'bg-indigo-500 text-white'
-                        : 'bg-indigo-500/15 text-indigo-300 border border-indigo-400/30'
-                    }`}
-                  >
-                    {i + 1}
+                  {isActive && (
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400/70 to-transparent" />
+                  )}
+                  <div className="flex items-center justify-between mb-3.5">
+                    <span
+                      className={`font-mono text-xs px-2 py-0.5 rounded-md transition-colors ${
+                        isActive
+                          ? 'bg-indigo-500 text-white'
+                          : 'bg-white/[0.05] text-zinc-400 border border-white/[0.08]'
+                      }`}
+                    >
+                      0{i + 1}
+                    </span>
                   </div>
                   <h4 className="text-base lg:text-lg font-semibold text-white mb-1.5">
                     {step.label}
                   </h4>
-                  <p className="text-sm text-gray-300 leading-relaxed">
+                  <p className="text-sm text-zinc-400 leading-relaxed">
                     {step.desc}
                   </p>
                 </button>
@@ -440,19 +452,19 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
               transition={{ duration: 0.2 }}
-              className="mt-8 max-w-4xl mx-auto rounded-2xl border border-gray-800 bg-gray-950/80 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              className="mt-6 rounded-2xl border border-white/[0.08] bg-gradient-to-r from-[#12141C] to-[#0D0F15] px-6 sm:px-8 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
             >
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-indigo-300 mb-1">
-                  Stage {activeLifecycle + 1} · {currentStep.label}
+                <p className="text-xs font-mono uppercase tracking-[0.16em] text-indigo-400 mb-1">
+                  Stage 0{activeLifecycle + 1} · {currentStep.label}
                 </p>
-                <p className="text-base text-gray-200 leading-relaxed">
+                <p className="text-base text-zinc-200 leading-relaxed">
                   {currentStep.detail}
                 </p>
               </div>
               <Link
                 to="/platform"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 border border-gray-700 px-4 py-2 rounded-lg shrink-0 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-white bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.1] px-4 py-2.5 rounded-lg shrink-0 transition-colors"
               >
                 Explore modules
                 <ArrowRight className="w-4 h-4" />
@@ -463,52 +475,67 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────── 5. PRODUCT SHOWCASE ──────────────────────── */}
-      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800">
+      <section className="py-24 sm:py-32 bg-[#0C0D12] border-y border-white/[0.07]">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-10">
-            <p className="text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-3">
+            <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
               Product
             </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.03em] text-white">
               See the work behind the interface.
             </h2>
-            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-zinc-400 leading-relaxed">
               Real screens captured from the live EduPulse application — switch
               modules below to inspect each workspace.
             </p>
           </motion.div>
 
-          {/* Tabs */}
-          <div className="flex flex-wrap justify-center gap-2.5 mb-8" role="tablist">
-            {SHOWCASE_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={activeShowcase === tab.id}
-                onClick={() => setActiveShowcase(tab.id)}
-                className={`px-5 py-2.5 rounded-lg text-sm lg:text-base font-medium transition-all cursor-pointer ${
-                  activeShowcase === tab.id
-                    ? 'bg-white text-gray-950 shadow-sm'
-                    : 'bg-gray-900 text-gray-300 border border-gray-700 hover:text-white hover:border-gray-500'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* Segmented control tabs with animated pill */}
+          <div className="flex justify-center mb-8">
+            <div
+              className="inline-flex flex-wrap justify-center gap-1.5 p-1.5 rounded-xl bg-white/[0.04] border border-white/[0.08]"
+              role="tablist"
+            >
+              {SHOWCASE_TABS.map((tab) => {
+                const isActive = activeShowcase === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveShowcase(tab.id)}
+                    className={`relative px-4 sm:px-5 py-2 rounded-lg text-sm lg:text-[15px] font-medium transition-colors cursor-pointer ${
+                      isActive ? 'text-zinc-950' : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="showcase-active-tab"
+                        transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                        className="absolute inset-0 rounded-lg bg-white shadow-sm"
+                      />
+                    )}
+                    <span className="relative z-10">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Active screenshot with smooth crossfade */}
-          <div className="max-w-7xl mx-auto">
-            <p className="text-center text-base lg:text-lg text-gray-300 mb-6 max-w-2xl mx-auto">
+          <div className="relative max-w-7xl mx-auto">
+            <p className="text-center text-base lg:text-lg text-zinc-400 mb-6 max-w-2xl mx-auto">
               {currentShowcase.description}
             </p>
+            <div className="pointer-events-none absolute -inset-x-8 top-12 h-40 bg-indigo-500/15 blur-3xl opacity-40" />
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentShowcase.id}
-                initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.99 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={shouldReduceMotion ? undefined : { opacity: 0, scale: 0.99 }}
-                transition={{ duration: 0.25 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                transition={{ duration: 0.22 }}
+                className="relative"
               >
                 <ScreenshotFrame
                   src={currentShowcase.screenshot}
@@ -522,13 +549,16 @@ export default function LandingPage() {
       </section>
 
       {/* ────────────── 6. ROLE-BASED EXPERIENCE (SPLIT) ─────────────── */}
-      <section className="py-20 sm:py-28">
+      <section className="py-24 sm:py-32">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+            <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+              Role-based Workspaces
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.03em] text-white">
               Built for every role in your institution
             </h2>
-            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-zinc-400 leading-relaxed">
               Each user sees exactly what they need — from the registrar&apos;s
               admissions pipeline to a student&apos;s fee ledger.
             </p>
@@ -537,20 +567,20 @@ export default function LandingPage() {
           {/* Management view */}
           <motion.div {...revealProps()} className="grid lg:grid-cols-12 gap-10 lg:gap-12 items-center mb-24">
             <div className="lg:col-span-5 min-w-0">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/15 text-indigo-300 mb-4">
-                Management & Registrar
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider bg-indigo-500/15 text-indigo-300 ring-1 ring-inset ring-indigo-400/25 mb-5">
+                Management &amp; Registrar
               </span>
-              <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-4">
+              <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-4">
                 Complete institutional visibility
               </h3>
-              <p className="text-base lg:text-lg text-gray-300 leading-relaxed mb-5">
+              <p className="text-base lg:text-lg text-zinc-400 leading-relaxed mb-6">
                 See system-wide KPIs, departmental breakdowns, enrollment
                 trends, and user activity — all from a single dashboard.
               </p>
               <ul className="space-y-3">
                 {['Real-time enrollment and admissions metrics', 'Cross-department student directory', 'System access and audit logs', 'Multi-campus node management'].map(
                   (item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-base text-gray-300">
+                    <li key={item} className="flex items-start gap-2.5 text-base text-zinc-300">
                       <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                       {item}
                     </li>
@@ -577,20 +607,20 @@ export default function LandingPage() {
               />
             </div>
             <div className="lg:col-span-5 order-1 lg:order-2 min-w-0">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 mb-4">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-wider bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/25 mb-5">
                 Faculty
               </span>
-              <h3 className="text-2xl sm:text-3xl font-semibold text-white mb-4">
+              <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-4">
                 Focused academic tools
               </h3>
-              <p className="text-base lg:text-lg text-gray-300 leading-relaxed mb-5">
+              <p className="text-base lg:text-lg text-zinc-400 leading-relaxed mb-6">
                 Faculty get a streamlined view of their sections, course
                 materials, attendance tracking, and exams — without clutter.
               </p>
               <ul className="space-y-3">
                 {['Exam scheduling and grade entry', 'Section-wise attendance recording', 'Course material management', 'Timetable and schedule view'].map(
                   (item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-base text-gray-300">
+                    <li key={item} className="flex items-start gap-2.5 text-base text-zinc-300">
                       <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                       {item}
                     </li>
@@ -603,14 +633,17 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────── 7. TRUST & ARCHITECTURE ──────────────────────── */}
-      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800">
+      <section className="py-24 sm:py-32 bg-[#0C0D12] border-y border-white/[0.07]">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+            <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+              Architecture
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.03em] text-white">
               Built for institutional trust
             </h2>
           </motion.div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
               {
                 icon: Shield,
@@ -636,15 +669,15 @@ export default function LandingPage() {
               <motion.div
                 key={item.title}
                 {...revealProps(idx * 0.05)}
-                className="bg-gray-900/90 rounded-2xl border border-gray-800 p-7 hover:border-gray-700 transition-colors"
+                className="relative overflow-hidden bg-gradient-to-b from-white/[0.05] to-white/[0.015] rounded-2xl border border-white/[0.08] p-7 hover:border-white/[0.16] transition-colors"
               >
-                <div className="w-11 h-11 rounded-xl bg-indigo-500/15 flex items-center justify-center mb-4">
+                <div className="w-11 h-11 rounded-xl bg-indigo-500/15 ring-1 ring-inset ring-indigo-400/25 flex items-center justify-center mb-4">
                   <item.icon className="w-5 h-5 text-indigo-300" />
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-2">
                   {item.title}
                 </h3>
-                <p className="text-base text-gray-300 leading-relaxed">
+                <p className="text-base text-zinc-400 leading-relaxed">
                   {item.body}
                 </p>
               </motion.div>
@@ -654,16 +687,16 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────────── 8. PRICING ───────────────────────────── */}
-      <section className="py-20 sm:py-28" id="pricing">
+      <section className="py-24 sm:py-32" id="pricing">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <motion.div {...revealProps()} className="max-w-3xl mx-auto text-center mb-14">
-            <p className="text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-3">
+            <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
               Pricing
             </p>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.03em] text-white">
               Transparent institutional pricing
             </h2>
-            <p className="mt-4 text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
+            <p className="mt-4 text-base sm:text-lg lg:text-xl text-zinc-400 leading-relaxed">
               Every plan starts with a 14-day full-featured trial. No credit
               card required. Pricing is in INR and tailored to your institution.
             </p>
@@ -674,26 +707,29 @@ export default function LandingPage() {
               <motion.div
                 key={tier.name}
                 {...revealProps(idx * 0.06)}
-                className={`rounded-2xl border p-7 sm:p-8 flex flex-col transition-all duration-200 hover:-translate-y-1 ${
+                className={`relative overflow-hidden rounded-2xl border p-7 sm:p-8 flex flex-col transition-all duration-200 hover:-translate-y-1 ${
                   tier.highlight
-                    ? 'border-indigo-400/70 bg-gray-950 shadow-lg ring-1 ring-indigo-400/20'
-                    : 'border-gray-800 bg-gray-950/60 hover:border-gray-700'
+                    ? 'border-indigo-400/60 bg-gradient-to-b from-indigo-500/[0.1] to-white/[0.02] shadow-[0_24px_60px_-20px_rgba(99,102,241,0.35)] ring-1 ring-indigo-400/25'
+                    : 'border-white/[0.08] bg-gradient-to-b from-white/[0.04] to-white/[0.01] hover:border-white/[0.16]'
                 }`}
               >
                 {tier.highlight && (
-                  <span className="inline-flex self-start items-center px-3 py-0.5 rounded-full text-xs font-semibold bg-indigo-500 text-white mb-3">
+                  <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
+                )}
+                {tier.highlight && (
+                  <span className="inline-flex self-start items-center px-3 py-0.5 rounded-full text-xs font-mono uppercase tracking-wider bg-indigo-500 text-white mb-4">
                     Most popular
                   </span>
                 )}
                 <h3 className="text-xl font-semibold text-white">
                   {tier.name}
                 </h3>
-                <p className="text-base text-gray-300 mt-1.5 mb-6">
+                <p className="text-base text-zinc-400 mt-1.5 mb-6">
                   {tier.audience}
                 </p>
                 <ul className="space-y-3 mb-8 flex-1">
                   {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2.5 text-base text-gray-300">
+                    <li key={f} className="flex items-start gap-2.5 text-base text-zinc-300">
                       <Check className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                       {f}
                     </li>
@@ -703,8 +739,8 @@ export default function LandingPage() {
                   to="/onboard"
                   className={`block w-full text-center px-4 py-3 rounded-lg text-base font-medium transition-colors ${
                     tier.highlight
-                      ? 'bg-white text-gray-950 hover:bg-gray-200'
-                      : 'bg-gray-800 text-gray-100 border border-gray-700 hover:bg-gray-700'
+                      ? 'bg-white text-zinc-950 hover:bg-zinc-200 shadow-sm'
+                      : 'bg-white/[0.06] text-white border border-white/[0.1] hover:bg-white/[0.12]'
                   }`}
                 >
                   Start 14-day trial
@@ -713,11 +749,11 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <p className="text-center text-base text-gray-300 mt-8">
+          <p className="text-center text-base text-zinc-400 mt-10">
             Need custom pricing for your institution?{' '}
             <a
               href="mailto:contact@edupulseerp.in"
-              className="text-indigo-300 font-medium hover:underline"
+              className="text-white font-medium underline decoration-white/30 hover:decoration-white"
             >
               Contact us
             </a>
@@ -726,15 +762,18 @@ export default function LandingPage() {
       </section>
 
       {/* ──────────────────────── 9. FAQ ──────────────────────────────── */}
-      <section className="py-20 sm:py-28 bg-gray-950/70 border-y border-gray-800" id="faq">
+      <section className="py-24 sm:py-32 bg-[#0C0D12] border-y border-white/[0.07]" id="faq">
         <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12">
           <div className="max-w-3xl mx-auto text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white">
+            <p className="text-xs font-mono uppercase tracking-[0.18em] text-indigo-400 mb-3">
+              FAQ
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-[-0.03em] text-white">
               Frequently asked questions
             </h2>
           </div>
 
-          <div className="max-w-3xl mx-auto divide-y divide-gray-800">
+          <div className="max-w-3xl mx-auto divide-y divide-white/[0.08]">
             {FAQ_ITEMS.map((item, i) => (
               <div key={i} className="py-5">
                 <button
@@ -742,11 +781,11 @@ export default function LandingPage() {
                   className="flex items-center justify-between w-full text-left cursor-pointer group"
                   aria-expanded={openFaq === i}
                 >
-                  <span className="text-lg font-medium text-gray-100 group-hover:text-indigo-300 transition-colors pr-4">
+                  <span className="text-lg font-medium text-zinc-100 group-hover:text-indigo-300 transition-colors pr-4">
                     {item.q}
                   </span>
                   <ChevronDown
-                    className={`w-5 h-5 text-gray-400 shrink-0 transition-transform duration-200 ${
+                    className={`w-5 h-5 text-zinc-400 shrink-0 transition-transform duration-200 ${
                       openFaq === i ? 'rotate-180' : ''
                     }`}
                   />
@@ -758,7 +797,7 @@ export default function LandingPage() {
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={shouldReduceMotion ? undefined : { opacity: 0, height: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="overflow-hidden mt-3 text-base text-gray-300 leading-relaxed"
+                      className="overflow-hidden mt-3 text-base text-zinc-400 leading-relaxed"
                     >
                       {item.a}
                     </motion.p>
@@ -771,26 +810,27 @@ export default function LandingPage() {
       </section>
 
       {/* ──────────────────── 10. FINAL CTA ───────────────────────────── */}
-      <section className="py-20 sm:py-28">
-        <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-white mb-4">
+      <section className="relative py-24 sm:py-32 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_100%,rgba(99,102,241,0.16),transparent)]" />
+        <div className="relative max-w-[1440px] 2xl:max-w-[1600px] mx-auto px-5 sm:px-8 lg:px-12 text-center">
+          <h2 className="text-3xl sm:text-5xl font-semibold tracking-[-0.03em] text-white mb-4">
             Bring your institution&apos;s operations together.
           </h2>
-          <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto mb-8">
+          <p className="text-base sm:text-lg lg:text-xl text-zinc-400 leading-relaxed max-w-2xl mx-auto mb-9">
             Start a 14-day trial and see how EduPulse replaces disconnected
             tools with one integrated platform.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
             <Link
               to="/onboard"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-gray-950 text-base font-medium hover:bg-gray-200 transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white text-zinc-950 text-base font-medium hover:bg-zinc-200 transition-colors shadow-[0_1px_0_0_rgba(255,255,255,0.4)_inset,0_8px_24px_-4px_rgba(255,255,255,0.18)]"
             >
               Start 14-day trial
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-gray-800 text-white text-base font-medium border border-gray-700 hover:bg-gray-700 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-lg bg-white/[0.06] text-white text-base font-medium border border-white/[0.1] hover:bg-white/[0.1] transition-colors"
             >
               Sign in
             </Link>
