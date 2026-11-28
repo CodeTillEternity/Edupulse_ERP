@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import MarketingLayout from '../components/marketing/MarketingLayout';
 import ScreenshotFrame from '../components/marketing/ScreenshotFrame';
+import IntegrationsSection from '../components/marketing/IntegrationsSection';
 
 /* ─── Data ────────────────────────────────────────────────────────── */
 
@@ -637,6 +638,9 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* ─────────────── INTEGRATIONS ECOSYSTEM (HAIRLINE) ──────────── */}
+      <IntegrationsSection />
 
       {/* ─────────────── TRUST & ARCHITECTURE (HAIRLINE) ─────────────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800">

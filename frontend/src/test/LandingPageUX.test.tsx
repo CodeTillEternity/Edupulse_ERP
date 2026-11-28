@@ -189,4 +189,27 @@ describe('LandingPage Public Marketing Website', () => {
     expect(screen.getByText('Complete institutional visibility')).toBeInTheDocument();
     expect(screen.getByText('Focused academic tools')).toBeInTheDocument();
   });
+
+  it('renders integrations ecosystem with real tools and category filters', () => {
+    render(
+      <BrowserRouter>
+        <LandingPage />
+      </BrowserRouter>
+    );
+
+    expect(
+      screen.getByText('Works with the tools your campus already runs on.')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Google Meet')).toBeInTheDocument();
+    expect(screen.getByText('Zoom')).toBeInTheDocument();
+    expect(screen.getByText('Jitsi Meet')).toBeInTheDocument();
+    expect(screen.getByText('Google Maps')).toBeInTheDocument();
+    expect(screen.getByText('Notion')).toBeInTheDocument();
+    expect(screen.getByText('Razorpay')).toBeInTheDocument();
+
+    const paymentsFilter = screen.getByRole('button', { name: 'Payments' });
+    fireEvent.click(paymentsFilter);
+    expect(screen.getByText('Razorpay')).toBeInTheDocument();
+    expect(screen.queryByText('Google Meet')).not.toBeInTheDocument();
+  });
 });
