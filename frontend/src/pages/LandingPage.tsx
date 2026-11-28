@@ -241,7 +241,7 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 xl:gap-16 items-center">
             {/* Left: Commanding Editorial Hero Copy */}
             <div className="lg:col-span-5 min-w-0">
-              <h1 className="text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] font-medium tracking-[-0.04em] leading-[1.06] text-white">
+              <h1 className="text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] font-medium tracking-[-0.035em] leading-[1.18] text-white">
                 Run your institution with one connected system.
               </h1>
               <p className="mt-6 text-base sm:text-lg xl:text-xl text-zinc-400 leading-relaxed max-w-xl">
