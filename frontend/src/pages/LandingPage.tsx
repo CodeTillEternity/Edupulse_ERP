@@ -432,7 +432,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right orbital 3D ring carousel (steps clockwise every 3s) */}
-            <div className="lg:col-span-8 min-w-0 pt-10 sm:pt-14 pb-4 overflow-hidden">
+            <div className="relative z-0 lg:col-span-8 min-w-0 pt-10 sm:pt-14 pb-4 overflow-hidden">
               <div className="relative flex items-center justify-center">
                 {/* Subtle orbital ring guide */}
                 <div
@@ -461,7 +461,7 @@ export default function LandingPage() {
                   const y = (1 - Math.cos(angle)) * -38 + 16;
                   const scale = 0.5 + depth * 0.5;
                   const opacity = 0.35 + depth * 0.65;
-                  const zIndex = Math.round(depth * 50) + 10;
+                  const zIndex = Math.round(depth * 10) + 1;
 
                   return (
                     <motion.div

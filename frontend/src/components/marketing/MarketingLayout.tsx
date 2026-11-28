@@ -31,7 +31,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
     <div className="marketing min-h-screen flex flex-col bg-[#09090B] text-zinc-100 font-sans antialiased selection:bg-zinc-700 selection:text-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-800">
+      <header className="sticky top-0 z-[100] bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-800">
         <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2.5 shrink-0">
