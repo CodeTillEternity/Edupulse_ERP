@@ -25,8 +25,8 @@ describe('LandingPage Public Marketing Website', () => {
     );
 
     expect(
-      screen.getByText(/Run your institution with one connected system\./i)
-    ).toBeInTheDocument();
+      screen.getByRole('heading', { level: 1 })
+    ).toHaveTextContent(/Run your institution with one connected system\./i);
 
     expect(
       screen.getByText(

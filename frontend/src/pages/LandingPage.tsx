@@ -241,8 +241,12 @@ export default function LandingPage() {
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 xl:gap-16 items-center">
             {/* Left: Commanding Editorial Hero Copy */}
             <div className="lg:col-span-5 min-w-0">
-              <h1 className="text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] font-medium tracking-[-0.035em] leading-[1.18] text-white">
-                Run your institution with one connected system.
+              <h1 className="text-4xl sm:text-5xl sm:leading-[1.16] lg:text-[56px] lg:leading-[1.15] xl:text-[64px] xl:leading-[1.15] font-medium tracking-[-0.035em] text-white">
+                Run your institution with{' '}
+                <span className="text-indigo-400 underline decoration-indigo-400/60 decoration-[3px] underline-offset-8">
+                  one
+                </span>{' '}
+                connected system.
               </h1>
               <p className="mt-6 text-base sm:text-lg xl:text-xl text-zinc-400 leading-relaxed max-w-xl">
                 EduPulse brings admissions, academics, examinations, finance, and

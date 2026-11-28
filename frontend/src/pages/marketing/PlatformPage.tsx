@@ -120,7 +120,7 @@ export default function PlatformPage() {
           <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             Platform
           </p>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.035em] leading-[1.18] text-white max-w-3xl">
+          <h1 className="text-3xl sm:text-4xl sm:leading-[1.18] lg:text-5xl lg:leading-[1.15] font-medium tracking-[-0.035em] text-white max-w-3xl">
             Every institutional workflow on one shared data foundation.
           </h1>
           <p className="mt-4 text-base sm:text-lg text-zinc-400 max-w-2xl leading-relaxed">
