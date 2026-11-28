@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   Check,
@@ -230,7 +230,20 @@ export default function LandingPage() {
     }
   }, [hash]);
 
-  const currentShowcase = SHOWCASE_TABS.find((t) => t.id === activeShowcase) || SHOWCASE_TABS[0];
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveShowcase((prev) => {
+        const idx = SHOWCASE_TABS.findIndex((t) => t.id === prev);
+        return SHOWCASE_TABS[(idx + 1) % SHOWCASE_TABS.length].id;
+      });
+    }, 3600);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeShowcaseIdx = Math.max(
+    0,
+    SHOWCASE_TABS.findIndex((t) => t.id === activeShowcase)
+  );
   const currentStep = LIFECYCLE_STEPS[activeLifecycle] || LIFECYCLE_STEPS[0];
 
   return (
@@ -352,7 +365,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-            {/* Left vertical selector rail */}
+            {/* Left vertical selector rail (auto-advancing) */}
             <div className="lg:col-span-4 border-t border-zinc-800" role="tablist">
               {SHOWCASE_TABS.map((tab) => {
                 const isActive = activeShowcase === tab.id;
@@ -362,7 +375,7 @@ export default function LandingPage() {
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => setActiveShowcase(tab.id)}
-                    className={`w-full text-left py-4 px-4 border-b border-zinc-800 border-l-2 transition-colors cursor-pointer ${
+                    className={`relative w-full text-left py-4 px-4 border-b border-zinc-800 border-l-2 transition-colors cursor-pointer overflow-hidden ${
                       isActive
                         ? 'border-l-white bg-zinc-900/60'
                         : 'border-l-transparent hover:bg-zinc-900/30'
@@ -376,28 +389,76 @@ export default function LandingPage() {
                         {tab.description}
                       </p>
                     )}
+                    {isActive && !shouldReduceMotion && (
+                      <motion.div
+                        key={`progress-${tab.id}`}
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 3.6, ease: 'linear' }}
+                        style={{ transformOrigin: 'left' }}
+                        className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-400"
+                      />
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            {/* Right genuine ERP screenshot */}
-            <div className="lg:col-span-8 min-w-0">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentShowcase.id}
-                  initial={shouldReduceMotion ? false : { opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={shouldReduceMotion ? undefined : { opacity: 0 }}
-                  transition={{ duration: 0.18 }}
-                >
+            {/* Right stacked auto-animated ERP screenshot deck */}
+            <div className="lg:col-span-8 min-w-0 pr-6 sm:pr-14 pb-8">
+              <div className="relative">
+                {/* Invisible spacer to lock container height */}
+                <div className="invisible pointer-events-none" aria-hidden="true">
                   <ScreenshotFrame
-                    src={currentShowcase.screenshot}
-                    alt={currentShowcase.alt}
-                    url={`app.edupulseerp.in/${currentShowcase.id === 'dashboard' ? 'dashboard' : `dashboard/${currentShowcase.id}`}`}
+                    src={SHOWCASE_TABS[0].screenshot}
+                    alt=""
+                    url="app.edupulseerp.in/dashboard"
                   />
-                </motion.div>
-              </AnimatePresence>
+                </div>
+
+                {SHOWCASE_TABS.map((tab, idx) => {
+                  const total = SHOWCASE_TABS.length;
+                  const offset = (idx - activeShowcaseIdx + total) % total;
+
+                  const target =
+                    offset === 0
+                      ? { x: 0, y: 0, scale: 1, opacity: 1, zIndex: 30 }
+                      : offset === 1
+                        ? { x: 26, y: 12, scale: 0.96, opacity: 0.55, zIndex: 20 }
+                        : offset === 2
+                          ? { x: 50, y: 24, scale: 0.92, opacity: 0.25, zIndex: 10 }
+                          : { x: -28, y: 24, scale: 0.9, opacity: 0, zIndex: 0 };
+
+                  return (
+                    <motion.div
+                      key={tab.id}
+                      initial={false}
+                      animate={{
+                        x: target.x,
+                        y: target.y,
+                        scale: target.scale,
+                        opacity: target.opacity,
+                      }}
+                      transition={
+                        shouldReduceMotion
+                          ? { duration: 0 }
+                          : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
+                      }
+                      style={{
+                        zIndex: target.zIndex,
+                        pointerEvents: offset === 0 ? 'auto' : 'none',
+                      }}
+                      className="absolute inset-0 origin-top-left"
+                    >
+                      <ScreenshotFrame
+                        src={tab.screenshot}
+                        alt={tab.alt}
+                        url={`app.edupulseerp.in/${tab.id === 'dashboard' ? 'dashboard' : `dashboard/${tab.id}`}`}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
