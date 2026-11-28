@@ -349,19 +349,23 @@ export default function LandingPage() {
               {!shouldReduceMotion && (
                 <motion.div
                   aria-hidden="true"
-                  animate={{ opacity: [0.18, 0.34, 0.18], scale: [0.97, 1.03, 0.97] }}
-                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                  className="pointer-events-none absolute -inset-6 rounded-3xl bg-gradient-to-tr from-amber-500/15 via-white/5 to-sky-500/15 blur-2xl"
+                  animate={{ opacity: [0.35, 0.72, 0.35], scale: [0.98, 1.03, 0.98] }}
+                  transition={{ duration: 4.8, repeat: Infinity, ease: 'easeInOut' }}
+                  className="pointer-events-none absolute -inset-4 rounded-2xl bg-gradient-to-tr from-amber-500/25 via-amber-400/10 to-sky-500/25 blur-2xl"
                 />
               )}
-              <div className="relative z-10">
+              <motion.div
+                className="relative z-10"
+                animate={shouldReduceMotion ? undefined : { y: [0, -6, 0] }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
+              >
                 <ScreenshotFrame
                   src="/screenshots/erp-dashboard.png"
                   alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
                   url="app.edupulseerp.in/dashboard"
                   priority
                 />
-              </div>
+              </motion.div>
             </Reveal>
           </div>
         </div>
@@ -392,15 +396,25 @@ export default function LandingPage() {
               return (
                 <StaggerItem
                   key={cap.title}
-                  className={`group border-r border-b border-zinc-800 p-7 sm:p-9 transition-colors duration-500 ${
-                    highlighted ? 'bg-zinc-900/55' : 'hover:bg-zinc-900/40'
+                  className={`relative group border-r border-b border-zinc-800 p-7 sm:p-9 transition-all duration-500 overflow-hidden ${
+                    highlighted
+                      ? 'bg-gradient-to-b from-zinc-800/50 to-zinc-900/30'
+                      : 'hover:bg-zinc-900/40'
                   }`}
                 >
+                  {highlighted && (
+                    <motion.span
+                      layoutId="cap-active-line"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/90 to-transparent"
+                      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  )}
                   <div className="flex items-center gap-2.5 mb-3">
                     <cap.icon
                       className={`w-4 h-4 transition-all duration-300 shrink-0 ${
                         highlighted
-                          ? 'text-white scale-110'
+                          ? 'text-amber-400 scale-110'
                           : 'text-zinc-400 group-hover:text-white group-hover:scale-110'
                       }`}
                     />
@@ -714,15 +728,25 @@ export default function LandingPage() {
               return (
                 <StaggerItem
                   key={item.title}
-                  className={`group border-r border-b border-zinc-800 p-7 sm:p-8 transition-colors duration-500 ${
-                    highlighted ? 'bg-zinc-900/55' : 'hover:bg-zinc-900/40'
+                  className={`relative group border-r border-b border-zinc-800 p-7 sm:p-8 transition-all duration-500 overflow-hidden ${
+                    highlighted
+                      ? 'bg-gradient-to-b from-zinc-800/50 to-zinc-900/30'
+                      : 'hover:bg-zinc-900/40'
                   }`}
                 >
+                  {highlighted && (
+                    <motion.span
+                      layoutId="trust-active-line"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/90 to-transparent"
+                      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  )}
                   <div className="flex items-center gap-2.5 mb-3">
                     <item.icon
                       className={`w-4 h-4 transition-all duration-300 shrink-0 ${
                         highlighted
-                          ? 'text-white scale-110'
+                          ? 'text-amber-400 scale-110'
                           : 'text-zinc-400 group-hover:text-white group-hover:scale-110'
                       }`}
                     />

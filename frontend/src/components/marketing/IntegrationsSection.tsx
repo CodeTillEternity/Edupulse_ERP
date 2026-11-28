@@ -284,16 +284,30 @@ function FleetMapsStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
                   loading="lazy"
                 />
                 {!prefersReducedMotion && (
-                  <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-[62.3%] top-[50%] -translate-x-1/2 -translate-y-1/2"
-                  >
-                    <motion.span
-                      className="block w-14 h-14 rounded-full border border-sky-400/60 bg-sky-400/15"
-                      animate={{ scale: [0.8, 1.9], opacity: [0.75, 0] }}
-                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}
-                    />
-                  </div>
+                  <>
+                    {/* Dual-ring live GPS beacon on bus marker */}
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-[62.3%] top-[50%] -translate-x-1/2 -translate-y-1/2"
+                    >
+                      <motion.span
+                        className="block w-16 h-16 rounded-full border-2 border-white/85 bg-sky-400/25 shadow-[0_0_24px_rgba(56,189,248,0.65)]"
+                        animate={{ scale: [0.75, 2.3], opacity: [0.9, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+                      />
+                    </div>
+                    {/* Subtle destination beacon on campus pin */}
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-[80.5%] top-[18.5%] -translate-x-1/2 -translate-y-1/2"
+                    >
+                      <motion.span
+                        className="block w-10 h-10 rounded-full border border-red-400/80 bg-red-500/20"
+                        animate={{ scale: [0.8, 2.0], opacity: [0.8, 0] }}
+                        transition={{ duration: 2.4, repeat: Infinity, ease: 'easeOut', delay: 0.6 }}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>
