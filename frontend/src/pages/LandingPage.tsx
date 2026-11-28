@@ -236,45 +236,61 @@ export default function LandingPage() {
   return (
     <MarketingLayout>
       {/* ────────────────────────── HERO ───────────────────────────── */}
-      <section className="pt-10 sm:pt-14 lg:pt-16 pb-14 sm:pb-20">
+      <section className="pt-12 sm:pt-16 lg:pt-24 pb-16 sm:pb-24 lg:pb-28">
         <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
-          <div className="grid lg:grid-cols-12 gap-6 lg:gap-10 items-end mb-10 sm:mb-12">
-            <div className="lg:col-span-7">
-              <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-medium tracking-[-0.035em] leading-[1.12] text-white">
+          <div className="grid lg:grid-cols-12 gap-10 lg:gap-12 xl:gap-16 items-center">
+            {/* Left: Commanding Editorial Hero Copy */}
+            <div className="lg:col-span-5 min-w-0">
+              <h1 className="text-4xl sm:text-5xl lg:text-[56px] xl:text-[64px] font-medium tracking-[-0.04em] leading-[1.06] text-white">
                 Run your institution with one connected system.
               </h1>
-            </div>
-            <div className="lg:col-span-5 space-y-5">
-              <p className="text-base sm:text-lg text-zinc-400 leading-relaxed">
+              <p className="mt-6 text-base sm:text-lg xl:text-xl text-zinc-400 leading-relaxed max-w-xl">
                 EduPulse brings admissions, academics, examinations, finance, and
                 campus operations into a single platform built for Indian schools
                 and colleges.
               </p>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Link
                   to="/onboard"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-white text-zinc-950 text-sm sm:text-base font-medium hover:bg-zinc-200 transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-md bg-white text-zinc-950 text-sm sm:text-base font-medium hover:bg-zinc-200 transition-colors"
                 >
                   Start 14-day trial
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
                   to="/login"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded-md bg-zinc-900 text-zinc-200 text-sm sm:text-base font-medium border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-md bg-zinc-900 text-zinc-200 text-sm sm:text-base font-medium border border-zinc-800 hover:bg-zinc-800 hover:text-white transition-colors"
                 >
                   Sign in
                 </Link>
               </div>
+
+              <div className="mt-12 pt-6 border-t border-zinc-800 grid grid-cols-3 gap-4 max-w-lg">
+                <div>
+                  <div className="text-sm font-mono text-white">14-day</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">Full-featured trial</div>
+                </div>
+                <div>
+                  <div className="text-sm font-mono text-white">INR</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">Native fee ledgers</div>
+                </div>
+                <div>
+                  <div className="text-sm font-mono text-white">RLS</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">Isolated per institution</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Genuine ERP Dashboard Stage */}
+            <div className="lg:col-span-7 min-w-0">
+              <ScreenshotFrame
+                src="/screenshots/erp-dashboard.png"
+                alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
+                url="app.edupulseerp.in/dashboard"
+                priority
+              />
             </div>
           </div>
-
-          {/* Genuine ERP Dashboard */}
-          <ScreenshotFrame
-            src="/screenshots/erp-dashboard.png"
-            alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
-            url="app.edupulseerp.in/dashboard"
-            priority
-          />
         </div>
       </section>
 
