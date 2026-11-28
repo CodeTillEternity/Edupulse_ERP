@@ -14,6 +14,9 @@ import {
   Paperclip,
   Smile,
   Mic,
+  Search,
+  MoreVertical,
+  SendHorizonal,
 } from 'lucide-react';
 
 /* ─── Authentic Vector Brand Logos ────────────────────────────────── */
@@ -739,16 +742,34 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
 
 /* ─── 5. Parent & Student Alerts (WhatsApp) ──────────────────────── */
 
+const SENDER_REPLY = 'Received, thank you!';
+
 function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
-  const [pulseStep, setPulseStep] = useState(0);
+  // Timeline ticks (every 100ms across an 8.5s cycle):
+  // 0..8:    Msg 1 (EduPulse automated) visible
+  // 9..20:   Msg 2 (EduPulse automated PDF) visible
+  // 22..44:  Sender typing character-by-character in composer
+  // 45..76:  Sender message sent (#D9FDD3 bubble); read ticks turn blue at tick 54
+  // 77..85:  Brief pause before next cycle
+  const [tick, setTick] = useState(prefersReducedMotion ? 60 : 0);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
-    const interval = setInterval(() => {
-      setPulseStep((prev) => (prev + 1) % 3);
-    }, 3000);
-    return () => clearInterval(interval);
+    const timer = setInterval(() => {
+      setTick((prev) => (prev + 1) % 85);
+    }, 100);
+    return () => clearInterval(timer);
   }, [prefersReducedMotion]);
+
+  const showMsg1 = prefersReducedMotion || tick >= 2;
+  const showMsg2 = prefersReducedMotion || tick >= 11;
+  const isTyping = !prefersReducedMotion && tick >= 22 && tick < 45;
+  const typedCount = isTyping
+    ? Math.min(SENDER_REPLY.length, Math.floor(((tick - 22) / 20) * SENDER_REPLY.length) + 1)
+    : 0;
+  const draftText = isTyping ? SENDER_REPLY.slice(0, typedCount) : '';
+  const showReply = prefersReducedMotion || tick >= 45;
+  const replyRead = prefersReducedMotion || tick >= 54;
 
   return (
     <section className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60">
@@ -790,29 +811,44 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
           <div className="lg:col-span-7 min-w-0">
             <div className="rounded-xl border border-zinc-800 bg-[#EFEAE2] overflow-hidden shadow-2xl">
               {/* Authentic WhatsApp Web Light Header */}
-              <div className="flex items-center justify-between px-4 sm:px-5 py-3 bg-[#F0F2F5] border-b border-[#D1D7DB]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#008069] flex items-center justify-center shrink-0">
-                    <WhatsAppLogo className="w-5 h-5" />
-                  </div>
-                  <div>
+              <div className="flex items-center justify-between px-4 py-2.5 bg-[#F0F2F5] border-b border-[#D1D7DB]">
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src="/logo.jpg"
+                    alt="EduPulse Campus Desk"
+                    className="w-10 h-10 rounded-full object-cover border border-[#D1D7DB] shrink-0"
+                  />
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-[#111B21]">
+                      <span className="text-[15px] font-medium text-[#111B21] truncate">
                         EduPulse Campus Desk
                       </span>
-                      <CheckCircle2 className="w-4 h-4 text-[#00A884]" />
+                      <svg viewBox="0 0 18 18" className="w-4 h-4 shrink-0" aria-hidden="true">
+                        <circle cx="9" cy="9" r="8" fill="#25D366" />
+                        <path
+                          fill="none"
+                          stroke="#FFFFFF"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5.6 9.2l2.1 2.1 4.7-4.7"
+                        />
+                      </svg>
                     </div>
-                    <p className="text-[11px] text-[#667781]">
+                    <p className="text-xs text-[#667781] truncate">
                       Official business account
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-medium text-[#008069]">online</span>
+                <div className="flex items-center gap-4 text-[#54656F] shrink-0 pr-1">
+                  <Search className="w-4 h-4" />
+                  <MoreVertical className="w-4 h-4" />
+                </div>
               </div>
 
               {/* Classic WhatsApp Light Wallpaper (#EFEAE2) */}
               <div
-                className="p-5 sm:p-6 space-y-3.5 min-h-[360px] flex flex-col justify-between relative"
+                className="p-5 sm:p-6 min-h-[370px] flex flex-col justify-between relative"
                 style={{
                   backgroundColor: '#EFEAE2',
                   backgroundImage:
@@ -820,88 +856,108 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
                   backgroundSize: '18px 18px',
                 }}
               >
-                <div className="space-y-3.5">
+                <div className="space-y-3">
                   {/* Date Chip */}
-                  <div className="flex justify-center">
-                    <span className="px-3 py-1 rounded-lg bg-white/90 text-[11px] font-medium text-[#54656F] shadow-sm">
+                  <div className="flex justify-center mb-1">
+                    <span className="px-3 py-1 rounded-lg bg-white/95 text-[11px] font-medium text-[#54656F] shadow-sm">
                       TODAY
                     </span>
                   </div>
 
-                  {/* Message 1: Attendance Alert (White incoming bubble) */}
-                  <div
-                    className={`max-w-[84%] rounded-lg rounded-tl-none bg-white p-3.5 shadow-sm border transition-all duration-300 ${
-                      pulseStep === 0 ? 'border-[#00A884]/40' : 'border-transparent'
-                    }`}
-                  >
-                    <p className="text-xs font-semibold text-[#008069] mb-1">
-                      Attendance Update
-                    </p>
-                    <p className="text-sm text-[#111B21] leading-relaxed">
-                      Good morning! Morning attendance for CS-301 Algorithms has been
-                      recorded as Present.
-                    </p>
-                    <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
-                      <span>09:02 AM</span>
-                      <span className="text-[#53BDEB] font-semibold">✓✓</span>
-                    </div>
-                  </div>
-
-                  {/* Message 2: Fee Receipt PDF (White incoming bubble) */}
-                  <div
-                    className={`max-w-[84%] rounded-lg rounded-tl-none bg-white p-3.5 shadow-sm border transition-all duration-300 ${
-                      pulseStep === 1 ? 'border-[#00A884]/40' : 'border-transparent'
-                    }`}
-                  >
-                    <p className="text-xs font-semibold text-[#008069] mb-1.5">
-                      Fee Receipt Issued
-                    </p>
-                    <div className="flex items-center gap-3 rounded-md bg-[#F0F2F5] border border-[#E2E8F0] p-2.5 mb-2">
-                      <FileText className="w-5 h-5 text-red-500 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-[#111B21] truncate">
-                          Semester_Tuition_Receipt.pdf
-                        </p>
-                        <p className="text-[11px] text-[#667781]">142 KB · PDF</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-[#111B21] leading-relaxed">
-                      Your semester fee payment has been reconciled to the student ledger.
-                    </p>
-                    <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
-                      <span>09:14 AM</span>
-                      <span className="text-[#53BDEB] font-semibold">✓✓</span>
-                    </div>
-                  </div>
-
-                  {/* Message 3: Guardian Reply (Classic WhatsApp Mint-Green #D9FDD3 bubble) */}
-                  <div className="flex justify-end">
-                    <div
-                      className={`max-w-[75%] rounded-lg rounded-tr-none bg-[#D9FDD3] px-3.5 py-2.5 shadow-sm border transition-all duration-300 ${
-                        pulseStep === 2 ? 'border-[#00A884]/40' : 'border-transparent'
-                      }`}
+                  {/* Message 1: Automated Business Alert */}
+                  {showMsg1 && (
+                    <motion.div
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="max-w-[84%] rounded-lg rounded-tl-none bg-white px-3.5 py-2.5 shadow-sm"
                     >
-                      <p className="text-sm text-[#111B21]">
-                        Received, thank you!
+                      <p className="text-xs font-semibold text-[#008069] mb-1">
+                        Attendance Update
                       </p>
-                      <div className="flex items-center justify-end gap-1 mt-0.5 text-[11px] text-[#667781]">
-                        <span>09:15 AM</span>
-                        <span className="text-[#53BDEB] font-semibold">✓✓</span>
+                      <p className="text-sm text-[#111B21] leading-relaxed">
+                        Good morning! Morning attendance for CS-301 Algorithms has been
+                        recorded as Present.
+                      </p>
+                      <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
+                        <span>09:02 AM</span>
                       </div>
-                    </div>
-                  </div>
+                    </motion.div>
+                  )}
+
+                  {/* Message 2: Automated Business PDF Receipt */}
+                  {showMsg2 && (
+                    <motion.div
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="max-w-[84%] rounded-lg rounded-tl-none bg-white px-3.5 py-2.5 shadow-sm"
+                    >
+                      <p className="text-xs font-semibold text-[#008069] mb-1.5">
+                        Fee Receipt Issued
+                      </p>
+                      <div className="flex items-center gap-3 rounded-md bg-[#F0F2F5] border border-[#E2E8F0] p-2.5 mb-2">
+                        <FileText className="w-5 h-5 text-red-500 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-[#111B21] truncate">
+                            Semester_Tuition_Receipt.pdf
+                          </p>
+                          <p className="text-[11px] text-[#667781]">142 KB · PDF</p>
+                        </div>
+                      </div>
+                      <p className="text-sm text-[#111B21] leading-relaxed">
+                        Your semester fee payment has been reconciled to the student ledger.
+                      </p>
+                      <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
+                        <span>09:14 AM</span>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Message 3: Sender Reply (sent after typing in composer) */}
+                  {showReply && (
+                    <motion.div
+                      initial={prefersReducedMotion ? false : { opacity: 0, y: 6, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.18 }}
+                      className="flex justify-end"
+                    >
+                      <div className="max-w-[75%] rounded-lg rounded-tr-none bg-[#D9FDD3] px-3.5 py-2 shadow-sm">
+                        <p className="text-sm text-[#111B21]">
+                          {SENDER_REPLY}
+                        </p>
+                        <div className="flex items-center justify-end gap-1 mt-0.5 text-[11px] text-[#667781]">
+                          <span>09:15 AM</span>
+                          <span className={replyRead ? 'text-[#53BDEB] font-semibold' : 'text-[#8696A0]'}>
+                            ✓✓
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               </div>
 
-              {/* Authentic WhatsApp Light Composer Bar */}
+              {/* Authentic WhatsApp Light Composer Bar (live sender typing + send) */}
               <div className="px-3.5 py-2.5 bg-[#F0F2F5] border-t border-[#D1D7DB] flex items-center gap-2.5">
                 <Smile className="w-5 h-5 text-[#54656F] shrink-0" />
                 <Paperclip className="w-5 h-5 text-[#54656F] shrink-0" />
-                <div className="flex-1 rounded-lg bg-white px-3.5 py-2 text-xs text-[#667781]">
-                  Type a message
+                <div className="flex-1 rounded-lg bg-white px-3.5 py-2 text-sm min-h-[36px] flex items-center">
+                  {isTyping ? (
+                    <span className="text-[#111B21]">
+                      {draftText}
+                      <span className="inline-block w-0.5 h-4 bg-[#008069] align-middle ml-0.5 animate-pulse" />
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[#667781]">Type a message</span>
+                  )}
                 </div>
-                <div className="w-8 h-8 rounded-full bg-[#00A884] flex items-center justify-center shrink-0">
-                  <Mic className="w-4 h-4 text-white" />
+                <div className="w-9 h-9 rounded-full bg-[#00A884] flex items-center justify-center shrink-0 transition-transform">
+                  {isTyping ? (
+                    <SendHorizonal className="w-4 h-4 text-white" />
+                  ) : (
+                    <Mic className="w-4 h-4 text-white" />
+                  )}
                 </div>
               </div>
             </div>
