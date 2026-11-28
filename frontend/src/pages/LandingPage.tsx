@@ -256,8 +256,35 @@ export default function LandingPage() {
             <div className="lg:col-span-5 min-w-0">
               <h1 className="text-4xl sm:text-5xl sm:leading-[1.16] lg:text-[56px] lg:leading-[1.15] xl:text-[64px] xl:leading-[1.15] font-medium tracking-[-0.035em] text-white">
                 Run your institution with{' '}
-                <span className="text-indigo-400 underline decoration-indigo-400/60 decoration-[3px] underline-offset-8">
-                  one
+                <span className="relative inline-block px-2.5 mx-0.5">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 180 68"
+                    preserveAspectRatio="none"
+                    className="pointer-events-none absolute -inset-x-1.5 -inset-y-0.5 w-[calc(100%+12px)] h-[calc(100%+4px)] -rotate-1"
+                  >
+                    <path
+                      d="M8 22C38 11 112 7 169 14C176 15 178 24 172 32C168 38 174 47 166 53C124 62 42 63 10 55C3 52 2 38 7 30C4 26 4 23 8 22Z"
+                      fill="#F59E0B"
+                    />
+                    <path
+                      d="M14 14C62 6 128 6 172 12"
+                      stroke="#FBBF24"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      opacity="0.7"
+                    />
+                    <path
+                      d="M6 56C54 62 126 60 168 54"
+                      stroke="#D97706"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                    />
+                  </svg>
+                  <span className="relative z-10 text-zinc-950 font-semibold">
+                    one
+                  </span>
                 </span>{' '}
                 connected system.
               </h1>
