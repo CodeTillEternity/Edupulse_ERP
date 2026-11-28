@@ -190,7 +190,7 @@ describe('LandingPage Public Marketing Website', () => {
     expect(screen.getByText('Focused academic tools')).toBeInTheDocument();
   });
 
-  it('renders integrations ecosystem with real tools and category filters', () => {
+  it('renders dedicated animated integration sections for live class, maps, notion, and razorpay', () => {
     render(
       <BrowserRouter>
         <LandingPage />
@@ -198,18 +198,27 @@ describe('LandingPage Public Marketing Website', () => {
     );
 
     expect(
-      screen.getByText('Works with the tools your campus already runs on.')
+      screen.getByText('One timetable. Every live classroom.')
     ).toBeInTheDocument();
-    expect(screen.getByText('Google Meet')).toBeInTheDocument();
-    expect(screen.getByText('Zoom')).toBeInTheDocument();
-    expect(screen.getByText('Jitsi Meet')).toBeInTheDocument();
-    expect(screen.getByText('Google Maps')).toBeInTheDocument();
-    expect(screen.getByText('Notion')).toBeInTheDocument();
-    expect(screen.getByText('Razorpay')).toBeInTheDocument();
+    expect(
+      screen.getByText('Live vehicle routing from gate to doorstep.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Every lecture turns into structured Notion notes.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Collect fees in seconds. Reconcile ledgers automatically.')
+    ).toBeInTheDocument();
 
-    const paymentsFilter = screen.getByRole('button', { name: 'Payments' });
-    fireEvent.click(paymentsFilter);
-    expect(screen.getByText('Razorpay')).toBeInTheDocument();
-    expect(screen.queryByText('Google Meet')).not.toBeInTheDocument();
+    // Interactive live classroom provider switcher
+    const zoomBtn = screen.getByRole('button', { name: 'Zoom' });
+    fireEvent.click(zoomBtn);
+    expect(zoomBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('zoom.us/j/94820194812')).toBeInTheDocument();
+
+    const jitsiBtn = screen.getByRole('button', { name: 'Jitsi Meet' });
+    fireEvent.click(jitsiBtn);
+    expect(jitsiBtn).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('meet.jit.si/edupulse-cse-a')).toBeInTheDocument();
   });
 });
