@@ -255,7 +255,7 @@ function LiveClassStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
 
 /* ─── 2. Real-Time Vehicle & Fleet Routing (Google Maps) ──────────── */
 
-function FleetMapsStage() {
+function FleetMapsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
   return (
     <section className="py-20 sm:py-28 border-t border-zinc-800 bg-[#09090B]">
       <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
@@ -276,13 +276,25 @@ function FleetMapsStage() {
                 </span>
               </div>
 
-              <div className="relative bg-[#0B0F17]">
+              <div className="relative bg-[#0B0F17] overflow-hidden">
                 <img
                   src="/integrations/fleet-map.jpg"
                   alt="Google Maps dark-mode campus bus route tracking showing active route and vehicle position"
                   className="w-full h-auto block object-cover"
                   loading="lazy"
                 />
+                {!prefersReducedMotion && (
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-[62.3%] top-[50%] -translate-x-1/2 -translate-y-1/2"
+                  >
+                    <motion.span
+                      className="block w-14 h-14 rounded-full border border-sky-400/60 bg-sky-400/15"
+                      animate={{ scale: [0.8, 1.9], opacity: [0.75, 0] }}
+                      transition={{ duration: 2.2, repeat: Infinity, ease: 'easeOut' }}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -981,7 +993,7 @@ export default function IntegrationsSection() {
   return (
     <>
       <LiveClassStage prefersReducedMotion={prefersReducedMotion} />
-      <FleetMapsStage />
+      <FleetMapsStage prefersReducedMotion={prefersReducedMotion} />
       <NotionNotesStage prefersReducedMotion={prefersReducedMotion} />
       <RazorpayPaymentsStage prefersReducedMotion={prefersReducedMotion} />
       <WhatsAppAlertsStage prefersReducedMotion={prefersReducedMotion} />

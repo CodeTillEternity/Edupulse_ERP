@@ -219,6 +219,8 @@ const FAQ_ITEMS = [
 export default function LandingPage() {
   const [activeShowcase, setActiveShowcase] = useState<ShowcaseId>('dashboard');
   const [activeLifecycle, setActiveLifecycle] = useState(0);
+  const [activeCap, setActiveCap] = useState(0);
+  const [activeTrust, setActiveTrust] = useState(0);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const shouldReduceMotion = useReducedMotion();
   const { hash } = useLocation();
@@ -247,7 +249,14 @@ export default function LandingPage() {
     const lifecycleTimer = setInterval(() => {
       setActiveLifecycle((prev) => (prev + 1) % LIFECYCLE_STEPS.length);
     }, 4500);
-    return () => clearInterval(lifecycleTimer);
+    const gridTimer = setInterval(() => {
+      setActiveCap((prev) => (prev + 1) % CAPABILITIES.length);
+      setActiveTrust((prev) => (prev + 1) % 4);
+    }, 2600);
+    return () => {
+      clearInterval(lifecycleTimer);
+      clearInterval(gridTimer);
+    };
   }, [shouldReduceMotion]);
 
   const activeShowcaseIdx = Math.max(
@@ -336,13 +345,23 @@ export default function LandingPage() {
             </div>
 
             {/* Right: Genuine ERP Dashboard Stage */}
-            <Reveal delay={0.1} className="lg:col-span-7 min-w-0">
-              <ScreenshotFrame
-                src="/screenshots/erp-dashboard.png"
-                alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
-                url="app.edupulseerp.in/dashboard"
-                priority
-              />
+            <Reveal delay={0.1} className="lg:col-span-7 min-w-0 relative">
+              {!shouldReduceMotion && (
+                <motion.div
+                  aria-hidden="true"
+                  animate={{ opacity: [0.18, 0.34, 0.18], scale: [0.97, 1.03, 0.97] }}
+                  transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  className="pointer-events-none absolute -inset-6 rounded-3xl bg-gradient-to-tr from-amber-500/15 via-white/5 to-sky-500/15 blur-2xl"
+                />
+              )}
+              <div className="relative z-10">
+                <ScreenshotFrame
+                  src="/screenshots/erp-dashboard.png"
+                  alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
+                  url="app.edupulseerp.in/dashboard"
+                  priority
+                />
+              </div>
             </Reveal>
           </div>
         </div>
@@ -368,22 +387,33 @@ export default function LandingPage() {
           </div>
 
           <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-zinc-800">
-            {CAPABILITIES.map((cap) => (
-              <StaggerItem
-                key={cap.title}
-                className="group border-r border-b border-zinc-800 p-7 sm:p-9 hover:bg-zinc-900/40 transition-colors"
-              >
-                <div className="flex items-center gap-2.5 mb-3">
-                  <cap.icon className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all shrink-0" />
-                  <h3 className="text-lg font-medium text-white">
-                    {cap.title}
-                  </h3>
-                </div>
-                <p className="text-base text-zinc-400 leading-relaxed">
-                  {cap.body}
-                </p>
-              </StaggerItem>
-            ))}
+            {CAPABILITIES.map((cap, idx) => {
+              const highlighted = !shouldReduceMotion && activeCap === idx;
+              return (
+                <StaggerItem
+                  key={cap.title}
+                  className={`group border-r border-b border-zinc-800 p-7 sm:p-9 transition-colors duration-500 ${
+                    highlighted ? 'bg-zinc-900/55' : 'hover:bg-zinc-900/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <cap.icon
+                      className={`w-4 h-4 transition-all duration-300 shrink-0 ${
+                        highlighted
+                          ? 'text-white scale-110'
+                          : 'text-zinc-400 group-hover:text-white group-hover:scale-110'
+                      }`}
+                    />
+                    <h3 className="text-lg font-medium text-white">
+                      {cap.title}
+                    </h3>
+                  </div>
+                  <p className="text-base text-zinc-400 leading-relaxed">
+                    {cap.body}
+                  </p>
+                </StaggerItem>
+              );
+            })}
           </StaggerGrid>
         </div>
       </section>
@@ -679,22 +709,33 @@ export default function LandingPage() {
                 title: 'Web & desktop',
                 body: 'Access from any browser today. Windows Desktop client is currently in pre-release.',
               },
-            ].map((item) => (
-              <StaggerItem
-                key={item.title}
-                className="group border-r border-b border-zinc-800 p-7 sm:p-8 hover:bg-zinc-900/40 transition-colors"
-              >
-                <div className="flex items-center gap-2.5 mb-3">
-                  <item.icon className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all shrink-0" />
-                  <h3 className="text-base font-medium text-white">
-                    {item.title}
-                  </h3>
-                </div>
-                <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
-                  {item.body}
-                </p>
-              </StaggerItem>
-            ))}
+            ].map((item, idx) => {
+              const highlighted = !shouldReduceMotion && activeTrust === idx;
+              return (
+                <StaggerItem
+                  key={item.title}
+                  className={`group border-r border-b border-zinc-800 p-7 sm:p-8 transition-colors duration-500 ${
+                    highlighted ? 'bg-zinc-900/55' : 'hover:bg-zinc-900/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <item.icon
+                      className={`w-4 h-4 transition-all duration-300 shrink-0 ${
+                        highlighted
+                          ? 'text-white scale-110'
+                          : 'text-zinc-400 group-hover:text-white group-hover:scale-110'
+                      }`}
+                    />
+                    <h3 className="text-base font-medium text-white">
+                      {item.title}
+                    </h3>
+                  </div>
+                  <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
+                    {item.body}
+                  </p>
+                </StaggerItem>
+              );
+            })}
           </StaggerGrid>
         </div>
       </section>

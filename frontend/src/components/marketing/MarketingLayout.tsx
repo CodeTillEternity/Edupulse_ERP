@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, useScroll, useSpring, useReducedMotion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -15,6 +16,13 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { pathname, hash } = useLocation();
   const navigate = useNavigate();
+  const prefersReducedMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 180,
+    damping: 30,
+    restDelta: 0.001,
+  });
 
   const handleNavClick = (item: (typeof NAV_ITEMS)[number], e: React.MouseEvent) => {
     setMobileMenuOpen(false);
@@ -124,6 +132,13 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             </div>
           )}
         </div>
+        {!prefersReducedMotion && (
+          <motion.div
+            aria-hidden="true"
+            className="h-[2px] w-full bg-gradient-to-r from-amber-400/70 via-white/80 to-sky-400/70 origin-left"
+            style={{ scaleX }}
+          />
+        )}
       </header>
 
       <main className="flex-1">{children}</main>
