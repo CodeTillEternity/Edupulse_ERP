@@ -2,17 +2,16 @@ import { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
   Check,
-  Mic,
-  Video,
-  MonitorUp,
-  PhoneOff,
   Navigation,
+  ChevronRight,
   FileText,
+  FolderOpen,
   Code2,
-  ListChecks,
   CreditCard,
   Smartphone,
   Building2,
+  CheckCircle2,
+  QrCode,
 } from 'lucide-react';
 
 /* ─── Authentic Vector Brand Logos ────────────────────────────────── */
@@ -119,16 +118,6 @@ const VIDEO_PROVIDERS: Record<
 
 function LiveClassStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
   const [provider, setProvider] = useState<VideoProviderId>('meet');
-  const [activeTile, setActiveTile] = useState(0);
-
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    const interval = setInterval(() => {
-      setActiveTile((prev) => (prev + 1) % 4);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [prefersReducedMotion]);
-
   const current = VIDEO_PROVIDERS[provider];
 
   return (
@@ -194,126 +183,47 @@ function LiveClassStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
             </ul>
           </div>
 
-          {/* Right Minimalist Video Stage */}
+          {/* Right Realistic Live Classroom Visual */}
           <div className="lg:col-span-7 min-w-0">
             <div className="rounded-xl border border-zinc-800 bg-[#09090B] overflow-hidden shadow-2xl">
-              {/* Minimal Chrome */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800 bg-zinc-950">
-                <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-950">
+                <div className="flex items-center gap-2.5">
                   {current.logo}
                   <span className="text-sm font-medium text-white">
                     {current.name}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="text-xs text-zinc-400">Live session</span>
-                </div>
-              </div>
-
-              {/* Clean Video Grid */}
-              <div className="p-5 grid grid-cols-12 gap-3.5">
-                {/* Main Presenter Stage */}
-                <div className="col-span-12 sm:col-span-8 relative rounded-lg border border-zinc-800 bg-zinc-900/40 min-h-[240px] flex flex-col justify-between p-5 overflow-hidden">
-                  <div
-                    className="pointer-events-none absolute inset-0 opacity-20 transition-colors duration-500"
-                    style={{
-                      background: `radial-gradient(circle at 50% 45%, ${current.accent}, transparent 68%)`,
-                    }}
-                  />
-
-                  <div className="relative z-10 flex items-center justify-between">
-                    <span className="text-xs font-medium text-zinc-400">
-                      Presenter
-                    </span>
-                    {/* Smooth Audio Equalizer */}
-                    <div className="flex items-end gap-1 h-4" aria-hidden="true">
-                      {[0.45, 0.9, 0.65, 1, 0.55].map((scale, idx) => (
-                        <motion.span
-                          key={idx}
-                          className="w-0.5 rounded-full"
-                          style={{ backgroundColor: current.accent }}
-                          animate={
-                            prefersReducedMotion
-                              ? { height: '10px' }
-                              : { height: ['4px', `${Math.round(scale * 14)}px`, '4px'] }
-                          }
-                          transition={{
-                            duration: 0.7 + idx * 0.14,
-                            repeat: Infinity,
-                            ease: 'easeInOut',
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Center Clean Presenter Silhouette */}
-                  <div className="relative z-10 flex flex-col items-center justify-center my-6">
-                    <div className="relative">
-                      {!prefersReducedMotion && (
-                        <motion.div
-                          className="absolute -inset-3 rounded-full opacity-25"
-                          style={{ border: `1.5px solid ${current.accent}` }}
-                          animate={{ scale: [1, 1.25, 1], opacity: [0.35, 0, 0.35] }}
-                          transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                        />
-                      )}
-                      <div className="w-16 h-16 rounded-full bg-zinc-800/90 border border-zinc-700 flex items-center justify-center">
-                        <Video className="w-6 h-6 text-zinc-200" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 flex items-center justify-between">
-                    <span className="text-xs text-zinc-400">Screen sharing</span>
-                    <MonitorUp className="w-3.5 h-3.5 text-zinc-500" />
-                  </div>
-                </div>
-
-                {/* Participant Tiles */}
-                <div className="col-span-12 sm:col-span-4 grid grid-cols-2 sm:grid-cols-1 gap-3">
-                  {[0, 1, 2, 3].slice(0, 3).map((idx) => {
-                    const speaking = activeTile === idx;
-                    return (
-                      <div
+                <div className="flex items-center gap-2.5">
+                  <div className="flex items-end gap-0.5 h-3.5" aria-hidden="true">
+                    {[0.45, 0.9, 0.65, 1].map((scale, idx) => (
+                      <motion.span
                         key={idx}
-                        className="rounded-lg border bg-zinc-900/40 p-3.5 flex items-center justify-between transition-colors duration-300"
-                        style={{
-                          borderColor: speaking ? current.accent : 'rgb(39 39 42)',
+                        className="w-0.5 rounded-full"
+                        style={{ backgroundColor: current.accent }}
+                        animate={
+                          prefersReducedMotion
+                            ? { height: '9px' }
+                            : { height: ['4px', `${Math.round(scale * 13)}px`, '4px'] }
+                        }
+                        transition={{
+                          duration: 0.7 + idx * 0.14,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
                         }}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700/80" />
-                          <div className="space-y-1.5">
-                            <div className="w-16 h-2 rounded bg-zinc-700/70" />
-                            <div className="w-10 h-1.5 rounded bg-zinc-800" />
-                          </div>
-                        </div>
-                        <Mic
-                          className="w-3.5 h-3.5 transition-colors"
-                          style={{ color: speaking ? current.accent : 'rgb(82 82 91)' }}
-                        />
-                      </div>
-                    );
-                  })}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-xs text-zinc-400">Live class</span>
                 </div>
               </div>
 
-              {/* Clean Call Controls Bar */}
-              <div className="px-5 py-3.5 border-t border-zinc-800 bg-zinc-950 flex items-center justify-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300">
-                  <Mic className="w-4 h-4" />
-                </div>
-                <div className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300">
-                  <Video className="w-4 h-4" />
-                </div>
-                <div className="w-9 h-9 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-300">
-                  <MonitorUp className="w-4 h-4" />
-                </div>
-                <div className="w-9 h-9 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center text-red-400">
-                  <PhoneOff className="w-4 h-4" />
-                </div>
+              <div className="relative bg-zinc-950">
+                <img
+                  src="/integrations/live-class.jpg"
+                  alt="Live university classroom session showing presenter slide and participating students"
+                  className="w-full h-auto block object-cover"
+                  loading="lazy"
+                />
               </div>
             </div>
           </div>
@@ -325,21 +235,16 @@ function LiveClassStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
 
 /* ─── 2. Real-Time Vehicle & Fleet Routing (Google Maps) ──────────── */
 
-function FleetMapsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
-  // Smooth cubic bezier road curve used both for the glowing route and animateMotion
-  const routePath =
-    'M 64 268 C 140 264, 168 205, 224 188 C 288 168, 316 198, 384 158 C 446 122, 474 78, 572 72';
-
+function FleetMapsStage() {
   return (
     <section className="py-20 sm:py-28 border-t border-zinc-800 bg-[#09090B]">
       <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          {/* Left Realistic Dark Vector Map */}
+          {/* Left Realistic Dark-Mode Google Maps Visual */}
           <div className="lg:col-span-7 order-2 lg:order-1 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-[#0B0F17] overflow-hidden shadow-2xl">
-              {/* Map Header */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800 bg-zinc-950">
-                <div className="flex items-center gap-3">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl">
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-950">
+                <div className="flex items-center gap-2.5">
                   <GoogleMapsLogo className="w-5 h-5" />
                   <span className="text-sm font-medium text-white">
                     Google Maps
@@ -351,98 +256,13 @@ function FleetMapsStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
                 </span>
               </div>
 
-              {/* Realistic Dark-Mode City Map Canvas */}
-              <div className="relative h-[300px] sm:h-[340px] bg-[#0B0F17] overflow-hidden">
-                <svg
-                  viewBox="0 0 640 340"
-                  className="w-full h-full"
-                  preserveAspectRatio="xMidYMid slice"
-                  aria-hidden="true"
-                >
-                  <defs>
-                    <filter id="route-glow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="5" result="blur" />
-                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                    </filter>
-                  </defs>
-
-                  {/* Subtle Urban Land Blocks & Park/Water Geometry */}
-                  <path
-                    d="M -20 40 Q 130 15, 250 70 T 520 35 L 660 50 L 660 -10 L -20 -10 Z"
-                    fill="#0E1522"
-                  />
-                  <path
-                    d="M 410 215 Q 500 185, 650 235 L 650 350 L 380 350 Z"
-                    fill="#0D171B"
-                  />
-                  <rect x="75" y="55" width="95" height="65" rx="6" fill="#101725" />
-                  <rect x="210" y="75" width="110" height="55" rx="6" fill="#101725" />
-                  <rect x="110" y="210" width="95" height="70" rx="6" fill="#101725" />
-                  <rect x="255" y="220" width="115" height="65" rx="6" fill="#101725" />
-
-                  {/* Minor City Street Network */}
-                  <g stroke="#182235" strokeWidth="2" fill="none">
-                    <path d="M 0 52 L 640 92" />
-                    <path d="M 0 142 L 640 120" />
-                    <path d="M 0 218 L 640 248" />
-                    <path d="M 0 296 L 640 278" />
-                    <path d="M 96 0 L 72 340" />
-                    <path d="M 196 0 L 222 340" />
-                    <path d="M 326 0 L 308 340" />
-                    <path d="M 456 0 L 478 340" />
-                    <path d="M 564 0 L 542 340" />
-                  </g>
-
-                  {/* Major Arterial Highways */}
-                  <g stroke="#202D44" strokeWidth="7" strokeLinecap="round" fill="none">
-                    <path d="M -10 182 C 160 170, 320 210, 650 150" />
-                    <path d="M 390 -10 C 375 110, 395 220, 360 350" />
-                  </g>
-
-                  {/* Active Route Casing + Glowing Google Maps Blue Line */}
-                  <path
-                    d={routePath}
-                    stroke="#1D4ED8"
-                    strokeOpacity="0.35"
-                    strokeWidth="12"
-                    strokeLinecap="round"
-                    fill="none"
-                  />
-                  <path
-                    d={routePath}
-                    stroke="#4285F4"
-                    strokeWidth="4.5"
-                    strokeLinecap="round"
-                    fill="none"
-                    filter="url(#route-glow)"
-                  />
-
-                  {/* Origin & Campus Destination Markers */}
-                  <g transform="translate(64, 268)">
-                    <circle r="7" fill="#34A853" stroke="#0B0F17" strokeWidth="3" />
-                  </g>
-                  <g transform="translate(304, 179)">
-                    <circle r="5.5" fill="#93C5FD" stroke="#0B0F17" strokeWidth="2.5" />
-                  </g>
-                  <g transform="translate(572, 72)">
-                    <circle r="14" fill="rgba(234, 67, 53, 0.2)" />
-                    <circle r="7.5" fill="#EA4335" stroke="#FFFFFF" strokeWidth="2.5" />
-                  </g>
-
-                  {/* Smoothly Gliding Vehicle Along Exact Bezier Road Path */}
-                  <g>
-                    <circle r="20" fill="rgba(66, 133, 244, 0.22)" />
-                    <circle r="10" fill="#4285F4" stroke="#FFFFFF" strokeWidth="3" />
-                    {!prefersReducedMotion && (
-                      <animateMotion
-                        dur="10s"
-                        repeatCount="indefinite"
-                        path={routePath}
-                        rotate="auto"
-                      />
-                    )}
-                  </g>
-                </svg>
+              <div className="relative bg-[#0B0F17]">
+                <img
+                  src="/integrations/fleet-map.jpg"
+                  alt="Google Maps dark-mode campus bus route tracking showing active route and vehicle position"
+                  className="w-full h-auto block object-cover"
+                  loading="lazy"
+                />
               </div>
             </div>
           </div>
@@ -487,15 +307,14 @@ function FleetMapsStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
 /* ─── 3. Live Class Notes & Knowledge Base (Notion) ───────────────── */
 
 function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
-  const [activeBlock, setActiveBlock] = useState(0);
+  const [selectedPage, setSelectedPage] = useState(0);
 
-  useEffect(() => {
-    if (prefersReducedMotion) return;
-    const interval = setInterval(() => {
-      setActiveBlock((prev) => (prev + 1) % 3);
-    }, 2800);
-    return () => clearInterval(interval);
-  }, [prefersReducedMotion]);
+  const sidebarPages = [
+    'CS-301 · Algorithms',
+    'Graph Traversal',
+    'Dynamic Programming',
+    'Lab Submissions',
+  ];
 
   return (
     <section className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60">
@@ -536,77 +355,81 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
           {/* Right Authentic Notion Dark Workspace */}
           <div className="lg:col-span-7 min-w-0">
             <div className="rounded-xl border border-zinc-800 bg-[#191919] overflow-hidden shadow-2xl">
-              {/* Notion Header */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800 bg-[#141414]">
-                <div className="flex items-center gap-3">
-                  <NotionLogo className="w-5 h-5" />
-                  <span className="text-sm font-medium text-white">Notion</span>
+              {/* Notion Top Chrome */}
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-zinc-800 bg-[#141414]">
+                <div className="flex items-center gap-2.5 text-xs text-zinc-400">
+                  <NotionLogo className="w-4 h-4" />
+                  <span>EduPulse Academics</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
+                  <span className="text-zinc-200">{sidebarPages[selectedPage]}</span>
                 </div>
-                <span className="text-xs text-zinc-500">Synced workspace</span>
+                <span className="text-xs text-zinc-500">Share</span>
               </div>
 
-              {/* Clean Document Body */}
-              <div className="p-6 sm:p-8 space-y-5">
-                <div className="flex items-center gap-2.5 text-zinc-400 text-xs">
-                  <FileText className="w-4 h-4" />
-                  <span>Algorithms &amp; Data Structures</span>
-                </div>
-
-                <h3 className="text-2xl font-semibold text-white tracking-tight">
-                  Balanced Search Trees
-                </h3>
-
-                {/* Block 1: Summary Callout */}
-                <div
-                  className={`rounded-lg border p-4 transition-colors duration-300 ${
-                    activeBlock === 0
-                      ? 'border-zinc-600 bg-zinc-800/60'
-                      : 'border-zinc-800 bg-zinc-900/50'
-                  }`}
-                >
-                  <p className="text-sm text-zinc-200 leading-relaxed">
-                    Self-balancing trees keep lookup, insertion, and deletion bounded
-                    at logarithmic height across dynamic workloads.
-                  </p>
-                </div>
-
-                {/* Block 2: Code Block */}
-                <div
-                  className={`rounded-lg border p-4 font-mono text-xs transition-colors duration-300 ${
-                    activeBlock === 1
-                      ? 'border-zinc-600 bg-[#111111]'
-                      : 'border-zinc-800 bg-[#111111]/80'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-zinc-500 mb-2">
-                    <Code2 className="w-3.5 h-3.5" />
-                    <span>TypeScript</span>
+              <div className="grid sm:grid-cols-12">
+                {/* Authentic Notion Sidebar */}
+                <div className="hidden sm:block sm:col-span-4 border-r border-zinc-800 bg-[#202020] p-3.5 space-y-1">
+                  <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-zinc-400">
+                    <FolderOpen className="w-3.5 h-3.5" />
+                    <span>Course Spaces</span>
                   </div>
-                  <pre className="text-zinc-300 overflow-x-auto leading-relaxed">
-                    <code>{`function balanceFactor(node: TreeNode | null): number {\n  return node ? height(node.left) - height(node.right) : 0;\n}`}</code>
-                  </pre>
+                  {sidebarPages.map((page, idx) => (
+                    <button
+                      key={page}
+                      type="button"
+                      onClick={() => setSelectedPage(idx)}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-xs text-left transition-colors cursor-pointer ${
+                        selectedPage === idx
+                          ? 'bg-zinc-800 text-white font-medium'
+                          : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
+                      <span className="truncate">{page}</span>
+                    </button>
+                  ))}
                 </div>
 
-                {/* Block 3: Live Checklist */}
-                <div
-                  className={`rounded-lg border p-4 transition-colors duration-300 ${
-                    activeBlock === 2
-                      ? 'border-zinc-600 bg-zinc-800/60'
-                      : 'border-zinc-800 bg-zinc-900/50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 text-xs text-zinc-400 mb-3">
-                    <ListChecks className="w-3.5 h-3.5" />
-                    <span>Reading checklist</span>
+                {/* Main Notion Page Body */}
+                <div className="sm:col-span-8 p-6 sm:p-7 space-y-4">
+                  <h3 className="text-2xl font-semibold text-white tracking-tight">
+                    {sidebarPages[selectedPage]}
+                  </h3>
+
+                  {/* Page Properties Table */}
+                  <div className="grid grid-cols-2 gap-2 py-2.5 border-y border-zinc-800 text-xs">
+                    <div className="text-zinc-500">Department</div>
+                    <div className="text-zinc-200">Computer Science</div>
+                    <div className="text-zinc-500">Sync Mode</div>
+                    <div className="text-emerald-400">Live Class Notes</div>
                   </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2.5 text-zinc-400">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="line-through">Single &amp; double rotation invariants</span>
+
+                  {/* Callout */}
+                  <div className="rounded-lg bg-[#252525] border border-zinc-800 p-3.5 text-xs sm:text-sm text-zinc-200 leading-relaxed">
+                    Breadth-first traversal explores level by level using a queue,
+                    guaranteeing shortest unweighted paths.
+                  </div>
+
+                  {/* Code Snippet */}
+                  <div className="rounded-lg bg-[#141414] border border-zinc-800 p-3.5 font-mono text-xs text-zinc-300">
+                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 mb-2">
+                      <Code2 className="w-3.5 h-3.5" />
+                      <span>TypeScript</span>
                     </div>
-                    <div className="flex items-center gap-2.5 text-zinc-100">
-                      <span className="w-4 h-4 rounded border border-zinc-600 shrink-0" />
-                      <span>Complexity proof &amp; practice problems</span>
+                    <pre className="overflow-x-auto leading-relaxed">
+                      <code>{`const queue: Node[] = [root];\nwhile (queue.length > 0) visit(queue.shift()!);`}</code>
+                    </pre>
+                  </div>
+
+                  {/* Checklist */}
+                  <div className="space-y-2 text-xs sm:text-sm pt-1">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="line-through">Queue invariant &amp; time complexity</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-zinc-100">
+                      <span className="w-3.5 h-3.5 rounded border border-zinc-600 shrink-0" />
+                      <span>Topological sort practice set</span>
                       {!prefersReducedMotion && (
                         <motion.span
                           aria-hidden="true"
@@ -630,92 +453,129 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
 /* ─── 4. Fee Collection & Ledger Reconciliation (Razorpay) ────────── */
 
 function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
-  const [activeMethod, setActiveMethod] = useState(0);
+  const [activeTab, setActiveTab] = useState<'upi' | 'card' | 'netbanking'>('upi');
+  const [paid, setPaid] = useState(false);
 
   useEffect(() => {
     if (prefersReducedMotion) return;
     const interval = setInterval(() => {
-      setActiveMethod((prev) => (prev + 1) % 3);
-    }, 2600);
+      setPaid((prev) => !prev);
+    }, 3200);
     return () => clearInterval(interval);
   }, [prefersReducedMotion]);
-
-  const methods = [
-    { label: 'UPI & QR', icon: Smartphone },
-    { label: 'Cards', icon: CreditCard },
-    { label: 'Netbanking', icon: Building2 },
-  ];
 
   return (
     <section className="py-20 sm:py-28 border-t border-zinc-800 bg-[#09090B]">
       <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          {/* Left Animated Razorpay -> Ledger Flow */}
+          {/* Left Realistic Razorpay Checkout + Ledger Flow */}
           <div className="lg:col-span-7 order-2 lg:order-1 min-w-0">
             <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl">
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800 bg-[#09090B]">
+              {/* Razorpay Navy Header */}
+              <div className="flex items-center justify-between px-5 py-3.5 bg-[#072654] border-b border-sky-900/60">
                 <div className="flex items-center gap-3">
-                  <RazorpayLogo className="w-5 h-5" />
-                  <span className="text-sm font-medium text-white">Razorpay</span>
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                    <RazorpayLogo className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">
+                      Razorpay Checkout
+                    </p>
+                    <p className="text-[11px] text-sky-200/80">
+                      EduPulse Institutional Fee Portal
+                    </p>
+                  </div>
                 </div>
-                <span className="text-xs text-zinc-500">INR Settlement</span>
+                <span className="text-xs font-medium text-sky-200">
+                  Trusted Business
+                </span>
               </div>
 
-              <div className="p-6 sm:p-8 grid sm:grid-cols-11 gap-5 items-center">
-                {/* Razorpay Checkout Sheet */}
-                <div className="sm:col-span-5 rounded-xl border border-zinc-800 bg-[#09090B] p-5 space-y-3">
-                  <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
-                    Payment method
-                  </p>
-                  {methods.map((method, idx) => {
-                    const Icon = method.icon;
-                    const selected = activeMethod === idx;
-                    return (
-                      <div
-                        key={method.label}
-                        className={`flex items-center justify-between px-3.5 py-2.5 rounded-lg border text-sm transition-all duration-300 ${
-                          selected
-                            ? 'border-sky-500/50 bg-sky-500/10 text-white'
-                            : 'border-zinc-800 bg-zinc-900/40 text-zinc-400'
-                        }`}
-                      >
-                        <span className="flex items-center gap-2.5">
-                          <Icon className={`w-4 h-4 ${selected ? 'text-sky-400' : 'text-zinc-500'}`} />
-                          {method.label}
-                        </span>
-                        {selected && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="p-5 sm:p-7 grid sm:grid-cols-12 gap-5 items-center">
+                {/* Razorpay Payment Modal */}
+                <div className="sm:col-span-6 rounded-xl border border-zinc-800 bg-[#09090B] overflow-hidden">
+                  {/* Method Tabs */}
+                  <div className="grid grid-cols-3 border-b border-zinc-800 text-xs">
+                    {[
+                      { id: 'upi', label: 'UPI / QR', icon: Smartphone },
+                      { id: 'card', label: 'Cards', icon: CreditCard },
+                      { id: 'netbanking', label: 'Bank', icon: Building2 },
+                    ].map((tab) => {
+                      const Icon = tab.icon;
+                      const selected = activeTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActiveTab(tab.id as 'upi' | 'card' | 'netbanking')}
+                          className={`flex items-center justify-center gap-1.5 py-2.5 font-medium transition-colors cursor-pointer ${
+                            selected
+                              ? 'bg-sky-500/10 text-sky-400 border-b-2 border-sky-400'
+                              : 'text-zinc-400 hover:text-zinc-200'
+                          }`}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                {/* Animated Settlement Pulse Beam */}
-                <div className="hidden sm:flex sm:col-span-1 items-center justify-center" aria-hidden="true">
-                  <div className="relative w-full h-0.5 bg-zinc-800 overflow-hidden rounded-full">
-                    {!prefersReducedMotion && (
+                  {/* Checkout Body */}
+                  <div className="p-5 flex flex-col items-center justify-center min-h-[190px] text-center">
+                    {paid ? (
                       <motion.div
-                        className="absolute inset-y-0 w-1/2 bg-gradient-to-r from-transparent via-sky-400 to-emerald-400"
-                        animate={{ x: ['-100%', '200%'] }}
-                        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                      />
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="flex flex-col items-center gap-2.5"
+                      >
+                        <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
+                          <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                        </div>
+                        <p className="text-sm font-medium text-white">
+                          Payment Successful
+                        </p>
+                        <p className="text-xs text-zinc-400">
+                          Synced to student fee ledger
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-24 h-24 rounded-lg bg-white p-2 flex items-center justify-center">
+                          <QrCode className="w-full h-full text-zinc-950" strokeWidth={1.5} />
+                        </div>
+                        <p className="text-xs text-zinc-300">
+                          Scan with any UPI app
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
 
                 {/* EduPulse Ledger */}
-                <div className="sm:col-span-5 rounded-xl border border-zinc-800 bg-[#09090B] p-5 space-y-3">
-                  <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
-                    Fee ledger
+                <div className="sm:col-span-6 space-y-2.5">
+                  <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-2">
+                    Institutional Fee Ledger
                   </p>
-                  {['Tuition Fee', 'Hostel & Mess', 'Exam Registration'].map((item) => (
-                    <div
-                      key={item}
-                      className="flex items-center justify-between px-3.5 py-2.5 rounded-lg border border-zinc-800 bg-zinc-900/40 text-sm text-zinc-200"
-                    >
-                      <span>{item}</span>
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                    </div>
-                  ))}
+                  {['Tuition Fee', 'Hostel & Mess', 'Exam Registration'].map((head, idx) => {
+                    const settled = paid || idx > 0;
+                    return (
+                      <div
+                        key={head}
+                        className="flex items-center justify-between px-4 py-3 rounded-lg border border-zinc-800 bg-[#09090B]"
+                      >
+                        <span className="text-sm text-zinc-200">{head}</span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 text-xs font-medium ${
+                            settled ? 'text-emerald-400' : 'text-sky-400'
+                          }`}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          {settled ? 'Settled' : 'Processing'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -741,7 +601,7 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
 
             <ul className="space-y-3 border-t border-zinc-800 pt-6">
               {[
-                'Native INR checkout with UPI, cards, and netbanking',
+                'Native INR checkout with UPI QR, cards, and netbanking',
                 'Instant fee-head reconciliation and digital receipts',
                 'Real-time settlement visibility for finance teams',
               ].map((bullet) => (
@@ -766,7 +626,7 @@ export default function IntegrationsSection() {
   return (
     <>
       <LiveClassStage prefersReducedMotion={prefersReducedMotion} />
-      <FleetMapsStage prefersReducedMotion={prefersReducedMotion} />
+      <FleetMapsStage />
       <NotionNotesStage prefersReducedMotion={prefersReducedMotion} />
       <RazorpayPaymentsStage prefersReducedMotion={prefersReducedMotion} />
     </>
