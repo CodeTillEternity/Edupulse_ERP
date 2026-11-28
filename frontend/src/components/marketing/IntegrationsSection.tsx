@@ -117,17 +117,17 @@ const VIDEO_PROVIDERS: Record<
   meet: {
     name: 'Google Meet',
     accent: '#00AC47',
-    logo: <GoogleMeetLogo className="w-5 h-5" />,
+    logo: <GoogleMeetLogo className="w-7 h-7" />,
   },
   zoom: {
     name: 'Zoom',
     accent: '#0B5CFF',
-    logo: <ZoomLogo className="w-5 h-5" />,
+    logo: <ZoomLogo className="w-7 h-7" />,
   },
   jitsi: {
     name: 'Jitsi Meet',
     accent: '#17A0DB',
-    logo: <JitsiLogo className="w-5 h-5" />,
+    logo: <JitsiLogo className="w-7 h-7" />,
   },
 };
 
@@ -284,9 +284,9 @@ function FleetMapsStage() {
 
           {/* Right Copy */}
           <div className="lg:col-span-5 order-1 lg:order-2 min-w-0">
-            <div className="inline-flex items-center gap-2.5 mb-4">
-              <GoogleMapsLogo className="w-5 h-5" />
-              <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+            <div className="inline-flex items-center gap-3.5 mb-5">
+              <GoogleMapsLogo className="w-9 h-9" />
+              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
                 Google Maps
               </span>
             </div>
@@ -337,9 +337,9 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Copy */}
           <div className="lg:col-span-5 min-w-0">
-            <div className="inline-flex items-center gap-2.5 mb-4">
-              <NotionLogo className="w-5 h-5" />
-              <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+            <div className="inline-flex items-center gap-3.5 mb-5">
+              <NotionLogo className="w-9 h-9" />
+              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
                 Notion
               </span>
             </div>
@@ -649,9 +649,9 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
 
           {/* Right Copy */}
           <div className="lg:col-span-5 order-1 lg:order-2 min-w-0">
-            <div className="inline-flex items-center gap-2.5 mb-4">
-              <RazorpayLogo className="w-5 h-5" />
-              <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+            <div className="inline-flex items-center gap-3.5 mb-5">
+              <RazorpayLogo className="w-9 h-9" />
+              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
                 Razorpay
               </span>
             </div>
@@ -703,9 +703,9 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Copy */}
           <div className="lg:col-span-5 min-w-0">
-            <div className="inline-flex items-center gap-2.5 mb-4">
-              <WhatsAppLogo className="w-5 h-5" />
-              <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+            <div className="inline-flex items-center gap-3.5 mb-5">
+              <WhatsAppLogo className="w-9 h-9" />
+              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
                 WhatsApp
               </span>
             </div>
