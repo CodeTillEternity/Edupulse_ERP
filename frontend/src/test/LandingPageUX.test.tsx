@@ -214,11 +214,9 @@ describe('LandingPage Public Marketing Website', () => {
     const zoomBtn = screen.getByRole('button', { name: 'Zoom' });
     fireEvent.click(zoomBtn);
     expect(zoomBtn).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('zoom.us/j/94820194812')).toBeInTheDocument();
 
     const jitsiBtn = screen.getByRole('button', { name: 'Jitsi Meet' });
     fireEvent.click(jitsiBtn);
     expect(jitsiBtn).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('meet.jit.si/edupulse-cse-a')).toBeInTheDocument();
   });
 });
