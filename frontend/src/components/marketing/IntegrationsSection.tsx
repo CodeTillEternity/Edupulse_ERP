@@ -286,10 +286,10 @@ function FleetMapsStage() {
 
           {/* Right Copy */}
           <div className="lg:col-span-5 order-1 lg:order-2 min-w-0">
-            <div className="inline-flex items-center gap-3.5 mb-5">
+            <div className="inline-flex items-center gap-3 mb-5">
               <GoogleMapsLogo className="w-9 h-9" />
-              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
-                Google Maps
+              <span className="text-xl sm:text-2xl tracking-[-0.02em] text-white font-medium">
+                Google <span className="font-normal text-zinc-300">Maps</span>
               </span>
             </div>
 
@@ -339,9 +339,9 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Copy */}
           <div className="lg:col-span-5 min-w-0">
-            <div className="inline-flex items-center gap-3.5 mb-5">
+            <div className="inline-flex items-center gap-3 mb-5">
               <NotionLogo className="w-9 h-9" />
-              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
+              <span className="text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-white">
                 Notion
               </span>
             </div>
@@ -702,9 +702,9 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
 
           {/* Right Copy */}
           <div className="lg:col-span-5 order-1 lg:order-2 min-w-0">
-            <div className="inline-flex items-center gap-3.5 mb-5">
+            <div className="inline-flex items-center gap-3 mb-5">
               <RazorpayLogo className="w-9 h-9" />
-              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
+              <span className="text-xl sm:text-2xl font-bold italic tracking-[-0.03em] text-white">
                 Razorpay
               </span>
             </div>
@@ -756,9 +756,9 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Copy */}
           <div className="lg:col-span-5 min-w-0">
-            <div className="inline-flex items-center gap-3.5 mb-5">
+            <div className="inline-flex items-center gap-3 mb-5">
               <WhatsAppLogo className="w-9 h-9" />
-              <span className="text-xs sm:text-sm font-mono uppercase tracking-[0.2em] text-zinc-400">
+              <span className="text-xl sm:text-2xl font-semibold tracking-[-0.02em] text-white">
                 WhatsApp
               </span>
             </div>
