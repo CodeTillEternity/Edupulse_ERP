@@ -236,7 +236,7 @@ export default function LandingPage() {
         const idx = SHOWCASE_TABS.findIndex((t) => t.id === prev);
         return SHOWCASE_TABS[(idx + 1) % SHOWCASE_TABS.length].id;
       });
-    }, 3600);
+    }, 3000);
     return () => clearInterval(timer);
   }, []);
 
@@ -394,7 +394,7 @@ export default function LandingPage() {
                         key={`progress-${tab.id}`}
                         initial={{ scaleX: 0 }}
                         animate={{ scaleX: 1 }}
-                        transition={{ duration: 3.6, ease: 'linear' }}
+                        transition={{ duration: 3, ease: 'linear' }}
                         style={{ transformOrigin: 'left' }}
                         className="absolute bottom-0 left-0 right-0 h-[2px] bg-indigo-400"
                       />
@@ -404,11 +404,17 @@ export default function LandingPage() {
               })}
             </div>
 
-            {/* Right stacked auto-animated ERP screenshot deck */}
-            <div className="lg:col-span-8 min-w-0 pr-12 sm:pr-20 pb-4">
-              <div className="relative">
-                {/* Invisible spacer to lock container height */}
-                <div className="invisible pointer-events-none" aria-hidden="true">
+            {/* Right orbital 3D ring carousel (steps clockwise every 3s) */}
+            <div className="lg:col-span-8 min-w-0 pt-10 sm:pt-14 pb-4 overflow-hidden">
+              <div className="relative flex items-center justify-center">
+                {/* Subtle orbital ring guide */}
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[58%] w-[84%] h-[42%] rounded-[100%] border border-zinc-800/80"
+                />
+
+                {/* Invisible sizer matching front card width/height */}
+                <div className="w-[78%] sm:w-[74%] invisible pointer-events-none" aria-hidden="true">
                   <ScreenshotFrame
                     src={SHOWCASE_TABS[0].screenshot}
                     alt=""
@@ -418,13 +424,17 @@ export default function LandingPage() {
 
                 {SHOWCASE_TABS.map((tab, idx) => {
                   const total = SHOWCASE_TABS.length;
-                  const offset = (idx - activeShowcaseIdx + total) % total;
+                  // Clockwise step: each card advances one orbital slot every 3s
+                  const slot = (idx - activeShowcaseIdx + total) % total;
+                  const angle = (slot * 2 * Math.PI) / total;
 
-                  const x = offset * 14;
-                  const rotate = offset * 2.2;
-                  const scale = 1 - offset * 0.025;
-                  const opacity = Math.max(0.3, 1 - offset * 0.17);
-                  const zIndex = (total - offset) * 10;
+                  // depth: 1 at front (0 deg), 0 at back (180 deg)
+                  const depth = (Math.cos(angle) + 1) / 2;
+                  const x = Math.sin(angle) * 150;
+                  const y = (1 - Math.cos(angle)) * -38 + 16;
+                  const scale = 0.5 + depth * 0.5;
+                  const opacity = 0.35 + depth * 0.65;
+                  const zIndex = Math.round(depth * 50) + 10;
 
                   return (
                     <motion.div
@@ -432,20 +442,20 @@ export default function LandingPage() {
                       initial={false}
                       animate={{
                         x,
-                        rotate,
+                        y,
                         scale,
                         opacity,
                       }}
                       transition={
                         shouldReduceMotion
                           ? { duration: 0 }
-                          : { duration: 0.65, ease: [0.22, 1, 0.36, 1] }
+                          : { duration: 0.75, ease: [0.22, 1, 0.36, 1] }
                       }
                       style={{
                         zIndex,
-                        pointerEvents: offset === 0 ? 'auto' : 'none',
+                        pointerEvents: slot === 0 ? 'auto' : 'none',
                       }}
-                      className="absolute inset-0 origin-bottom-left"
+                      className="absolute w-[78%] sm:w-[74%] origin-center"
                     >
                       <ScreenshotFrame
                         src={tab.screenshot}
