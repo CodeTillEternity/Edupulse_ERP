@@ -31,6 +31,12 @@ jobs:
         working-directory: backend
         run: mvn clean package -DskipTests -B
 
+      - name: Stage Backend JAR for Desktop Bundle
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path src-tauri/resources/backend | Out-Null
+          Copy-Item "backend/target/institutional-erp-backend-1.0.0-SNAPSHOT.jar" "src-tauri/resources/backend/institutional-erp-backend.jar" -Force
+
       - name: Install & Build Frontend
         working-directory: frontend
         run: |
@@ -44,5 +50,5 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: 'EduPulse ERP Desktop v__VERSION__'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false

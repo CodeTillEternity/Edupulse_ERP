@@ -1,0 +1,21 @@
+EDUPULSE ERP DESKTOP EDITION — END-USER LICENSE AGREEMENT (EULA)
+Copyright (c) 2026 EduPulse ERP Technologies. All rights reserved.
+
+1. GRANT OF LICENSE
+EduPulse ERP Technologies ("Licensor") grants you ("Licensee") a non-exclusive, non-transferable license to install and use the EduPulse ERP Windows Desktop Edition ("Software") on authorized institutional computers for evaluation, demonstration, or licensed institutional administration.
+
+2. EVALUATION & DEMO CREDENTIALS
+This release includes a local institutional demonstration environment seeded with sample academic, student, and financial records. Demo accounts are intended strictly for evaluation and testing purposes.
+
+3. RESTRICTIONS
+You may not reverse-engineer, decompile, disassemble, redistribute, sublicense, or remove proprietary notices from the Software except to the extent expressly permitted by applicable law.
+
+4. DATA ISOLATION & SECURITY
+When connected to a production EduPulse tenant backend, institutional records remain isolated within your institution's PostgreSQL Row-Level Security (RLS) boundary.
+
+5. DISCLAIMER OF WARRANTY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+6. SUPPORT & CONTACT
+For institutional licensing, deployment, or support inquiries, contact:
+contact@edupulseerp.in | https://edupulseerp.in

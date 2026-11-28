@@ -39,6 +39,7 @@
     ],
     "publisher": "EduPulse ERP Technologies",
     "copyright": "Copyright © 2026 EduPulse ERP. All rights reserved.",
+    "licenseFile": "LICENSE.txt",
     "shortDescription": "EduPulse Enterprise Resource Planning Desktop Edition",
     "longDescription": "EduPulse ERP Windows Desktop Edition for Higher Education Institutions.",
     "windows": {
