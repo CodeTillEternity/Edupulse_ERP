@@ -116,7 +116,7 @@ export default function PlatformPage() {
     <MarketingLayout>
       {/* Hero */}
       <section className="pt-12 pb-12 sm:pt-16 sm:pb-14 border-b border-zinc-800">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
             Platform
           </p>
@@ -147,7 +147,7 @@ export default function PlatformPage() {
 
       {/* Modules */}
       <section className="py-14 sm:py-20">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10 space-y-16 sm:space-y-20">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 space-y-16 sm:space-y-20">
           {MODULES.map((mod, idx) => {
             const isEven = idx % 2 === 1;
             return (

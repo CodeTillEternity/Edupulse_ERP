@@ -237,7 +237,7 @@ export default function LandingPage() {
     <MarketingLayout>
       {/* ────────────────────────── HERO ───────────────────────────── */}
       <section className="pt-10 sm:pt-14 lg:pt-16 pb-14 sm:pb-20">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="grid lg:grid-cols-12 gap-6 lg:gap-10 items-end mb-10 sm:mb-12">
             <div className="lg:col-span-7">
               <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-medium tracking-[-0.035em] leading-[1.12] text-white">
@@ -280,7 +280,7 @@ export default function LandingPage() {
 
       {/* ────────────────── PLATFORM CAPABILITIES (HAIRLINE GRID) ────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800" id="platform">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
             <div className="max-w-2xl">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white">
@@ -320,7 +320,7 @@ export default function LandingPage() {
 
       {/* ────────────────── PRODUCT SHOWCASE (SPLIT EXPLORER) ─────────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="max-w-2xl mb-12">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white mb-4">
               See the work behind the interface.
@@ -385,7 +385,7 @@ export default function LandingPage() {
 
       {/* ────────────────── INSTITUTIONAL LIFECYCLE ──────────────────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white max-w-xl">
               The complete institutional lifecycle
@@ -404,7 +404,7 @@ export default function LandingPage() {
                   key={step.label}
                   type="button"
                   onClick={() => setActiveLifecycle(i)}
-                  className={`text-left pt-5 border-t-2 transition-colors cursor-pointer ${
+                  className={`flex flex-col justify-start text-left pt-5 border-t-2 transition-colors cursor-pointer ${
                     isActive
                       ? 'border-white'
                       : 'border-zinc-800 hover:border-zinc-600'
@@ -444,7 +444,7 @@ export default function LandingPage() {
 
       {/* ────────────── ROLE-BASED EXPERIENCE (SPLIT) ────────────────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="max-w-2xl mb-16">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white mb-4">
               Built for every role in your institution
@@ -525,7 +525,7 @@ export default function LandingPage() {
 
       {/* ─────────────── TRUST & ARCHITECTURE (HAIRLINE) ─────────────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white mb-12">
             Built for institutional trust
           </h2>
@@ -573,7 +573,7 @@ export default function LandingPage() {
 
       {/* ─────────────────────── PRICING (MATRIX) ────────────────────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60" id="pricing">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
             <div>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white">
@@ -641,7 +641,7 @@ export default function LandingPage() {
 
       {/* ──────────────────────── FAQ (2-COL SPLIT) ──────────────────── */}
       <section className="py-20 sm:py-28 border-t border-zinc-800" id="faq">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
           <div className="grid lg:grid-cols-12 gap-10 lg:gap-12">
             <div className="lg:col-span-4">
               <h2 className="text-3xl sm:text-4xl font-medium tracking-[-0.03em] text-white mb-3">
@@ -690,7 +690,7 @@ export default function LandingPage() {
 
       {/* ──────────────────── FINAL CTA ──────────────────────────────── */}
       <section className="py-20 sm:py-24 border-t border-zinc-800 bg-zinc-950/60">
-        <div className="max-w-[1280px] mx-auto px-6 sm:px-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="max-w-2xl">
             <h2 className="text-3xl sm:text-4xl font-medium tracking-[-0.03em] text-white mb-3">
               Bring your institution&apos;s operations together.
