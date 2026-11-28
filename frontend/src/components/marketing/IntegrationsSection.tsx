@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, useReducedMotion, useInView } from 'framer-motion';
 import {
   Check,
   Navigation,
@@ -542,19 +542,21 @@ function DenseQrMatrix() {
 }
 
 function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { amount: 0.2 });
   const [activeTab, setActiveTab] = useState<'upi' | 'card' | 'netbanking'>('upi');
   const [paid, setPaid] = useState(false);
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !isInView) return;
     const interval = setInterval(() => {
       setPaid((prev) => !prev);
     }, 3400);
     return () => clearInterval(interval);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, isInView]);
 
   return (
-    <section className="py-20 sm:py-28 border-t border-zinc-800 bg-[#09090B]">
+    <section ref={sectionRef} className="py-20 sm:py-28 border-t border-zinc-800 bg-[#09090B]">
       <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Authentic White Razorpay Checkout + Ledger Flow */}
@@ -580,13 +582,13 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
                     </div>
                   </div>
 
-                  {/* Checkout Body */}
-                  <div className="p-4 space-y-3 bg-[#F8FAFC]">
+                  {/* Checkout Body (fixed height prevents any layout shift) */}
+                  <div className="p-4 bg-[#F8FAFC] h-[320px] flex flex-col justify-center">
                     {paid ? (
                       <motion.div
                         initial={{ scale: 0.94, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="py-10 flex flex-col items-center justify-center text-center gap-2"
+                        className="flex flex-col items-center justify-center text-center gap-2"
                       >
                         <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
                           <CheckCircle2 className="w-7 h-7 text-emerald-600" />
@@ -599,7 +601,7 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
                         </p>
                       </motion.div>
                     ) : (
-                      <>
+                      <div className="space-y-3">
                         {/* Recommended UPI QR Box */}
                         <div className="rounded-lg bg-white border border-slate-200 p-3.5">
                           <div className="flex items-center justify-between mb-2.5">
@@ -659,7 +661,7 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
                             );
                           })}
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
 
@@ -745,6 +747,9 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
 const SENDER_REPLY = 'Received, thank you!';
 
 function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
+  const sectionRef = useRef<HTMLElement>(null);
+  const isInView = useInView(sectionRef, { amount: 0.2 });
+
   // Timeline ticks (every 100ms across an 8.5s cycle):
   // 0..8:    Msg 1 (EduPulse automated) visible
   // 9..20:   Msg 2 (EduPulse automated PDF) visible
@@ -754,12 +759,12 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
   const [tick, setTick] = useState(prefersReducedMotion ? 60 : 0);
 
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || !isInView) return;
     const timer = setInterval(() => {
       setTick((prev) => (prev + 1) % 85);
     }, 100);
     return () => clearInterval(timer);
-  }, [prefersReducedMotion]);
+  }, [prefersReducedMotion, isInView]);
 
   const showMsg1 = prefersReducedMotion || tick >= 2;
   const showMsg2 = prefersReducedMotion || tick >= 11;
@@ -772,7 +777,7 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
   const replyRead = prefersReducedMotion || tick >= 54;
 
   return (
-    <section className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60">
+    <section ref={sectionRef} className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60">
       <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Copy */}
@@ -846,9 +851,9 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
                 </div>
               </div>
 
-              {/* Classic WhatsApp Light Wallpaper (#EFEAE2) */}
+              {/* Classic WhatsApp Light Wallpaper (#EFEAE2) - fixed height prevents layout shift */}
               <div
-                className="p-5 sm:p-6 min-h-[370px] flex flex-col justify-between relative"
+                className="p-5 sm:p-6 h-[395px] overflow-hidden flex flex-col justify-start relative"
                 style={{
                   backgroundColor: '#EFEAE2',
                   backgroundImage:
