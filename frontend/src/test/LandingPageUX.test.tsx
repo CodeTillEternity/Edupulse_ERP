@@ -209,6 +209,9 @@ describe('LandingPage Public Marketing Website', () => {
     expect(
       screen.getByText('Collect fees in seconds. Reconcile ledgers automatically.')
     ).toBeInTheDocument();
+    expect(
+      screen.getByText('Instant campus updates where parents already read.')
+    ).toBeInTheDocument();
 
     // Interactive live classroom provider switcher
     const zoomBtn = screen.getByRole('button', { name: 'Zoom' });

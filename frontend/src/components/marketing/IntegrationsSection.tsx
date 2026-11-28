@@ -87,6 +87,21 @@ function RazorpayLogo({ className = 'w-6 h-6' }: { className?: string }) {
   );
 }
 
+function WhatsAppLogo({ className = 'w-6 h-6' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
+      <path
+        fill="#25D366"
+        d="M16 3C8.82 3 3 8.82 3 16c0 2.3.6 4.54 1.74 6.52L3 29l6.65-1.74A12.93 12.93 0 0 0 16 29c7.18 0 13-5.82 13-13S23.18 3 16 3z"
+      />
+      <path
+        fill="#FFFFFF"
+        d="M22.38 19.38c-.34-.17-2.02-.99-2.34-1.11-.31-.11-.54-.17-.77.17-.23.34-.88 1.11-1.08 1.34-.2.23-.4.25-.74.08-.34-.17-1.44-.53-2.74-1.69-1.01-.9-1.7-2.02-1.9-2.36-.2-.34-.02-.52.15-.69.15-.15.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.08-.17-.77-1.85-1.05-2.53-.28-.66-.56-.57-.77-.58h-.65c-.23 0-.6.08-.91.43-.31.34-1.19 1.17-1.19 2.84s1.22 3.3 1.39 3.53c.17.23 2.4 3.67 5.82 5.14.81.35 1.45.56 1.94.72.82.26 1.56.22 2.15.13.66-.1 2.02-.83 2.31-1.62.28-.8.28-1.48.2-1.62-.09-.14-.31-.23-.65-.4z"
+      />
+    </svg>
+  );
+}
+
 /* ─── 1. Live Classroom Showcase (Google Meet · Zoom · Jitsi) ────── */
 
 type VideoProviderId = 'meet' | 'zoom' | 'jitsi';
@@ -363,81 +378,132 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
                   <ChevronRight className="w-3.5 h-3.5 text-zinc-600" />
                   <span className="text-zinc-200">{sidebarPages[selectedPage]}</span>
                 </div>
-                <span className="text-xs text-zinc-500">Share</span>
+                <div className="flex items-center gap-3 text-xs text-zinc-500">
+                  <span>Share</span>
+                  <span>Updates</span>
+                </div>
               </div>
 
-              <div className="grid sm:grid-cols-12">
+              <div className="grid sm:grid-cols-12 min-h-[540px]">
                 {/* Authentic Notion Sidebar */}
-                <div className="hidden sm:block sm:col-span-4 border-r border-zinc-800 bg-[#202020] p-3.5 space-y-1">
-                  <div className="flex items-center gap-2 px-2 py-1.5 text-xs font-medium text-zinc-400">
-                    <FolderOpen className="w-3.5 h-3.5" />
-                    <span>Course Spaces</span>
+                <div className="hidden sm:flex sm:col-span-4 flex-col justify-between border-r border-zinc-800 bg-[#202020] p-3.5">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 px-2 py-2 text-xs font-medium text-zinc-300 mb-2">
+                      <div className="w-4 h-4 rounded bg-zinc-700 flex items-center justify-center text-[10px] text-white font-semibold">
+                        E
+                      </div>
+                      <span>EduPulse Workspace</span>
+                    </div>
+
+                    <div className="flex items-center gap-2 px-2 py-1.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+                      <FolderOpen className="w-3.5 h-3.5" />
+                      <span>Course Spaces</span>
+                    </div>
+                    {sidebarPages.map((page, idx) => (
+                      <button
+                        key={page}
+                        type="button"
+                        onClick={() => setSelectedPage(idx)}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-xs text-left transition-colors cursor-pointer ${
+                          selectedPage === idx
+                            ? 'bg-zinc-800 text-white font-medium'
+                            : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
+                        <span className="truncate">{page}</span>
+                      </button>
+                    ))}
                   </div>
-                  {sidebarPages.map((page, idx) => (
-                    <button
-                      key={page}
-                      type="button"
-                      onClick={() => setSelectedPage(idx)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded text-xs text-left transition-colors cursor-pointer ${
-                        selectedPage === idx
-                          ? 'bg-zinc-800 text-white font-medium'
-                          : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
-                      }`}
-                    >
-                      <FileText className="w-3.5 h-3.5 shrink-0 text-zinc-500" />
-                      <span className="truncate">{page}</span>
-                    </button>
-                  ))}
+
+                  <div className="pt-4 border-t border-zinc-800/80 px-2 text-[11px] text-zinc-500">
+                    Synced with Timetable
+                  </div>
                 </div>
 
                 {/* Main Notion Page Body */}
-                <div className="sm:col-span-8 p-6 sm:p-7 space-y-4">
-                  <h3 className="text-2xl font-semibold text-white tracking-tight">
-                    {sidebarPages[selectedPage]}
-                  </h3>
+                <div className="sm:col-span-8 flex flex-col">
+                  {/* Subtle Notion Cover Banner */}
+                  <div className="h-20 sm:h-24 w-full bg-gradient-to-r from-indigo-950/70 via-zinc-900 to-sky-950/60 border-b border-zinc-800/70 relative" />
 
-                  {/* Page Properties Table */}
-                  <div className="grid grid-cols-2 gap-2 py-2.5 border-y border-zinc-800 text-xs">
-                    <div className="text-zinc-500">Department</div>
-                    <div className="text-zinc-200">Computer Science</div>
-                    <div className="text-zinc-500">Sync Mode</div>
-                    <div className="text-emerald-400">Live Class Notes</div>
-                  </div>
-
-                  {/* Callout */}
-                  <div className="rounded-lg bg-[#252525] border border-zinc-800 p-3.5 text-xs sm:text-sm text-zinc-200 leading-relaxed">
-                    Breadth-first traversal explores level by level using a queue,
-                    guaranteeing shortest unweighted paths.
-                  </div>
-
-                  {/* Code Snippet */}
-                  <div className="rounded-lg bg-[#141414] border border-zinc-800 p-3.5 font-mono text-xs text-zinc-300">
-                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 mb-2">
-                      <Code2 className="w-3.5 h-3.5" />
-                      <span>TypeScript</span>
+                  <div className="px-6 sm:px-8 pb-7 -mt-5 relative z-10 space-y-5">
+                    {/* Overlapping Notion Page Icon */}
+                    <div className="w-11 h-11 rounded-lg bg-[#252525] border border-zinc-700 flex items-center justify-center shadow-md">
+                      <FileText className="w-5 h-5 text-sky-400" />
                     </div>
-                    <pre className="overflow-x-auto leading-relaxed">
-                      <code>{`const queue: Node[] = [root];\nwhile (queue.length > 0) visit(queue.shift()!);`}</code>
-                    </pre>
-                  </div>
 
-                  {/* Checklist */}
-                  <div className="space-y-2 text-xs sm:text-sm pt-1">
-                    <div className="flex items-center gap-2 text-zinc-400">
-                      <Check className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="line-through">Queue invariant &amp; time complexity</span>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                      {sidebarPages[selectedPage]}
+                    </h3>
+
+                    {/* Page Properties Table */}
+                    <div className="grid grid-cols-3 gap-y-2.5 py-3 border-y border-zinc-800 text-xs">
+                      <div className="text-zinc-500">Department</div>
+                      <div className="col-span-2 text-zinc-200">Computer Science &amp; Engineering</div>
+                      <div className="text-zinc-500">Instructor</div>
+                      <div className="col-span-2 text-zinc-200">Prof. Rajesh Verma</div>
+                      <div className="text-zinc-500">Sync Status</div>
+                      <div className="col-span-2">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">
+                          Live Class Notes
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-zinc-100">
-                      <span className="w-3.5 h-3.5 rounded border border-zinc-600 shrink-0" />
-                      <span>Topological sort practice set</span>
-                      {!prefersReducedMotion && (
-                        <motion.span
-                          aria-hidden="true"
-                          animate={{ opacity: [1, 0, 1] }}
-                          transition={{ duration: 0.9, repeat: Infinity }}
-                          className="inline-block w-0.5 h-4 bg-white"
-                        />
-                      )}
+
+                    {/* Callout Block */}
+                    <div className="rounded-lg bg-[#252525] border border-zinc-800 p-4 text-xs sm:text-sm text-zinc-200 leading-relaxed">
+                      Breadth-first traversal explores level by level using a queue,
+                      guaranteeing shortest unweighted paths across connected graphs.
+                    </div>
+
+                    {/* Notion Comparison Table */}
+                    <div className="rounded-lg border border-zinc-800 overflow-hidden text-xs">
+                      <div className="grid grid-cols-3 bg-[#202020] border-b border-zinc-800 text-zinc-400 font-medium">
+                        <div className="px-3 py-2 border-r border-zinc-800">Algorithm</div>
+                        <div className="px-3 py-2 border-r border-zinc-800">Structure</div>
+                        <div className="px-3 py-2">Complexity</div>
+                      </div>
+                      <div className="grid grid-cols-3 border-b border-zinc-800/80 text-zinc-200">
+                        <div className="px-3 py-2 border-r border-zinc-800/80">BFS</div>
+                        <div className="px-3 py-2 border-r border-zinc-800/80">Queue</div>
+                        <div className="px-3 py-2 font-mono text-sky-400">O(V + E)</div>
+                      </div>
+                      <div className="grid grid-cols-3 text-zinc-200">
+                        <div className="px-3 py-2 border-r border-zinc-800/80">DFS</div>
+                        <div className="px-3 py-2 border-r border-zinc-800/80">Stack</div>
+                        <div className="px-3 py-2 font-mono text-sky-400">O(V + E)</div>
+                      </div>
+                    </div>
+
+                    {/* Code Snippet */}
+                    <div className="rounded-lg bg-[#141414] border border-zinc-800 p-4 font-mono text-xs text-zinc-300">
+                      <div className="flex items-center gap-1.5 text-[11px] text-zinc-500 mb-2">
+                        <Code2 className="w-3.5 h-3.5" />
+                        <span>TypeScript</span>
+                      </div>
+                      <pre className="overflow-x-auto leading-relaxed">
+                        <code>{`const queue: Node[] = [root];\nwhile (queue.length > 0) visit(queue.shift()!);`}</code>
+                      </pre>
+                    </div>
+
+                    {/* Checklist */}
+                    <div className="space-y-2.5 text-xs sm:text-sm pt-1">
+                      <div className="flex items-center gap-2 text-zinc-400">
+                        <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="line-through">Queue invariant &amp; time complexity</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-zinc-100">
+                        <span className="w-3.5 h-3.5 rounded border border-zinc-600 shrink-0" />
+                        <span>Topological sort practice set</span>
+                        {!prefersReducedMotion && (
+                          <motion.span
+                            aria-hidden="true"
+                            animate={{ opacity: [1, 0, 1] }}
+                            transition={{ duration: 0.9, repeat: Infinity }}
+                            className="inline-block w-0.5 h-4 bg-white"
+                          />
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -618,6 +684,161 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
   );
 }
 
+/* ─── 5. Parent & Student Alerts (WhatsApp) ──────────────────────── */
+
+function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
+  const [pulseStep, setPulseStep] = useState(0);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const interval = setInterval(() => {
+      setPulseStep((prev) => (prev + 1) % 3);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [prefersReducedMotion]);
+
+  return (
+    <section className="py-20 sm:py-28 border-t border-zinc-800 bg-zinc-950/60">
+      <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
+        <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+          {/* Left Copy */}
+          <div className="lg:col-span-5 min-w-0">
+            <div className="inline-flex items-center gap-2.5 mb-4">
+              <WhatsAppLogo className="w-5 h-5" />
+              <span className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-500">
+                WhatsApp
+              </span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white leading-[1.08] mb-5">
+              Instant campus updates where parents already read.
+            </h2>
+            <p className="text-base sm:text-lg text-zinc-400 leading-relaxed mb-7">
+              Deliver attendance alerts, fee payment receipts, bus arrival notices,
+              and examination circulars straight to verified parent and student
+              WhatsApp threads automatically.
+            </p>
+
+            <ul className="space-y-3 border-t border-zinc-800 pt-6">
+              {[
+                'Automated attendance & absentee alerts to guardians',
+                'Instant fee confirmation with downloadable PDF receipts',
+                'Verified institutional sender thread for official circulars',
+              ].map((bullet) => (
+                <li key={bullet} className="flex items-start gap-2.5 text-sm sm:text-base text-zinc-300">
+                  <Check className="w-4 h-4 text-zinc-400 shrink-0 mt-1" />
+                  <span>{bullet}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Right Authentic WhatsApp Dark Mode Chat */}
+          <div className="lg:col-span-7 min-w-0">
+            <div className="rounded-xl border border-zinc-800 bg-[#0B141A] overflow-hidden shadow-2xl">
+              {/* WhatsApp Header */}
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 bg-[#202C33] border-b border-zinc-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-[#00A884]/20 border border-[#00A884]/40 flex items-center justify-center">
+                    <WhatsAppLogo className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-medium text-white">
+                        EduPulse Campus Desk
+                      </span>
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
+                    </div>
+                    <p className="text-[11px] text-zinc-400">
+                      Official Institutional Account
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs text-zinc-400">online</span>
+              </div>
+
+              {/* WhatsApp Chat Canvas */}
+              <div className="p-5 sm:p-6 space-y-4 bg-[#0B141A] min-h-[340px] flex flex-col justify-between">
+                <div className="space-y-3.5">
+                  {/* Message 1: Attendance Alert */}
+                  <div
+                    className={`max-w-[85%] rounded-lg rounded-tl-none bg-[#202C33] p-3.5 border transition-colors duration-300 ${
+                      pulseStep === 0 ? 'border-[#25D366]/50' : 'border-transparent'
+                    }`}
+                  >
+                    <p className="text-xs font-semibold text-[#25D366] mb-1">
+                      Attendance Update
+                    </p>
+                    <p className="text-sm text-zinc-100 leading-relaxed">
+                      Good morning! Morning attendance for CS-301 Algorithms has been
+                      recorded as Present.
+                    </p>
+                    <div className="flex items-center justify-end gap-1 mt-1.5 text-[11px] text-zinc-400">
+                      <span>09:02 AM</span>
+                      <span className="text-sky-400">✓✓</span>
+                    </div>
+                  </div>
+
+                  {/* Message 2: Fee Receipt PDF */}
+                  <div
+                    className={`max-w-[85%] rounded-lg rounded-tl-none bg-[#202C33] p-3.5 border transition-colors duration-300 ${
+                      pulseStep === 1 ? 'border-[#25D366]/50' : 'border-transparent'
+                    }`}
+                  >
+                    <p className="text-xs font-semibold text-[#25D366] mb-1.5">
+                      Fee Receipt Issued
+                    </p>
+                    <div className="flex items-center gap-3 rounded-md bg-[#111B21] border border-zinc-800 p-2.5 mb-2">
+                      <FileText className="w-5 h-5 text-red-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-zinc-100 truncate">
+                          Semester_Tuition_Receipt.pdf
+                        </p>
+                        <p className="text-[11px] text-zinc-500">PDF Document</p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-zinc-100 leading-relaxed">
+                      Your semester fee payment has been reconciled to the student ledger.
+                    </p>
+                    <div className="flex items-center justify-end gap-1 mt-1.5 text-[11px] text-zinc-400">
+                      <span>09:14 AM</span>
+                      <span className="text-sky-400">✓✓</span>
+                    </div>
+                  </div>
+
+                  {/* Message 3: Guardian Reply */}
+                  <div className="flex justify-end">
+                    <div
+                      className={`max-w-[75%] rounded-lg rounded-tr-none bg-[#005C4B] p-3.5 border transition-colors duration-300 ${
+                        pulseStep === 2 ? 'border-[#25D366]/60' : 'border-transparent'
+                      }`}
+                    >
+                      <p className="text-sm text-white">
+                        Received, thank you!
+                      </p>
+                      <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-emerald-200/80">
+                        <span>09:15 AM</span>
+                        <span className="text-sky-300">✓✓</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* WhatsApp Composer Bar */}
+                <div className="pt-2 flex items-center gap-2.5">
+                  <div className="flex-1 rounded-lg bg-[#202C33] px-4 py-2.5 text-xs text-zinc-500 border border-zinc-800/80">
+                    Automated notifications enabled
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ─── Combined Export ─────────────────────────────────────────────── */
 
 export default function IntegrationsSection() {
@@ -629,6 +850,7 @@ export default function IntegrationsSection() {
       <FleetMapsStage />
       <NotionNotesStage prefersReducedMotion={prefersReducedMotion} />
       <RazorpayPaymentsStage prefersReducedMotion={prefersReducedMotion} />
+      <WhatsAppAlertsStage prefersReducedMotion={prefersReducedMotion} />
     </>
   );
 }
