@@ -405,7 +405,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right stacked auto-animated ERP screenshot deck */}
-            <div className="lg:col-span-8 min-w-0 pr-6 sm:pr-14 pb-8">
+            <div className="lg:col-span-8 min-w-0 pr-12 sm:pr-20 pb-4">
               <div className="relative">
                 {/* Invisible spacer to lock container height */}
                 <div className="invisible pointer-events-none" aria-hidden="true">
@@ -420,35 +420,30 @@ export default function LandingPage() {
                   const total = SHOWCASE_TABS.length;
                   const offset = (idx - activeShowcaseIdx + total) % total;
 
-                  const target =
-                    offset === 0
-                      ? { x: 0, y: 0, scale: 1, opacity: 1, zIndex: 30 }
-                      : offset === 1
-                        ? { x: 26, y: 12, scale: 0.96, opacity: 0.55, zIndex: 20 }
-                        : offset === 2
-                          ? { x: 50, y: 24, scale: 0.92, opacity: 0.25, zIndex: 10 }
-                          : { x: -28, y: 24, scale: 0.9, opacity: 0, zIndex: 0 };
+                  const x = offset * 18;
+                  const scale = 1 - offset * 0.025;
+                  const opacity = Math.max(0.25, 1 - offset * 0.19);
+                  const zIndex = (total - offset) * 10;
 
                   return (
                     <motion.div
                       key={tab.id}
                       initial={false}
                       animate={{
-                        x: target.x,
-                        y: target.y,
-                        scale: target.scale,
-                        opacity: target.opacity,
+                        x,
+                        scale,
+                        opacity,
                       }}
                       transition={
                         shouldReduceMotion
                           ? { duration: 0 }
-                          : { duration: 0.55, ease: [0.22, 1, 0.36, 1] }
+                          : { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
                       }
                       style={{
-                        zIndex: target.zIndex,
+                        zIndex,
                         pointerEvents: offset === 0 ? 'auto' : 'none',
                       }}
-                      className="absolute inset-0 origin-top-left"
+                      className="absolute inset-0 origin-left"
                     >
                       <ScreenshotFrame
                         src={tab.screenshot}
