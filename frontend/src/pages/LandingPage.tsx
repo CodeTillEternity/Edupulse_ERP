@@ -420,9 +420,10 @@ export default function LandingPage() {
                   const total = SHOWCASE_TABS.length;
                   const offset = (idx - activeShowcaseIdx + total) % total;
 
-                  const x = offset * 18;
+                  const x = offset * 14;
+                  const rotate = offset * 2.2;
                   const scale = 1 - offset * 0.025;
-                  const opacity = Math.max(0.25, 1 - offset * 0.19);
+                  const opacity = Math.max(0.3, 1 - offset * 0.17);
                   const zIndex = (total - offset) * 10;
 
                   return (
@@ -431,19 +432,20 @@ export default function LandingPage() {
                       initial={false}
                       animate={{
                         x,
+                        rotate,
                         scale,
                         opacity,
                       }}
                       transition={
                         shouldReduceMotion
                           ? { duration: 0 }
-                          : { duration: 0.6, ease: [0.22, 1, 0.36, 1] }
+                          : { duration: 0.65, ease: [0.22, 1, 0.36, 1] }
                       }
                       style={{
                         zIndex,
                         pointerEvents: offset === 0 ? 'auto' : 'none',
                       }}
-                      className="absolute inset-0 origin-left"
+                      className="absolute inset-0 origin-bottom-left"
                     >
                       <ScreenshotFrame
                         src={tab.screenshot}
