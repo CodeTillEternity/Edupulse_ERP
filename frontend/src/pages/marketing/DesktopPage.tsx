@@ -13,6 +13,7 @@ import {
   KeyRound,
 } from 'lucide-react';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
+import { StaggerGrid, StaggerItem } from '../../components/marketing/MotionPrimitives';
 
 const GITHUB_RELEASES_BASE =
   'https://github.com/CodeTillEternity/Edupulse_ERP/releases/latest';
@@ -166,7 +167,7 @@ export default function DesktopPage() {
       {/* Installer & Runtime Architecture */}
       <section className="py-16 sm:py-20 border-b border-zinc-800 bg-zinc-950/60">
         <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-zinc-800 bg-[#09090B]">
+          <StaggerGrid className="grid sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-zinc-800 bg-[#09090B]">
             {[
               {
                 title: 'Guided EULA Setup',
@@ -185,18 +186,18 @@ export default function DesktopPage() {
                 body: 'Windows 10 or Windows 11 (64-bit), Java 21 runtime, and 1280×800 minimum display resolution.',
               },
             ].map((item) => (
-              <div
+              <StaggerItem
                 key={item.title}
-                className="border-r border-b border-zinc-800 p-7 sm:p-8"
+                className="group border-r border-b border-zinc-800 p-7 sm:p-8 hover:bg-zinc-900/40 transition-colors"
               >
                 <div className="flex items-center gap-2 mb-3">
-                  <ShieldCheck className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <ShieldCheck className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all shrink-0" />
                   <h2 className="text-base font-medium text-white">{item.title}</h2>
                 </div>
                 <p className="text-sm text-zinc-400 leading-relaxed">{item.body}</p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGrid>
         </div>
       </section>
 

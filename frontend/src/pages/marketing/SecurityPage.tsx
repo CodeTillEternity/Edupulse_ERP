@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Shield, Lock, FileCheck2, Database, ArrowRight } from 'lucide-react';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
+import { Reveal, StaggerGrid, StaggerItem } from '../../components/marketing/MotionPrimitives';
 
 const SECURITY_PILLARS = [
   {
@@ -46,14 +47,14 @@ export default function SecurityPage() {
 
       <section className="py-20 sm:py-24">
         <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
-          <div className="grid sm:grid-cols-2 border-t border-l border-zinc-800">
+          <StaggerGrid className="grid sm:grid-cols-2 border-t border-l border-zinc-800">
             {SECURITY_PILLARS.map((pillar) => (
-              <div
+              <StaggerItem
                 key={pillar.title}
-                className="border-r border-b border-zinc-800 p-8 sm:p-10"
+                className="group border-r border-b border-zinc-800 p-8 sm:p-10 hover:bg-zinc-900/40 transition-colors"
               >
                 <div className="flex items-center gap-2.5 mb-3">
-                  <pillar.icon className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <pillar.icon className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all shrink-0" />
                   <h2 className="text-xl font-medium text-white">
                     {pillar.title}
                   </h2>
@@ -61,11 +62,12 @@ export default function SecurityPage() {
                 <p className="text-base text-zinc-400 leading-relaxed">
                   {pillar.body}
                 </p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGrid>
 
-          <div className="mt-10 border border-zinc-800 bg-zinc-950/60 p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+          <Reveal delay={0.1}>
+            <div className="mt-10 border border-zinc-800 bg-zinc-950/60 p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
             <div>
               <h3 className="text-xl font-medium text-white mb-1.5">
                 Need architectural details for your IT committee?
@@ -81,7 +83,8 @@ export default function SecurityPage() {
               Contact team
               <ArrowRight className="w-4 h-4" />
             </Link>
-          </div>
+            </div>
+          </Reveal>
         </div>
       </section>
     </MarketingLayout>

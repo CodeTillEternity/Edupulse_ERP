@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
+import { Reveal } from '../../components/marketing/MotionPrimitives';
 
 const PRICING_TIERS: {
   name: string;
@@ -68,7 +69,8 @@ export default function PricingPage() {
 
       <section className="py-20 sm:py-24">
         <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
-          <div className="grid md:grid-cols-3 border border-zinc-800 divide-y md:divide-y-0 md:divide-x divide-zinc-800">
+          <Reveal>
+            <div className="grid md:grid-cols-3 border border-zinc-800 divide-y md:divide-y-0 md:divide-x divide-zinc-800">
             {PRICING_TIERS.map((tier) => (
               <div
                 key={tier.name}
@@ -134,7 +136,8 @@ export default function PricingPage() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          </Reveal>
         </div>
       </section>
     </MarketingLayout>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
   Check,
@@ -19,6 +19,7 @@ import {
 import MarketingLayout from '../components/marketing/MarketingLayout';
 import ScreenshotFrame from '../components/marketing/ScreenshotFrame';
 import IntegrationsSection from '../components/marketing/IntegrationsSection';
+import { Reveal, StaggerGrid, StaggerItem } from '../components/marketing/MotionPrimitives';
 
 /* ─── Data ────────────────────────────────────────────────────────── */
 
@@ -241,6 +242,14 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (shouldReduceMotion) return;
+    const lifecycleTimer = setInterval(() => {
+      setActiveLifecycle((prev) => (prev + 1) % LIFECYCLE_STEPS.length);
+    }, 4500);
+    return () => clearInterval(lifecycleTimer);
+  }, [shouldReduceMotion]);
+
   const activeShowcaseIdx = Math.max(
     0,
     SHOWCASE_TABS.findIndex((t) => t.id === activeShowcase)
@@ -327,14 +336,14 @@ export default function LandingPage() {
             </div>
 
             {/* Right: Genuine ERP Dashboard Stage */}
-            <div className="lg:col-span-7 min-w-0">
+            <Reveal delay={0.1} className="lg:col-span-7 min-w-0">
               <ScreenshotFrame
                 src="/screenshots/erp-dashboard.png"
                 alt="EduPulse institutional dashboard showing system users, departments, students, admissions, and recent enrollments"
                 url="app.edupulseerp.in/dashboard"
                 priority
               />
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -358,14 +367,14 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-zinc-800">
+          <StaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 border-t border-l border-zinc-800">
             {CAPABILITIES.map((cap) => (
-              <div
+              <StaggerItem
                 key={cap.title}
-                className="border-r border-b border-zinc-800 p-7 sm:p-9 hover:bg-zinc-900/40 transition-colors"
+                className="group border-r border-b border-zinc-800 p-7 sm:p-9 hover:bg-zinc-900/40 transition-colors"
               >
                 <div className="flex items-center gap-2.5 mb-3">
-                  <cap.icon className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <cap.icon className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all shrink-0" />
                   <h3 className="text-lg font-medium text-white">
                     {cap.title}
                   </h3>
@@ -373,9 +382,9 @@ export default function LandingPage() {
                 <p className="text-base text-zinc-400 leading-relaxed">
                   {cap.body}
                 </p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGrid>
         </div>
       </section>
 
@@ -648,7 +657,7 @@ export default function LandingPage() {
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-medium tracking-[-0.03em] text-white mb-12">
             Built for institutional trust
           </h2>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-zinc-800">
+          <StaggerGrid className="grid sm:grid-cols-2 lg:grid-cols-4 border-t border-l border-zinc-800">
             {[
               {
                 icon: Shield,
@@ -671,12 +680,12 @@ export default function LandingPage() {
                 body: 'Access from any browser today. Windows Desktop client is currently in pre-release.',
               },
             ].map((item) => (
-              <div
+              <StaggerItem
                 key={item.title}
-                className="border-r border-b border-zinc-800 p-7 sm:p-8"
+                className="group border-r border-b border-zinc-800 p-7 sm:p-8 hover:bg-zinc-900/40 transition-colors"
               >
                 <div className="flex items-center gap-2.5 mb-3">
-                  <item.icon className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <item.icon className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:scale-110 transition-all shrink-0" />
                   <h3 className="text-base font-medium text-white">
                     {item.title}
                   </h3>
@@ -684,9 +693,9 @@ export default function LandingPage() {
                 <p className="text-sm sm:text-base text-zinc-400 leading-relaxed">
                   {item.body}
                 </p>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGrid>
         </div>
       </section>
 
@@ -711,7 +720,8 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="grid lg:grid-cols-3 border border-zinc-800 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
+          <Reveal>
+            <div className="grid lg:grid-cols-3 border border-zinc-800 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
             {PRICING_TIERS.map((tier) => (
               <div
                 key={tier.name}
@@ -754,7 +764,8 @@ export default function LandingPage() {
                 </Link>
               </div>
             ))}
-          </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -795,11 +806,19 @@ export default function LandingPage() {
                       }`}
                     />
                   </button>
-                  {openFaq === i && (
-                    <p className="mt-3 text-sm sm:text-base text-zinc-400 leading-relaxed">
-                      {item.a}
-                    </p>
-                  )}
+                  <AnimatePresence initial={false}>
+                    {openFaq === i && (
+                      <motion.p
+                        initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={shouldReduceMotion ? undefined : { opacity: 0, height: 0 }}
+                        transition={{ duration: 0.22 }}
+                        className="mt-3 text-sm sm:text-base text-zinc-400 leading-relaxed overflow-hidden"
+                      >
+                        {item.a}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </div>
               ))}
             </div>

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
 import ScreenshotFrame from '../../components/marketing/ScreenshotFrame';
+import { Reveal } from '../../components/marketing/MotionPrimitives';
 
 const MODULES = [
   {
@@ -151,11 +152,11 @@ export default function PlatformPage() {
           {MODULES.map((mod, idx) => {
             const isEven = idx % 2 === 1;
             return (
-              <div
-                key={mod.id}
-                id={mod.id}
-                className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center"
-              >
+              <Reveal key={mod.id} delay={0.05}>
+                <div
+                  id={mod.id}
+                  className="grid lg:grid-cols-12 gap-10 lg:gap-14 items-center"
+                >
                 <div className={`lg:col-span-5 min-w-0 ${isEven ? 'lg:order-2' : ''}`}>
                   <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-zinc-500 mb-3">
                     <mod.icon className="w-3.5 h-3.5" />
@@ -187,7 +188,8 @@ export default function PlatformPage() {
                     url={mod.url}
                   />
                 </div>
-              </div>
+                </div>
+              </Reveal>
             );
           })}
         </div>

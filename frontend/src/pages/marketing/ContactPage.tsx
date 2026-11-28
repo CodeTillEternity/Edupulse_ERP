@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Mail, ArrowRight, PlayCircle } from 'lucide-react';
 import MarketingLayout from '../../components/marketing/MarketingLayout';
+import { Reveal } from '../../components/marketing/MotionPrimitives';
 
 export default function ContactPage() {
   return (
@@ -21,8 +22,9 @@ export default function ContactPage() {
       </section>
 
       <section className="py-20 sm:py-24">
-        <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 grid sm:grid-cols-2 border-t border-l border-zinc-800">
-          <div className="border-r border-b border-zinc-800 p-8 sm:p-10 flex flex-col justify-between">
+        <Reveal className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
+          <div className="grid sm:grid-cols-2 border-t border-l border-zinc-800">
+          <div className="border-r border-b border-zinc-800 p-8 sm:p-10 flex flex-col justify-between hover:bg-zinc-900/30 transition-colors">
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <Mail className="w-4 h-4 text-zinc-400" />
@@ -65,7 +67,8 @@ export default function ContactPage() {
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
-        </div>
+          </div>
+        </Reveal>
       </section>
     </MarketingLayout>
   );
