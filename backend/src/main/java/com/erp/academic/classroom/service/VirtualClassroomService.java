@@ -72,7 +72,13 @@ public class VirtualClassroomService {
             return classroomRegistry.get(generatedRoomName);
         }
 
-        String roomUrl = "https://" + jitsiDomain + "/" + generatedRoomName;
+        String provider = (request.getProvider() != null && !request.getProvider().isBlank())
+                ? request.getProvider().trim().toUpperCase()
+                : "JITSI_MEET";
+
+        String roomUrl = (request.getRoomUrl() != null && !request.getRoomUrl().isBlank())
+                ? request.getRoomUrl().trim()
+                : "https://" + jitsiDomain + "/" + generatedRoomName;
 
         VirtualClassroomDto classroom = VirtualClassroomDto.builder()
                 .roomId(UUID.randomUUID().toString())
@@ -89,7 +95,7 @@ public class VirtualClassroomService {
                 .isLive(true)
                 .activeParticipants(0)
                 .recordingEnabled(true)
-                .provider("JITSI_MEET")
+                .provider(provider)
                 .build();
 
         classroomRegistry.put(generatedRoomName, classroom);

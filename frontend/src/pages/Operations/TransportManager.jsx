@@ -17,7 +17,8 @@ import {
   Navigation,
   Printer,
   Download,
-  Award
+  Award,
+  ExternalLink
 } from 'lucide-react';
 import {
   getVehicles,
@@ -42,6 +43,33 @@ export default function TransportManager() {
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
   const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [previewRoute, setPreviewRoute] = useState(null);
+
+  const buildGoogleMapsDirectionsUrl = (stopsText) => {
+    const stops = (stopsText || '')
+      .split(/[,->]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (stops.length >= 2) {
+      const origin = encodeURIComponent(stops[0]);
+      const destination = encodeURIComponent(stops[stops.length - 1]);
+      const waypoints = stops.slice(1, -1).map(encodeURIComponent).join('|');
+      return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${
+        waypoints ? `&waypoints=${waypoints}` : ''
+      }`;
+    }
+    const query = encodeURIComponent(stops[0] || 'Campus Main Gate');
+    return `https://www.google.com/maps/search/?api=1&query=${query}`;
+  };
+
+  const buildGoogleMapsEmbedUrl = (stopsText) => {
+    const stops = (stopsText || '')
+      .split(/[,->]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const query = encodeURIComponent(stops[0] || 'Jaipur');
+    return `https://maps.google.com/maps?q=${query}&output=embed`;
+  };
 
   // Form states
   const [vehicleForm, setVehicleForm] = useState({
@@ -526,18 +554,28 @@ export default function TransportManager() {
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleOpenAssignModalForRoute(route.id)}
-                        disabled={isFull}
-                        className={`w-full py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-                          isFull
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                            : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 cursor-pointer'
-                        }`}
-                      >
-                        <UserCheck className="w-3.5 h-3.5" />
-                        {isFull ? 'Vehicle Full (40/40)' : 'Assign Student Passenger'}
-                      </button>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewRoute(route)}
+                          className="w-full py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                        >
+                          <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                          View Map
+                        </button>
+                        <button
+                          onClick={() => handleOpenAssignModalForRoute(route.id)}
+                          disabled={isFull}
+                          className={`w-full py-2 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors ${
+                            isFull
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                              : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 cursor-pointer'
+                          }`}
+                        >
+                          <UserCheck className="w-3.5 h-3.5" />
+                          {isFull ? 'Vehicle Full' : 'Assign Seat'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -980,6 +1018,61 @@ export default function TransportManager() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: GOOGLE MAPS ROUTE PREVIEW                                        */}
+      {/* ========================================================================= */}
+      {previewRoute && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Navigation className="w-4 h-4 text-blue-600" />
+                  {previewRoute.routeName}
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Stops: {previewRoute.stops || 'No waypoints specified'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewRoute(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 bg-slate-50">
+              <div className="rounded-xl overflow-hidden border border-slate-200 bg-white h-80">
+                <iframe
+                  title={`Google Maps preview for ${previewRoute.routeName}`}
+                  src={buildGoogleMapsEmbedUrl(previewRoute.stops)}
+                  className="w-full h-full border-0"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between gap-3">
+              <span className="text-xs text-slate-500">
+                Vehicle: {previewRoute.vehicleRegistrationNumber || 'Unassigned'}
+              </span>
+              <a
+                href={buildGoogleMapsDirectionsUrl(previewRoute.stops)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm"
+              >
+                Open Full Route in Google Maps
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
         </div>
       )}

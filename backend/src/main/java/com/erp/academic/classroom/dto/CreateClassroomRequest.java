@@ -18,5 +18,7 @@ public class CreateClassroomRequest {
     private String sectionName;
     private Integer durationMinutes;
     private Boolean recordingEnabled;
+    private String provider;
+    private String roomUrl;
 }
 
