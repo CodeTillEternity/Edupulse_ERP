@@ -1,7 +1,11 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, useScroll, useSpring, useReducedMotion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Sun, Moon } from 'lucide-react';
+import {
+  MarketingThemeContext,
+  type MarketingTheme,
+} from '../../context/MarketingThemeContext';
 
 const NAV_ITEMS = [
   { label: 'Platform', to: '/platform' },
@@ -14,6 +18,14 @@ const NAV_ITEMS = [
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<MarketingTheme>(() => {
+    try {
+      const saved = localStorage.getItem('edupulse_marketing_theme');
+      return saved === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
   const { pathname, hash } = useLocation();
   const navigate = useNavigate();
   const prefersReducedMotion = useReducedMotion();
@@ -23,6 +35,18 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
     damping: 30,
     restDelta: 0.001,
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('edupulse_marketing_theme', theme);
+    } catch {
+      // ignore storage errors
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   const handleNavClick = (item: (typeof NAV_ITEMS)[number], e: React.MouseEvent) => {
     setMobileMenuOpen(false);
@@ -37,7 +61,11 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="marketing min-h-screen flex flex-col bg-[#09090B] text-zinc-100 font-sans antialiased selection:bg-zinc-700 selection:text-white">
+    <MarketingThemeContext.Provider value={{ theme, toggleTheme }}>
+      <div
+        data-marketing-theme={theme}
+        className="marketing min-h-screen flex flex-col bg-[#09090B] text-zinc-100 font-sans antialiased selection:bg-zinc-700 selection:text-white transition-colors duration-300"
+      >
       {/* Header */}
       <header className="sticky top-0 z-[100] bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-800">
         <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
@@ -76,7 +104,16 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
               })}
             </nav>
 
-            <div className="hidden md:flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                className="p-2 rounded-md border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
               <Link
                 to="/login"
                 className="text-sm font-medium text-zinc-400 hover:text-white transition-colors px-3 py-2"
@@ -91,14 +128,24 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
               </Link>
             </div>
 
-            <button
-              className="md:hidden p-2 text-zinc-400 hover:text-white"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileMenuOpen}
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+            <div className="md:hidden flex items-center gap-2">
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+                className="p-2 rounded-md border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+              <button
+                className="p-2 text-zinc-400 hover:text-white"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+                aria-expanded={mobileMenuOpen}
+              >
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
 
           {mobileMenuOpen && (
@@ -245,16 +292,17 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <div className="border-t border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-400">
+          <div className="border-t border-zinc-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-sm text-zinc-400">
               © {new Date().getFullYear()} EduPulse · edupulseerp.in
             </p>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-zinc-400">
               Built for Indian educational institutions.
             </p>
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </MarketingThemeContext.Provider>
   );
 }

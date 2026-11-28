@@ -222,4 +222,18 @@ describe('LandingPage Public Marketing Website', () => {
     fireEvent.click(jitsiBtn);
     expect(jitsiBtn).toHaveAttribute('aria-pressed', 'true');
   });
+
+  it('toggles light theme and switches WhatsApp preview to dark mode in light theme', () => {
+    render(
+      <BrowserRouter>
+        <LandingPage />
+      </BrowserRouter>
+    );
+
+    const toggleBtns = screen.getAllByRole('button', { name: /Switch to light theme/i });
+    fireEvent.click(toggleBtns[0]);
+
+    const root = document.querySelector('.marketing');
+    expect(root).toHaveAttribute('data-marketing-theme', 'light');
+  });
 });

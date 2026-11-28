@@ -301,7 +301,7 @@ export default function LandingPage() {
                       opacity="0.85"
                     />
                   </svg>
-                  <span className="relative z-10 text-zinc-950 font-semibold">
+                  <span className="marketing-brush-text relative z-10 text-zinc-950 font-semibold">
                     one
                   </span>
                 </span>{' '}

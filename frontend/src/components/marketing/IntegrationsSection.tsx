@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, useReducedMotion, useInView } from 'framer-motion';
+import { useMarketingTheme } from '../../context/MarketingThemeContext';
 import {
   Check,
   Navigation,
@@ -205,7 +206,7 @@ function LiveClassStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
 
           {/* Right Realistic Live Classroom Visual */}
           <div className="lg:col-span-7 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-[#09090B] overflow-hidden shadow-2xl">
+            <div className="marketing-keep-dark rounded-xl border border-zinc-800 bg-[#09090B] overflow-hidden shadow-2xl">
               <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-950">
                 <div className="flex items-center gap-2.5">
                   {current.logo}
@@ -262,7 +263,7 @@ function FleetMapsStage({ prefersReducedMotion }: { prefersReducedMotion: boolea
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Realistic Dark-Mode Google Maps Visual */}
           <div className="lg:col-span-7 order-2 lg:order-1 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl">
+            <div className="marketing-keep-dark rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl">
               <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-zinc-800 bg-zinc-950">
                 <div className="flex items-center gap-2.5">
                   <GoogleMapsLogo className="w-5 h-5" />
@@ -400,7 +401,7 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
 
           {/* Right Authentic Notion Dark Workspace */}
           <div className="lg:col-span-7 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-[#191919] overflow-hidden shadow-2xl">
+            <div className="marketing-keep-dark rounded-xl border border-zinc-800 bg-[#191919] overflow-hidden shadow-2xl">
               {/* Notion Top Chrome */}
               <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-zinc-800 bg-[#141414]">
                 <div className="flex items-center gap-2.5 text-xs text-zinc-400">
@@ -587,7 +588,7 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Authentic White Razorpay Checkout + Ledger Flow */}
           <div className="lg:col-span-7 order-2 lg:order-1 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6 shadow-2xl">
+            <div className="marketing-keep-dark rounded-xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6 shadow-2xl">
               <div className="grid sm:grid-cols-12 gap-5 items-center">
                 {/* Authentic Light-Mode Razorpay Standard Checkout Modal */}
                 <div className="sm:col-span-7 rounded-xl overflow-hidden bg-white text-slate-900 shadow-xl border border-slate-200">
@@ -775,6 +776,8 @@ const SENDER_REPLY = 'Received, thank you!';
 function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { amount: 0.2 });
+  const { theme } = useMarketingTheme();
+  const isDarkChat = theme === 'light';
 
   // Timeline ticks (every 100ms across an 8.5s cycle):
   // 0..8:    Msg 1 (EduPulse automated) visible
@@ -838,20 +841,36 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
             </ul>
           </div>
 
-          {/* Right Authentic WhatsApp Light Theme Chat */}
+          {/* Right Authentic WhatsApp Chat (Light in Dark Mode, Dark in Light Mode) */}
           <div className="lg:col-span-7 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-[#EFEAE2] overflow-hidden shadow-2xl">
-              {/* Authentic WhatsApp Web Light Header */}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-[#F0F2F5] border-b border-[#D1D7DB]">
+            <div
+              className={`marketing-keep-dark rounded-xl border overflow-hidden shadow-2xl ${
+                isDarkChat ? 'border-zinc-300 bg-[#0B141A]' : 'border-zinc-800 bg-[#EFEAE2]'
+              }`}
+            >
+              {/* Authentic WhatsApp Web Header */}
+              <div
+                className={`flex items-center justify-between px-4 py-2.5 border-b ${
+                  isDarkChat
+                    ? 'bg-[#202C33] border-zinc-700/60'
+                    : 'bg-[#F0F2F5] border-[#D1D7DB]'
+                }`}
+              >
                 <div className="flex items-center gap-3 min-w-0">
                   <img
                     src="/logo.jpg"
                     alt="EduPulse Campus Desk"
-                    className="w-10 h-10 rounded-full object-cover border border-[#D1D7DB] shrink-0"
+                    className={`w-10 h-10 rounded-full object-cover border shrink-0 ${
+                      isDarkChat ? 'border-zinc-700' : 'border-[#D1D7DB]'
+                    }`}
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[15px] font-medium text-[#111B21] truncate">
+                      <span
+                        className={`text-[15px] font-medium truncate ${
+                          isDarkChat ? 'text-[#E9EDEF]' : 'text-[#111B21]'
+                        }`}
+                      >
                         EduPulse Campus Desk
                       </span>
                       <svg viewBox="0 0 18 18" className="w-4 h-4 shrink-0" aria-hidden="true">
@@ -866,31 +885,46 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
                         />
                       </svg>
                     </div>
-                    <p className="text-xs text-[#667781] truncate">
+                    <p
+                      className={`text-xs truncate ${
+                        isDarkChat ? 'text-[#8696A0]' : 'text-[#667781]'
+                      }`}
+                    >
                       Official business account
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 text-[#54656F] shrink-0 pr-1">
+                <div
+                  className={`flex items-center gap-4 shrink-0 pr-1 ${
+                    isDarkChat ? 'text-[#AEBAC1]' : 'text-[#54656F]'
+                  }`}
+                >
                   <Search className="w-4 h-4" />
                   <MoreVertical className="w-4 h-4" />
                 </div>
               </div>
 
-              {/* Classic WhatsApp Light Wallpaper (#EFEAE2) - fixed height prevents layout shift */}
+              {/* Classic WhatsApp Wallpaper - fixed height prevents layout shift */}
               <div
                 className="p-5 sm:p-6 h-[395px] overflow-hidden flex flex-col justify-start relative"
                 style={{
-                  backgroundColor: '#EFEAE2',
-                  backgroundImage:
-                    'radial-gradient(rgba(17, 27, 33, 0.045) 1px, transparent 1px)',
+                  backgroundColor: isDarkChat ? '#0B141A' : '#EFEAE2',
+                  backgroundImage: isDarkChat
+                    ? 'radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px)'
+                    : 'radial-gradient(rgba(17, 27, 33, 0.045) 1px, transparent 1px)',
                   backgroundSize: '18px 18px',
                 }}
               >
                 <div className="space-y-3">
                   {/* Date Chip */}
                   <div className="flex justify-center mb-1">
-                    <span className="px-3 py-1 rounded-lg bg-white/95 text-[11px] font-medium text-[#54656F] shadow-sm">
+                    <span
+                      className={`px-3 py-1 rounded-lg text-[11px] font-medium shadow-sm ${
+                        isDarkChat
+                          ? 'bg-[#182229] text-[#8696A0]'
+                          : 'bg-white/95 text-[#54656F]'
+                      }`}
+                    >
                       TODAY
                     </span>
                   </div>
@@ -901,16 +935,30 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
                       initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="max-w-[84%] rounded-lg rounded-tl-none bg-white px-3.5 py-2.5 shadow-sm"
+                      className={`max-w-[84%] rounded-lg rounded-tl-none px-3.5 py-2.5 shadow-sm ${
+                        isDarkChat ? 'bg-[#202C33]' : 'bg-white'
+                      }`}
                     >
-                      <p className="text-xs font-semibold text-[#008069] mb-1">
+                      <p
+                        className={`text-xs font-semibold mb-1 ${
+                          isDarkChat ? 'text-[#25D366]' : 'text-[#008069]'
+                        }`}
+                      >
                         Attendance Update
                       </p>
-                      <p className="text-sm text-[#111B21] leading-relaxed">
+                      <p
+                        className={`text-sm leading-relaxed ${
+                          isDarkChat ? 'text-[#E9EDEF]' : 'text-[#111B21]'
+                        }`}
+                      >
                         Good morning! Morning attendance for CS-301 Algorithms has been
                         recorded as Present.
                       </p>
-                      <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
+                      <div
+                        className={`flex items-center justify-end gap-1 mt-1 text-[11px] ${
+                          isDarkChat ? 'text-[#8696A0]' : 'text-[#667781]'
+                        }`}
+                      >
                         <span>09:02 AM</span>
                       </div>
                     </motion.div>
@@ -922,24 +970,54 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
                       initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="max-w-[84%] rounded-lg rounded-tl-none bg-white px-3.5 py-2.5 shadow-sm"
+                      className={`max-w-[84%] rounded-lg rounded-tl-none px-3.5 py-2.5 shadow-sm ${
+                        isDarkChat ? 'bg-[#202C33]' : 'bg-white'
+                      }`}
                     >
-                      <p className="text-xs font-semibold text-[#008069] mb-1.5">
+                      <p
+                        className={`text-xs font-semibold mb-1.5 ${
+                          isDarkChat ? 'text-[#25D366]' : 'text-[#008069]'
+                        }`}
+                      >
                         Fee Receipt Issued
                       </p>
-                      <div className="flex items-center gap-3 rounded-md bg-[#F0F2F5] border border-[#E2E8F0] p-2.5 mb-2">
+                      <div
+                        className={`flex items-center gap-3 rounded-md border p-2.5 mb-2 ${
+                          isDarkChat
+                            ? 'bg-[#111B21] border-zinc-700/60'
+                            : 'bg-[#F0F2F5] border-[#E2E8F0]'
+                        }`}
+                      >
                         <FileText className="w-5 h-5 text-red-500 shrink-0" />
                         <div className="min-w-0">
-                          <p className="text-xs font-medium text-[#111B21] truncate">
+                          <p
+                            className={`text-xs font-medium truncate ${
+                              isDarkChat ? 'text-[#E9EDEF]' : 'text-[#111B21]'
+                            }`}
+                          >
                             Semester_Tuition_Receipt.pdf
                           </p>
-                          <p className="text-[11px] text-[#667781]">142 KB · PDF</p>
+                          <p
+                            className={`text-[11px] ${
+                              isDarkChat ? 'text-[#8696A0]' : 'text-[#667781]'
+                            }`}
+                          >
+                            142 KB · PDF
+                          </p>
                         </div>
                       </div>
-                      <p className="text-sm text-[#111B21] leading-relaxed">
+                      <p
+                        className={`text-sm leading-relaxed ${
+                          isDarkChat ? 'text-[#E9EDEF]' : 'text-[#111B21]'
+                        }`}
+                      >
                         Your semester fee payment has been reconciled to the student ledger.
                       </p>
-                      <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
+                      <div
+                        className={`flex items-center justify-end gap-1 mt-1 text-[11px] ${
+                          isDarkChat ? 'text-[#8696A0]' : 'text-[#667781]'
+                        }`}
+                      >
                         <span>09:14 AM</span>
                       </div>
                     </motion.div>
@@ -953,11 +1031,19 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
                       transition={{ duration: 0.18 }}
                       className="flex justify-end"
                     >
-                      <div className="max-w-[75%] rounded-lg rounded-tr-none bg-[#D9FDD3] px-3.5 py-2 shadow-sm">
-                        <p className="text-sm text-[#111B21]">
+                      <div
+                        className={`max-w-[75%] rounded-lg rounded-tr-none px-3.5 py-2 shadow-sm ${
+                          isDarkChat ? 'bg-[#005C4B]' : 'bg-[#D9FDD3]'
+                        }`}
+                      >
+                        <p className={`text-sm ${isDarkChat ? 'text-[#E9EDEF]' : 'text-[#111B21]'}`}>
                           {SENDER_REPLY}
                         </p>
-                        <div className="flex items-center justify-end gap-1 mt-0.5 text-[11px] text-[#667781]">
+                        <div
+                          className={`flex items-center justify-end gap-1 mt-0.5 text-[11px] ${
+                            isDarkChat ? 'text-[#8696A0]' : 'text-[#667781]'
+                          }`}
+                        >
                           <span>09:15 AM</span>
                           <span className={replyRead ? 'text-[#53BDEB] font-semibold' : 'text-[#8696A0]'}>
                             ✓✓
@@ -969,18 +1055,34 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
                 </div>
               </div>
 
-              {/* Authentic WhatsApp Light Composer Bar (live sender typing + send) */}
-              <div className="px-3.5 py-2.5 bg-[#F0F2F5] border-t border-[#D1D7DB] flex items-center gap-2.5">
-                <Smile className="w-5 h-5 text-[#54656F] shrink-0" />
-                <Paperclip className="w-5 h-5 text-[#54656F] shrink-0" />
-                <div className="flex-1 rounded-lg bg-white px-3.5 py-2 text-sm min-h-[36px] flex items-center">
+              {/* Authentic WhatsApp Composer Bar (live sender typing + send) */}
+              <div
+                className={`px-3.5 py-2.5 border-t flex items-center gap-2.5 ${
+                  isDarkChat
+                    ? 'bg-[#202C33] border-zinc-700/60'
+                    : 'bg-[#F0F2F5] border-[#D1D7DB]'
+                }`}
+              >
+                <Smile className={`w-5 h-5 shrink-0 ${isDarkChat ? 'text-[#8696A0]' : 'text-[#54656F]'}`} />
+                <Paperclip className={`w-5 h-5 shrink-0 ${isDarkChat ? 'text-[#8696A0]' : 'text-[#54656F]'}`} />
+                <div
+                  className={`flex-1 rounded-lg px-3.5 py-2 text-sm min-h-[36px] flex items-center ${
+                    isDarkChat ? 'bg-[#2A3942]' : 'bg-white'
+                  }`}
+                >
                   {isTyping ? (
-                    <span className="text-[#111B21]">
+                    <span className={isDarkChat ? 'text-[#E9EDEF]' : 'text-[#111B21]'}>
                       {draftText}
-                      <span className="inline-block w-0.5 h-4 bg-[#008069] align-middle ml-0.5 animate-pulse" />
+                      <span
+                        className={`inline-block w-0.5 h-4 align-middle ml-0.5 animate-pulse ${
+                          isDarkChat ? 'bg-[#25D366]' : 'bg-[#008069]'
+                        }`}
+                      />
                     </span>
                   ) : (
-                    <span className="text-xs text-[#667781]">Type a message</span>
+                    <span className={`text-xs ${isDarkChat ? 'text-[#8696A0]' : 'text-[#667781]'}`}>
+                      Type a message
+                    </span>
                   )}
                 </div>
                 <div className="w-9 h-9 rounded-full bg-[#00A884] flex items-center justify-center shrink-0 transition-transform">
