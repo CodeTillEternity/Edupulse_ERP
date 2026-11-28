@@ -10,7 +10,7 @@ import {
   DEFAULT_THEME,
   type ExtractedColors,
 } from '../lib/colorExtractor';
-import { Loader2, Eye, EyeOff, Building2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Building2, ArrowLeft } from 'lucide-react';
 import { ServerSettingsModal } from '../components/ServerSettingsModal';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -259,14 +259,22 @@ export default function Login() {
 
       {/* RIGHT PANEL: Integrated Login Facility */}
       <div className="w-full lg:w-1/2 xl:w-5/12 bg-white flex flex-col justify-between p-8 sm:p-12 xl:p-16 min-h-screen lg:min-h-0 lg:h-full overflow-y-auto">
-        {/* Mobile Header */}
-        <div className="lg:hidden flex items-center justify-between mb-6">
-          <Link to="/" className="flex items-center space-x-3">
+        {/* Top Navigation Row (Mobile brand + Back to website) */}
+        <div className="flex items-center justify-between mb-6">
+          <Link to="/" className="lg:hidden flex items-center space-x-3">
             <img src="/logo.jpg" alt="EduPulse Logo" className="w-9 h-9 rounded-lg shadow-sm" />
             <div>
               <h1 className="text-base font-bold text-slate-900">EduPulse ERP</h1>
               <p className="text-[11px] text-slate-500">Institutional Workspace</p>
             </div>
+          </Link>
+
+          <Link
+            to="/"
+            className="ml-auto inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-950 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to website
           </Link>
         </div>
 
