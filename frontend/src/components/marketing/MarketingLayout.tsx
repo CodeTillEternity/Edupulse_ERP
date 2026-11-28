@@ -69,19 +69,19 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
       {/* Header */}
       <header className="sticky top-0 z-[100] bg-[#09090B]/90 backdrop-blur-md border-b border-zinc-800">
         <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
-          <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center justify-between h-[72px]">
+            <Link to="/" className="flex items-center gap-3 shrink-0">
               <img
                 src="/logo.jpg"
                 alt="EduPulse"
-                className="h-7 w-7 rounded-md object-cover"
+                className="h-8 w-8 rounded-md object-cover"
               />
-              <span className="font-semibold text-base tracking-tight text-white">
+              <span className="font-semibold text-lg tracking-tight text-white">
                 EduPulse
               </span>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-7" aria-label="Main navigation">
+            <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
               {NAV_ITEMS.map((item) => {
                 const active =
                   'hash' in item && item.hash
@@ -92,7 +92,7 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
                     key={item.to}
                     to={item.to}
                     onClick={(e) => handleNavClick(item, e)}
-                    className={`text-sm font-medium transition-colors ${
+                    className={`text-[15px] font-medium transition-colors ${
                       active
                         ? 'text-white'
                         : 'text-zinc-400 hover:text-white'
@@ -104,25 +104,25 @@ export default function MarketingLayout({ children }: { children: ReactNode }) {
               })}
             </nav>
 
-            <div className="hidden md:flex items-center gap-2.5">
+            <div className="hidden md:flex items-center gap-3">
               <button
                 type="button"
                 onClick={toggleTheme}
                 aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
                 title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-                className="p-2 rounded-md border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="p-2.5 rounded-md border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === 'dark' ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
               </button>
               <Link
                 to="/login"
-                className="text-sm font-medium text-zinc-400 hover:text-white transition-colors px-3 py-2"
+                className="text-[15px] font-medium text-zinc-400 hover:text-white transition-colors px-3.5 py-2"
               >
                 Sign in
               </Link>
               <Link
                 to="/start-trial"
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-white text-zinc-950 text-sm font-medium hover:bg-zinc-200 transition-colors"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-md bg-white text-zinc-950 text-[15px] font-medium hover:bg-zinc-200 transition-colors"
               >
                 Start 14-day trial
               </Link>
