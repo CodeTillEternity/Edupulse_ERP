@@ -100,7 +100,7 @@
     color: #09090b !important;
   }
   .marketing[data-marketing-theme="light"] header {
-    background-color: rgba(255, 255, 255, 0.94) !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
     border-color: #d4d4d8 !important;
   }
   .marketing[data-marketing-theme="light"] footer {
@@ -110,15 +110,10 @@
   .marketing[data-marketing-theme="light"] .bg-\[\#09090B\]:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
     background-color: #ffffff !important;
   }
-  .marketing[data-marketing-theme="light"] .bg-zinc-950\/60:not(.marketing-keep-dark):not(.marketing-keep-dark *),
-  .marketing[data-marketing-theme="light"] .bg-zinc-950\/40:not(.marketing-keep-dark):not(.marketing-keep-dark *),
-  .marketing[data-marketing-theme="light"] .bg-zinc-950:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
+  .marketing[data-marketing-theme="light"] [class*="bg-zinc-950"]:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
     background-color: #f4f4f5 !important;
   }
-  .marketing[data-marketing-theme="light"] .bg-zinc-900\/80:not(.marketing-keep-dark):not(.marketing-keep-dark *),
-  .marketing[data-marketing-theme="light"] .bg-zinc-900\/70:not(.marketing-keep-dark):not(.marketing-keep-dark *),
-  .marketing[data-marketing-theme="light"] .bg-zinc-900\/60:not(.marketing-keep-dark):not(.marketing-keep-dark *),
-  .marketing[data-marketing-theme="light"] .bg-zinc-900:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
+  .marketing[data-marketing-theme="light"] [class*="bg-zinc-900"]:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
     background-color: #ffffff !important;
   }
   .marketing[data-marketing-theme="light"] .text-white:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
@@ -135,13 +130,13 @@
   .marketing[data-marketing-theme="light"] .text-gray-400:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
     color: #3f3f46 !important;
   }
-  .marketing[data-marketing-theme="light"] .text-zinc-500:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
+  .marketing[data-marketing-theme="light"] .text-zinc-500:not(.marketing-keep-dark):not(.marketing-keep-dark *),
+  .marketing[data-marketing-theme="light"] .text-zinc-600:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
     color: #52525b !important;
   }
-  .marketing[data-marketing-theme="light"] .border-zinc-800:not(.marketing-keep-dark):not(.marketing-keep-dark *),
-  .marketing[data-marketing-theme="light"] .border-zinc-800\/80:not(.marketing-keep-dark):not(.marketing-keep-dark *),
-  .marketing[data-marketing-theme="light"] .border-zinc-700:not(.marketing-keep-dark):not(.marketing-keep-dark *),
+  .marketing[data-marketing-theme="light"] [class*="border-zinc-"]:not(.marketing-keep-dark):not(.marketing-keep-dark *),
   .marketing[data-marketing-theme="light"] .border-gray-800:not(.marketing-keep-dark):not(.marketing-keep-dark *),
+  .marketing[data-marketing-theme="light"] .border-white\/\[0\.07\]:not(.marketing-keep-dark):not(.marketing-keep-dark *),
   .marketing[data-marketing-theme="light"] .divide-zinc-800:not(.marketing-keep-dark):not(.marketing-keep-dark *) > * + * {
     border-color: #d4d4d8 !important;
   }
@@ -151,6 +146,13 @@
   }
   .marketing[data-marketing-theme="light"] .border-l-white:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
     border-left-color: #09090b !important;
+  }
+  /* Showcase 3s progress bar inside active tab */
+  .marketing[data-marketing-theme="light"] [role="tab"][aria-selected="true"] {
+    background-color: #f4f4f5 !important;
+  }
+  .marketing[data-marketing-theme="light"] [role="tab"] .bg-white {
+    background-color: #09090b !important;
   }
   /* Primary CTA buttons (bg-white text-zinc-950 -> crisp dark button in light mode) */
   .marketing[data-marketing-theme="light"] .bg-white.text-zinc-950 {
@@ -173,17 +175,17 @@
   .marketing[data-marketing-theme="light"] .marketing-brush-text {
     color: #09090b !important;
   }
-  /* Darken amber accents slightly on light backgrounds for crisp contrast */
+  /* Darken amber accents on light backgrounds for crisp contrast */
   .marketing[data-marketing-theme="light"] .text-amber-400:not(.marketing-keep-dark):not(.marketing-keep-dark *) {
     color: #d97706 !important;
   }
-  /* Subtle light-mode grid cell highlight */
-  .marketing[data-marketing-theme="light"] .from-zinc-800\/50 {
-    --tw-gradient-from: rgb(228 228 231 / 0.7) var(--tw-gradient-from-position) !important;
-    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position) !important;
+  /* Highlighted grid cells in light mode */
+  .marketing[data-marketing-theme="light"] .bg-gradient-to-b.from-zinc-800\/50 {
+    background: #f4f4f5 !important;
   }
   .marketing[data-marketing-theme="light"] .hover\:bg-zinc-900\/40:hover,
-  .marketing[data-marketing-theme="light"] .hover\:bg-zinc-900\/30:hover {
+  .marketing[data-marketing-theme="light"] .hover\:bg-zinc-900\/30:hover,
+  .marketing[data-marketing-theme="light"] .hover\:bg-zinc-800:hover {
     background-color: #e4e4e7 !important;
   }
   .marketing[data-marketing-theme="light"] .hover\:text-white:hover:not(.bg-white) {

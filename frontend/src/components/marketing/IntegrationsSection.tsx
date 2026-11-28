@@ -77,7 +77,7 @@ function NotionLogo({ className = 'w-6 h-6' }: { className?: string }) {
   return (
     <svg viewBox="0 0 32 32" className={className} aria-hidden="true">
       <path
-        fill="#FFFFFF"
+        fill="currentColor"
         d="M6.4 5.4c1.2.95 1.65.9 3.9.75l14.7-.9c.45 0 .08-.45-.08-.53L22.5 3.0c-.75-.55-1.75-1.18-3.65-1.05L4.7 2.98c-.52.05-.62.3-.42.5l2.12 1.92zm1.12 3.75v18.4c0 .98.5 1.35 1.62 1.3l16.3-.95c1.12-.05 1.25-.72 1.25-1.5V8.15c0-.77-.3-1.18-.98-1.12l-17.0 1.0c-.72.05-1.19.45-1.19 1.12zm16.48.92c.1.48 0 .95-.48 1.0l-.78.15v13.6c-.68.38-1.3.58-1.82.58-.82 0-1.02-.25-1.62-1.2l-5.0-7.85v7.6l1.62.38s0 .95-1.32.95l-3.65.2c-.1-.22 0-.75.38-.85l.95-.25V12.2l-1.32-.1c-.1-.48.15-1.18.88-1.22l3.92-.25 5.18 7.95v-7.08l-1.35-.15c-.1-.58.32-.98.85-1.02l3.55-.25z"
       />
     </svg>
@@ -369,9 +369,9 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           {/* Left Copy */}
           <div className="lg:col-span-5 min-w-0">
-            <div className="inline-flex items-center gap-3 mb-5">
+            <div className="inline-flex items-center gap-3 mb-5 text-white">
               <NotionLogo className="w-9 h-9" />
-              <span className="text-xl sm:text-2xl font-semibold tracking-[-0.03em] text-white">
+              <span className="text-xl sm:text-2xl font-semibold tracking-[-0.03em]">
                 Notion
               </span>
             </div>
