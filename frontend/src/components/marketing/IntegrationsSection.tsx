@@ -11,7 +11,9 @@ import {
   Smartphone,
   Building2,
   CheckCircle2,
-  QrCode,
+  Paperclip,
+  Smile,
+  Mic,
 } from 'lucide-react';
 
 /* ─── Authentic Vector Brand Logos ────────────────────────────────── */
@@ -423,13 +425,13 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
 
                 {/* Main Notion Page Body */}
                 <div className="sm:col-span-8 flex flex-col">
-                  {/* Subtle Notion Cover Banner */}
-                  <div className="h-20 sm:h-24 w-full bg-gradient-to-r from-indigo-950/70 via-zinc-900 to-sky-950/60 border-b border-zinc-800/70 relative" />
+                  {/* Authentic Muted Notion Cover Banner */}
+                  <div className="h-20 sm:h-24 w-full bg-gradient-to-r from-[#232325] via-[#2A2A2D] to-[#1F2022] border-b border-zinc-800/80 relative" />
 
                   <div className="px-6 sm:px-8 pb-7 -mt-5 relative z-10 space-y-5">
-                    {/* Overlapping Notion Page Icon */}
-                    <div className="w-11 h-11 rounded-lg bg-[#252525] border border-zinc-700 flex items-center justify-center shadow-md">
-                      <FileText className="w-5 h-5 text-sky-400" />
+                    {/* Authentic Monochrome Notion Page Icon */}
+                    <div className="w-11 h-11 rounded-lg bg-[#252525] border border-zinc-700/80 flex items-center justify-center shadow-md">
+                      <FileText className="w-5 h-5 text-zinc-300" />
                     </div>
 
                     <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
@@ -444,7 +446,7 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
                       <div className="col-span-2 text-zinc-200">Prof. Rajesh Verma</div>
                       <div className="text-zinc-500">Sync Status</div>
                       <div className="col-span-2">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-medium">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded bg-[#2C2C2C] text-zinc-200 font-medium border border-zinc-700/70">
                           Live Class Notes
                         </span>
                       </div>
@@ -466,12 +468,12 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
                       <div className="grid grid-cols-3 border-b border-zinc-800/80 text-zinc-200">
                         <div className="px-3 py-2 border-r border-zinc-800/80">BFS</div>
                         <div className="px-3 py-2 border-r border-zinc-800/80">Queue</div>
-                        <div className="px-3 py-2 font-mono text-sky-400">O(V + E)</div>
+                        <div className="px-3 py-2 font-mono text-zinc-300">O(V + E)</div>
                       </div>
                       <div className="grid grid-cols-3 text-zinc-200">
                         <div className="px-3 py-2 border-r border-zinc-800/80">DFS</div>
                         <div className="px-3 py-2 border-r border-zinc-800/80">Stack</div>
-                        <div className="px-3 py-2 font-mono text-sky-400">O(V + E)</div>
+                        <div className="px-3 py-2 font-mono text-zinc-300">O(V + E)</div>
                       </div>
                     </div>
 
@@ -489,7 +491,7 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
                     {/* Checklist */}
                     <div className="space-y-2.5 text-xs sm:text-sm pt-1">
                       <div className="flex items-center gap-2 text-zinc-400">
-                        <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <Check className="w-4 h-4 text-zinc-400 shrink-0" />
                         <span className="line-through">Queue invariant &amp; time complexity</span>
                       </div>
                       <div className="flex items-center gap-2 text-zinc-100">
@@ -518,6 +520,24 @@ function NotionNotesStage({ prefersReducedMotion }: { prefersReducedMotion: bool
 
 /* ─── 4. Fee Collection & Ledger Reconciliation (Razorpay) ────────── */
 
+function DenseQrMatrix() {
+  return (
+    <svg viewBox="0 0 29 29" className="w-20 h-20 text-slate-900" aria-hidden="true">
+      {/* Top-left finder */}
+      <path fill="currentColor" d="M1 1h7v7H1V1zm1 1v5h5V2H2zm1 1h3v3H3V3z" />
+      {/* Top-right finder */}
+      <path fill="currentColor" d="M21 1h7v7h-7V1zm1 1v5h5V2h-5zm1 1h3v3h-3V3z" />
+      {/* Bottom-left finder */}
+      <path fill="currentColor" d="M1 21h7v7H1v-7zm1 1v5h5v-5H2zm1 1h3v3H3v-3z" />
+      {/* Data modules */}
+      <path
+        fill="currentColor"
+        d="M10 2h2v2h-2V2zm4 0h3v1h-3V2zm4 1h2v2h-2V3zm-6 3h2v3h-2V6zm4 1h3v2h-3V7zm-6 3h1v2h-1v-2zm3 0h3v2h-3v-2zm5 0h2v2h-2v-2zm4 0h3v2h-3v-2zm-19 2h2v2H3v-2zm4 0h2v2H7v-2zm4 2h3v2h-3v-2zm5 0h2v3h-2v-3zm4 1h3v2h-3v-2zm4 0h2v3h-2v-3zM2 16h2v2H2v-2zm4 0h3v2H6v-2zm5 1h2v2h-2v-2zm4 0h2v2h-2v-2zm4 1h3v2h-3v-2zm5 0h2v2h-2v-2zm-14 3h2v2h-2v-2zm4 0h2v3h-2v-3zm4 1h3v2h-3v-2zm4 0h2v2h-2v-2zm-8 3h2v2h-2v-2zm4 1h3v2h-3v-2zm4 0h2v2h-2v-2z"
+      />
+    </svg>
+  );
+}
+
 function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion: boolean | null }) {
   const [activeTab, setActiveTab] = useState<'upi' | 'card' | 'netbanking'>('upi');
   const [paid, setPaid] = useState(false);
@@ -526,7 +546,7 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
     if (prefersReducedMotion) return;
     const interval = setInterval(() => {
       setPaid((prev) => !prev);
-    }, 3200);
+    }, 3400);
     return () => clearInterval(interval);
   }, [prefersReducedMotion]);
 
@@ -534,92 +554,125 @@ function RazorpayPaymentsStage({ prefersReducedMotion }: { prefersReducedMotion:
     <section className="py-20 sm:py-28 border-t border-zinc-800 bg-[#09090B]">
       <div className="w-full max-w-[1680px] mx-auto px-5 sm:px-8 lg:px-12 xl:px-16">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          {/* Left Realistic Razorpay Checkout + Ledger Flow */}
+          {/* Left Authentic White Razorpay Checkout + Ledger Flow */}
           <div className="lg:col-span-7 order-2 lg:order-1 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-2xl">
-              {/* Razorpay Navy Header */}
-              <div className="flex items-center justify-between px-5 py-3.5 bg-[#072654] border-b border-sky-900/60">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-                    <RazorpayLogo className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">
-                      Razorpay Checkout
-                    </p>
-                    <p className="text-[11px] text-sky-200/80">
-                      EduPulse Institutional Fee Portal
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-medium text-sky-200">
-                  Trusted Business
-                </span>
-              </div>
-
-              <div className="p-5 sm:p-7 grid sm:grid-cols-12 gap-5 items-center">
-                {/* Razorpay Payment Modal */}
-                <div className="sm:col-span-6 rounded-xl border border-zinc-800 bg-[#09090B] overflow-hidden">
-                  {/* Method Tabs */}
-                  <div className="grid grid-cols-3 border-b border-zinc-800 text-xs">
-                    {[
-                      { id: 'upi', label: 'UPI / QR', icon: Smartphone },
-                      { id: 'card', label: 'Cards', icon: CreditCard },
-                      { id: 'netbanking', label: 'Bank', icon: Building2 },
-                    ].map((tab) => {
-                      const Icon = tab.icon;
-                      const selected = activeTab === tab.id;
-                      return (
-                        <button
-                          key={tab.id}
-                          type="button"
-                          onClick={() => setActiveTab(tab.id as 'upi' | 'card' | 'netbanking')}
-                          className={`flex items-center justify-center gap-1.5 py-2.5 font-medium transition-colors cursor-pointer ${
-                            selected
-                              ? 'bg-sky-500/10 text-sky-400 border-b-2 border-sky-400'
-                              : 'text-zinc-400 hover:text-zinc-200'
-                          }`}
-                        >
-                          <Icon className="w-3.5 h-3.5" />
-                          <span>{tab.label}</span>
-                        </button>
-                      );
-                    })}
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6 shadow-2xl">
+              <div className="grid sm:grid-cols-12 gap-5 items-center">
+                {/* Authentic Light-Mode Razorpay Standard Checkout Modal */}
+                <div className="sm:col-span-7 rounded-xl overflow-hidden bg-white text-slate-900 shadow-xl border border-slate-200">
+                  {/* Iconic Razorpay Deep Navy Header */}
+                  <div className="px-4 py-3.5 bg-[#072654] text-white flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center shrink-0">
+                        <RazorpayLogo className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold leading-tight">
+                          EduPulse University
+                        </p>
+                        <p className="text-[11px] text-sky-200/90">
+                          Razorpay Trusted Business
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Checkout Body */}
-                  <div className="p-5 flex flex-col items-center justify-center min-h-[190px] text-center">
+                  <div className="p-4 space-y-3 bg-[#F8FAFC]">
                     {paid ? (
                       <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
+                        initial={{ scale: 0.94, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="flex flex-col items-center gap-2.5"
+                        className="py-10 flex flex-col items-center justify-center text-center gap-2"
                       >
-                        <div className="w-12 h-12 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                          <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                        <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
+                          <CheckCircle2 className="w-7 h-7 text-emerald-600" />
                         </div>
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-semibold text-slate-900">
                           Payment Successful
                         </p>
-                        <p className="text-xs text-zinc-400">
-                          Synced to student fee ledger
+                        <p className="text-xs text-slate-500">
+                          Fee ledger updated automatically
                         </p>
                       </motion.div>
                     ) : (
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="w-24 h-24 rounded-lg bg-white p-2 flex items-center justify-center">
-                          <QrCode className="w-full h-full text-zinc-950" strokeWidth={1.5} />
+                      <>
+                        {/* Recommended UPI QR Box */}
+                        <div className="rounded-lg bg-white border border-slate-200 p-3.5">
+                          <div className="flex items-center justify-between mb-2.5">
+                            <span className="text-xs font-semibold text-slate-800">
+                              UPI QR
+                            </span>
+                            <span className="text-[11px] font-medium text-blue-600">
+                              GPay · PhonePe · Paytm
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3.5">
+                            <div className="p-1.5 rounded border border-slate-200 bg-white shrink-0">
+                              <DenseQrMatrix />
+                            </div>
+                            <div className="text-xs text-slate-600 space-y-1">
+                              <p className="font-medium text-slate-800">
+                                Scan QR with any UPI app
+                              </p>
+                              <p className="text-[11px] text-slate-500">
+                                Instant confirmation &amp; receipt
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-xs text-zinc-300">
-                          Scan with any UPI app
-                        </p>
-                      </div>
+
+                        {/* Payment Method Rows */}
+                        <div className="rounded-lg bg-white border border-slate-200 divide-y divide-slate-100">
+                          {[
+                            { id: 'upi', label: 'UPI / QR', sub: 'Google Pay, PhonePe, BHIM', icon: Smartphone },
+                            { id: 'card', label: 'Card', sub: 'Visa, MasterCard, RuPay', icon: CreditCard },
+                            { id: 'netbanking', label: 'Netbanking', sub: 'All Indian banks', icon: Building2 },
+                          ].map((row) => {
+                            const Icon = row.icon;
+                            const selected = activeTab === row.id;
+                            return (
+                              <button
+                                key={row.id}
+                                type="button"
+                                onClick={() => setActiveTab(row.id as 'upi' | 'card' | 'netbanking')}
+                                className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors cursor-pointer ${
+                                  selected ? 'bg-blue-50/70' : 'hover:bg-slate-50'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5">
+                                  <Icon className="w-4 h-4 text-blue-600 shrink-0" />
+                                  <div>
+                                    <p className="text-xs font-medium text-slate-800">
+                                      {row.label}
+                                    </p>
+                                    <p className="text-[10px] text-slate-500">
+                                      {row.sub}
+                                    </p>
+                                  </div>
+                                </div>
+                                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
                     )}
+                  </div>
+
+                  {/* Razorpay Footer CTA */}
+                  <div className="px-4 py-3 bg-white border-t border-slate-200 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      Secured by Razorpay
+                    </span>
+                    <span className="px-3.5 py-1.5 rounded bg-[#2B84EA] text-white text-xs font-semibold">
+                      Pay Now
+                    </span>
                   </div>
                 </div>
 
                 {/* EduPulse Ledger */}
-                <div className="sm:col-span-6 space-y-2.5">
+                <div className="sm:col-span-5 space-y-2.5">
                   <p className="text-xs font-mono uppercase tracking-wider text-zinc-500 mb-2">
                     Institutional Fee Ledger
                   </p>
@@ -733,102 +786,122 @@ function WhatsAppAlertsStage({ prefersReducedMotion }: { prefersReducedMotion: b
             </ul>
           </div>
 
-          {/* Right Authentic WhatsApp Dark Mode Chat */}
+          {/* Right Authentic WhatsApp Light Theme Chat */}
           <div className="lg:col-span-7 min-w-0">
-            <div className="rounded-xl border border-zinc-800 bg-[#0B141A] overflow-hidden shadow-2xl">
-              {/* WhatsApp Header */}
-              <div className="flex items-center justify-between px-4 sm:px-5 py-3.5 bg-[#202C33] border-b border-zinc-800">
+            <div className="rounded-xl border border-zinc-800 bg-[#EFEAE2] overflow-hidden shadow-2xl">
+              {/* Authentic WhatsApp Web Light Header */}
+              <div className="flex items-center justify-between px-4 sm:px-5 py-3 bg-[#F0F2F5] border-b border-[#D1D7DB]">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#00A884]/20 border border-[#00A884]/40 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-full bg-[#008069] flex items-center justify-center shrink-0">
                     <WhatsAppLogo className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-white">
+                      <span className="text-sm font-semibold text-[#111B21]">
                         EduPulse Campus Desk
                       </span>
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366]" />
+                      <CheckCircle2 className="w-4 h-4 text-[#00A884]" />
                     </div>
-                    <p className="text-[11px] text-zinc-400">
-                      Official Institutional Account
+                    <p className="text-[11px] text-[#667781]">
+                      Official business account
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-zinc-400">online</span>
+                <span className="text-xs font-medium text-[#008069]">online</span>
               </div>
 
-              {/* WhatsApp Chat Canvas */}
-              <div className="p-5 sm:p-6 space-y-4 bg-[#0B141A] min-h-[340px] flex flex-col justify-between">
+              {/* Classic WhatsApp Light Wallpaper (#EFEAE2) */}
+              <div
+                className="p-5 sm:p-6 space-y-3.5 min-h-[360px] flex flex-col justify-between relative"
+                style={{
+                  backgroundColor: '#EFEAE2',
+                  backgroundImage:
+                    'radial-gradient(rgba(17, 27, 33, 0.045) 1px, transparent 1px)',
+                  backgroundSize: '18px 18px',
+                }}
+              >
                 <div className="space-y-3.5">
-                  {/* Message 1: Attendance Alert */}
+                  {/* Date Chip */}
+                  <div className="flex justify-center">
+                    <span className="px-3 py-1 rounded-lg bg-white/90 text-[11px] font-medium text-[#54656F] shadow-sm">
+                      TODAY
+                    </span>
+                  </div>
+
+                  {/* Message 1: Attendance Alert (White incoming bubble) */}
                   <div
-                    className={`max-w-[85%] rounded-lg rounded-tl-none bg-[#202C33] p-3.5 border transition-colors duration-300 ${
-                      pulseStep === 0 ? 'border-[#25D366]/50' : 'border-transparent'
+                    className={`max-w-[84%] rounded-lg rounded-tl-none bg-white p-3.5 shadow-sm border transition-all duration-300 ${
+                      pulseStep === 0 ? 'border-[#00A884]/40' : 'border-transparent'
                     }`}
                   >
-                    <p className="text-xs font-semibold text-[#25D366] mb-1">
+                    <p className="text-xs font-semibold text-[#008069] mb-1">
                       Attendance Update
                     </p>
-                    <p className="text-sm text-zinc-100 leading-relaxed">
+                    <p className="text-sm text-[#111B21] leading-relaxed">
                       Good morning! Morning attendance for CS-301 Algorithms has been
                       recorded as Present.
                     </p>
-                    <div className="flex items-center justify-end gap-1 mt-1.5 text-[11px] text-zinc-400">
+                    <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
                       <span>09:02 AM</span>
-                      <span className="text-sky-400">✓✓</span>
+                      <span className="text-[#53BDEB] font-semibold">✓✓</span>
                     </div>
                   </div>
 
-                  {/* Message 2: Fee Receipt PDF */}
+                  {/* Message 2: Fee Receipt PDF (White incoming bubble) */}
                   <div
-                    className={`max-w-[85%] rounded-lg rounded-tl-none bg-[#202C33] p-3.5 border transition-colors duration-300 ${
-                      pulseStep === 1 ? 'border-[#25D366]/50' : 'border-transparent'
+                    className={`max-w-[84%] rounded-lg rounded-tl-none bg-white p-3.5 shadow-sm border transition-all duration-300 ${
+                      pulseStep === 1 ? 'border-[#00A884]/40' : 'border-transparent'
                     }`}
                   >
-                    <p className="text-xs font-semibold text-[#25D366] mb-1.5">
+                    <p className="text-xs font-semibold text-[#008069] mb-1.5">
                       Fee Receipt Issued
                     </p>
-                    <div className="flex items-center gap-3 rounded-md bg-[#111B21] border border-zinc-800 p-2.5 mb-2">
-                      <FileText className="w-5 h-5 text-red-400 shrink-0" />
+                    <div className="flex items-center gap-3 rounded-md bg-[#F0F2F5] border border-[#E2E8F0] p-2.5 mb-2">
+                      <FileText className="w-5 h-5 text-red-500 shrink-0" />
                       <div className="min-w-0">
-                        <p className="text-xs font-medium text-zinc-100 truncate">
+                        <p className="text-xs font-medium text-[#111B21] truncate">
                           Semester_Tuition_Receipt.pdf
                         </p>
-                        <p className="text-[11px] text-zinc-500">PDF Document</p>
+                        <p className="text-[11px] text-[#667781]">142 KB · PDF</p>
                       </div>
                     </div>
-                    <p className="text-sm text-zinc-100 leading-relaxed">
+                    <p className="text-sm text-[#111B21] leading-relaxed">
                       Your semester fee payment has been reconciled to the student ledger.
                     </p>
-                    <div className="flex items-center justify-end gap-1 mt-1.5 text-[11px] text-zinc-400">
+                    <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-[#667781]">
                       <span>09:14 AM</span>
-                      <span className="text-sky-400">✓✓</span>
+                      <span className="text-[#53BDEB] font-semibold">✓✓</span>
                     </div>
                   </div>
 
-                  {/* Message 3: Guardian Reply */}
+                  {/* Message 3: Guardian Reply (Classic WhatsApp Mint-Green #D9FDD3 bubble) */}
                   <div className="flex justify-end">
                     <div
-                      className={`max-w-[75%] rounded-lg rounded-tr-none bg-[#005C4B] p-3.5 border transition-colors duration-300 ${
-                        pulseStep === 2 ? 'border-[#25D366]/60' : 'border-transparent'
+                      className={`max-w-[75%] rounded-lg rounded-tr-none bg-[#D9FDD3] px-3.5 py-2.5 shadow-sm border transition-all duration-300 ${
+                        pulseStep === 2 ? 'border-[#00A884]/40' : 'border-transparent'
                       }`}
                     >
-                      <p className="text-sm text-white">
+                      <p className="text-sm text-[#111B21]">
                         Received, thank you!
                       </p>
-                      <div className="flex items-center justify-end gap-1 mt-1 text-[11px] text-emerald-200/80">
+                      <div className="flex items-center justify-end gap-1 mt-0.5 text-[11px] text-[#667781]">
                         <span>09:15 AM</span>
-                        <span className="text-sky-300">✓✓</span>
+                        <span className="text-[#53BDEB] font-semibold">✓✓</span>
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* WhatsApp Composer Bar */}
-                <div className="pt-2 flex items-center gap-2.5">
-                  <div className="flex-1 rounded-lg bg-[#202C33] px-4 py-2.5 text-xs text-zinc-500 border border-zinc-800/80">
-                    Automated notifications enabled
-                  </div>
+              {/* Authentic WhatsApp Light Composer Bar */}
+              <div className="px-3.5 py-2.5 bg-[#F0F2F5] border-t border-[#D1D7DB] flex items-center gap-2.5">
+                <Smile className="w-5 h-5 text-[#54656F] shrink-0" />
+                <Paperclip className="w-5 h-5 text-[#54656F] shrink-0" />
+                <div className="flex-1 rounded-lg bg-white px-3.5 py-2 text-xs text-[#667781]">
+                  Type a message
+                </div>
+                <div className="w-8 h-8 rounded-full bg-[#00A884] flex items-center justify-center shrink-0">
+                  <Mic className="w-4 h-4 text-white" />
                 </div>
               </div>
             </div>
